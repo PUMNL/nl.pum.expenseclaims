@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/pumexpenseclaims/page/claimlevel</path>
+    <page_callback>CRM_Expenseclaims_Page_ClaimLevel</page_callback>
+    <title>ClaimLevel</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/pumexpenseclaims/form/claimlevel</path>
+    <page_callback>CRM_Expenseclaims_Form_ClaimLevel</page_callback>
+    <title>ClaimLevel</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+</menu>

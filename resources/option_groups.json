@@ -1,0 +1,84 @@
+{
+  "pum_claim_type": {
+    "name": "pum_claim_type",
+    "title": "PUM Senior Experts Claim Types",
+    "is_active": "1",
+    "is_reserved": "0",
+    "option_values": {
+      "main_activity": {
+        "name": "pum_main_activity",
+        "value": "project",
+        "label": "PUM Main Activity",
+        "is_active": 1
+      },
+      "country_coordinator": {
+        "name": "country_coordinator",
+        "value": "7160",
+        "label": "Country Coordinator",
+        "is_active": 1
+      },
+      "sector_coordinator": {
+        "name": "sector_coordinator",
+        "value": "7161",
+        "label": "Sector Coordinator",
+        "is_active": 1
+      },
+      "hans_blankert": {
+        "name": "hans_blankert",
+        "value": "7162",
+        "label": "Hans Blankert Fonds (HBF)",
+        "is_active": 1
+      },
+      "recruitment": {
+        "name": "recruitment",
+        "value": "7163",
+        "label": "Recruitment (RCT)",
+        "is_active": 1
+      },
+      "aspect_advisors": {
+        "name": "aspect_advisors",
+        "value": "7164",
+        "label": "Aspect-Advisors (AA)",
+        "is_active": 1
+      },
+      "programme_manager": {
+        "name": "programme_manager",
+        "value": "7165",
+        "label": "Programma-Manager (PM)",
+        "is_active": 1
+      }
+    }
+  },
+  "pum_claim_level": {
+    "name": "pum_claim_level",
+    "title": "PUM Senior Experts Claim Levels",
+    "is_active": "1",
+    "is_reserved": "0",
+    "option_values": {
+      "project_officer": {
+        "name": "project_officer",
+        "value": 1,
+        "label": "Project Officer",
+        "is_active": 1
+      },
+      "senior_project_officer": {
+        "name": "senior_project_officer",
+        "value": 2,
+        "label": "Senior Project Officer",
+        "is_active": 1
+      },
+      "cfo": {
+        "name": "cfo",
+        "value": 3,
+        "label": "CFO",
+        "is_active": 1
+      },
+      "cpo": {
+        "name": "cpo",
+        "value": 4,
+        "label": "CPO",
+        "is_active": 1
+      }
+    }
+  }
+}
