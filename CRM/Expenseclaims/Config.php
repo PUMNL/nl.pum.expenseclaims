@@ -55,7 +55,7 @@ class CRM_Expenseclaims_Config {
         $caseType = civicrm_api3('OptionValue', 'getsingle', array(
           'option_group_id' => 'case_type',
           'name' => $mainActivity));
-        $this->_validMainActivities[$caseType['id']] = $caseType['label'];
+        $this->_validMainActivities[$caseType['value']] = $caseType['label'];
       } catch (CiviCRM_API3_Exception $ex) {
         throw new Exception(ts('Could not find an option value in option group case_type with name '.$mainActivity.' in ')
           . __METHOD__ . ts(', contact your system administrator. Error message from API OptionValue getsingle: '.$ex->getMessage()));

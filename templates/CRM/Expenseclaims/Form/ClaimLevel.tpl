@@ -16,18 +16,27 @@
     <div class="clear"></div>
   </div>
   <div class="crm-section pum_claim_level_valid_types">
-    <div class="label">{$form.valid_types.label}</div>
-    <div class="content">{$form.valid_types.html}</div>
+    <div class="label">
+      <label for="valid_types">{$form.valid_types.label}</label>
+    </div>
+    <div class="content crm-select-container" id="valid_types_block">
+      {$form.valid_types.html}
+    </div>
     <div class="clear"></div>
   </div>
   <div class="crm-section pum_claim_level_valid_main_activities">
-    <div class="label">{$form.valid_main_activities.label}</div>
-    <div class="content">{$form.valid_main_activities.html}</div>
+    <div class="label">
+      <label for="valid_main_activities">{$form.valid_main_activities.label}</label>
+    </div>
+    <div class="content crm-select-container" id="valid_main_activities_block">
+      {$form.valid_main_activities.html}
+    </div>
     <div class="clear"></div>
   </div>
   <div class="crm-section pum_claim_level_authorizing_level">
     <div class="label">{$form.authorizing_level.label}</div>
-    <div class="content">{$form.authorizing_level.html}</div>
+    <div class="content">{$form.authorizing_level.html}<br/><em>{ts}The role to authorize claims from this role{/ts}</em></div>
+    <div></div>
     <div class="clear"></div>
   </div>
   {* FOOTER *}

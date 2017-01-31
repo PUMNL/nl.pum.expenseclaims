@@ -19,11 +19,13 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
   public function buildQuickForm() {
     // add form elements
     $this->add('hidden', 'claim_level_id');
-    $this->add('select', 'label', ts('Label'), $this->getClaimLevelLabels());
+    $this->add('select', 'label', ts('Label'), $this->getClaimLevelLabels(), true);
     $this->add('text', 'max_amount', ts('Max Amount'), array('size' => 14), true);
-    $this->add('select', 'valid_types', ts('Label'), $this->getValidTypes());
-    $this->add('select', 'valid_main_activities', ts('Main Activities'), $this->getValidMainActivities());
-    $this->add('select', 'authorization_level', ts('Label'), $this->getClaimLevelLabels());
+    $this->add('select', 'valid_types', ts('Valid Types'), $this->getValidTypes(), true,
+      array('id' => 'valid_types', 'multiple' => 'multiple','class' => 'crm-select2'));
+    $this->add('select', 'valid_main_activities', ts('Valid Main Activities'), $this->getValidMainActivities(), true,
+      array('id' => 'valid_main_activities', 'multiple' => 'multiple','class' => 'crm-select2'));
+    $this->add('select', 'authorizing_level', ts('Authorizing Level'), $this->getClaimLevelLabels());
     // add buttons
     $this->addButtons(array(
       array('type' => 'next', 'name' => ts('Save'), 'isDefault' => true,),
@@ -31,14 +33,54 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
 
     parent::buildQuickForm();
   }
+
+  /**
+   * Method to get available claim levels
+   *
+   * @return array
+   */
   private function getClaimLevelLabels() {
-
+    $result = array();
+    $result[0] = '- select -';
+    try {
+      $claimLevels = civicrm_api3('OptionValue', 'get', array(
+        'option_group_id' => 'pum_claim_level',
+        'is_active' => 1,
+        'options' => array('sort' => 'label', 'limit' => 0)));
+      foreach ($claimLevels['values'] as $claimLevelId => $claimLevel) {
+        $result[$claimLevel['value']] = $claimLevel['label'];
+      }
+    } catch (CiviCRM_API3_Exception $ex) {}
+    return $result;
   }
+
+  /**
+   * Method to get available claim types
+   *
+   * @return array
+   */
   private function getValidTypes() {
-
+    $result = array();
+    try {
+      $claimTypes = civicrm_api3('OptionValue', 'get', array(
+        'option_group_id' => 'pum_claim_type',
+        'is_active' => 1,
+        'options' => array('sort' => 'label', 'limit' => 0)));
+      foreach ($claimTypes['values'] as $claimTypeId => $claimType) {
+        $result[$claimType['value']] = $claimType['label'];
+      }
+    } catch (CiviCRM_API3_Exception $ex) {}
+    return $result;
   }
-  private function getValidMainActivities() {
 
+  /**
+   * Method to get the valid main activities
+   *
+   * @return mixed
+   */
+  private function getValidMainActivities() {
+    $config = CRM_Expenseclaims_Config::singleton();
+    return $config->getValidMainActivities();
   }
 
   /**
@@ -50,6 +92,17 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
       $this->saveClaimLevel($this->_submitValues);
     }
     parent::postProcess();
+  }
+
+  /**
+   * Method to save the claim level
+   *
+   * @param $values
+   */
+  private function saveClaimLevel($values) {
+    if (!empty($values)) {
+      $this->_claimLevel = civicrm_api3('ClaimLevel', 'create', $values);
+    }
   }
 
   /**
@@ -67,14 +120,17 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
     }
     switch ($this->_action) {
       case CRM_Core_Action::ADD:
-        $actionLabel = "Add Expense Claim Level";
+        $actionHeader = "Add Expense Claim Level";
         break;
       case CRM_Core_Action::UPDATE:
-        $actionLabel = "Edit Expense Claim Level";
+        $actionHeader = "Edit Expense Claim Level";
+        break;
+      default:
+        $actionHeader = 'Expense Claim Level';
         break;
     }
     CRM_Utils_System::setTitle(ts('PUM Senior Experts Expense Claim Level'));
-    $this->assign('actionLabel', $actionLabel);
+    $this->assign('actionHeader', $actionHeader);
   }
 
   /**
@@ -85,82 +141,35 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
    */
   function setDefaultValues() {
     $defaults = array();
-    $defaults['segment_id'] = $this->_segmentId;
-    if (!isset($this->_segment['parent_id']) || empty($this->_segment['parent_id'])) {
-      $defaults['segment_type'] = 'parent';
-    } else {
-      $defaults['segment_type'] = 'child';
+    $defaults['claim_level_id'] = $this->_claimLevelId;
+    if ($this->_action == CRM_Core_Action::UPDATE) {
+      $defaults['label'] = $this->_claimLevel['label'];
+      $defaults['max_amount'] = $this->_claimLevel['max_amount'];
+      $defaults['valid_types'] = $this->_claimLevel['level_types'];
+      $defaults['valid_main_activities'] = $this->_claimLevel['level_main_activities'];
+      $defaults['authorizing_level'] = $this->_claimLevel['authorizing_level'];
     }
-    if ($this->_action == CRM_Core_Action::VIEW || $this->_action == CRM_Core_Action::UPDATE) {
-      $defaults['segment_label'] = $this->_segment['label'];
-      if ($this->_segment['parent_id']) {
-        $defaults['segment_parent'] = $this->_segment['parent_id'];
-      }
-    }
-    $defaults['is_active'] = true;
-    if ($this->_segmentId && empty($this->_segment['is_active'])) {
-      $defaults['is_active'] = false;
-    }
-
     return $defaults;
   }
 
   /**
-   * Function to save the segment
-   *
-   * @param $formValues
-   * @access protected
-   */
-  protected function saveSegment($formValues) {
-    $params = array();
-    if ($formValues['segment_id']) {
-      $params['id'] = $formValues['segment_id'];
-    }
-    $params['label'] = $formValues['segment_label'];
-    $params['is_active'] = $formValues['is_active'] ? '1' : '0';
-    $params['name'] = CRM_Contactsegment_Utils::generateNameFromLabel($params['label']);
-    if ($this->_action == CRM_Core_Action::ADD) {
-      $segmentType = key($formValues['segment_type_list']);
-    } else {
-      if ($formValues['segment_parent']) {
-        $segmentType = 1;
-      }
-    }
-    switch ($segmentType) {
-      case 0:
-        $params['parent_id'] = NULL;
-        $statusTitle = $this->_parentLabel." saved";
-        $statusMessage = $this->_parentLabel." ".$params['label']." saved";
-        break;
-      case 1:
-        $params['parent_id'] = $formValues['segment_parent'];
-        $statusTitle = $this->_childLabel." saved";
-        $statusMessage = $this->_childLabel." ".$params['label']." from "
-          .$this->_parentLabel." ".$this->getSegmentParentLabel($formValues['segment_parent'])." saved";
-        break;
-    }
-    $this->_segment = civicrm_api3('Segment', 'Create', $params);
-    $session = CRM_Core_Session::singleton();
-    $session->setStatus($statusMessage, $statusTitle, "success");
-  }
-
-  /**
-   * Method to delete segment
+   * Method to delete claim level
    *
    */
-  protected function deleteSegmentAndReturn() {
-    if (!$this->_segment['parent_id']) {
-      $statusMessage = $this->_parentLabel." ".$this->_segment['label']." deleted";
-      $statusTitle = $this->_parentLabel." deleted";
-    } else {
-      $statusMessage = $this->_childLabel." ".$this->_segment['label']." from "
-        .$this->_parentLabel." ".$this->getSegmentParentLabel($this->_segment['parent_id'])." deleted";
-      $statusTitle = $this->_childLabel." deleted";
-    }
-    civicrm_api3('Segment', 'Delete', array('id' => $this->_segmentId));
+  protected function deleteClaimLevelAndReturn() {
+    civicrm_api3('ClaimLevel', 'Delete', array('id' => $this->_claimLevelId));
     $session = CRM_Core_Session::singleton();
-    $session->setStatus($statusMessage, $statusTitle, "success");
+    $session->setStatus(ts('Deleted Claim Level').' '.$this->_claimLevel['label'].' '.ts('from the database'),
+      'Deleted Claim Level', 'success');
     CRM_Utils_System::redirect($session->readUserContext());
   }
 
+  /**
+   * Overridden parent method to set validation rules
+   */
+  public function addRules() {
+    //$this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateLabel'));
+    //$this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateAuthorizingLevel'));
+    //$this->addFormRule(array('CRM_Epxenseclaims_Form_ClaimLevel', 'validateMaxAmount'));
+  }
 }

@@ -8,7 +8,7 @@
  * @return void
  * @see http://wiki.civicrm.org/confluence/display/CRM/API+Architecture+Standards
  */
-function _civicrm_api3_contact_segment_create_spec(&$spec) {
+function _civicrm_api3_claim_line_get_spec(&$spec) {
   $spec['id'] = array(
     'name' => 'id',
     'title' => 'id',
