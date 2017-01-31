@@ -20,7 +20,8 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
    * Once installed, make sure all config items are created
    */
   public function postInstall() {
-    CRM_Expenseclaims_ConfigItems_ConfigItems::singleton();
+    $configItems = CRM_Expenseclaims_ConfigItems_ConfigItems::singleton();
+    $configItems->install();
   }
 
   /**

@@ -24,7 +24,13 @@ class CRM_Expenseclaims_ConfigItems_ConfigItems {
         .'.It does not exist or is not a folder, contact your system administrator'));
     }
     $this->_resourcesPath = $resourcesPath;
-    $this->setOptionGroups();
+  }
+
+  /**
+   * Method to install config items
+   */
+  public function install() {
+    $this->installOptionGroups();
   }
 
   /**
@@ -71,7 +77,7 @@ class CRM_Expenseclaims_ConfigItems_ConfigItems {
    * @throws Exception when resource file not found
    * @access protected
    */
-  protected function setOptionGroups() {
+  protected function installOptionGroups() {
     $jsonFile = $this->_resourcesPath.'option_groups.json';
     if (!file_exists($jsonFile)) {
       throw new Exception(ts('Could not load option_groups configuration file for extension,

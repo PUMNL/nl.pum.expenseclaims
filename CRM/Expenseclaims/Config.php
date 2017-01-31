@@ -12,12 +12,14 @@ class CRM_Expenseclaims_Config {
   static private $_singleton = NULL;
 
   protected $_validMainActivities = array();
+  protected $_claimActivityTypeId = NULL;
 
   /**
    * CRM_Expenseclaims_Config constructor.
    */
   function __construct() {
     $this->setValidMainActivities();
+    $this->setClaimActivityTypeId();
   }
 
   /**
@@ -28,6 +30,16 @@ class CRM_Expenseclaims_Config {
    */
   public function getValidMainActivities() {
     return $this->_validMainActivities;
+  }
+
+  /**
+   * Getter for claimActivityTypeId
+   *
+   * @return string
+   * @access public
+   */
+  public function getClaimActivityTypeId() {
+    return $this->_claimActivityTypeId;
   }
 
   /**
@@ -49,6 +61,20 @@ class CRM_Expenseclaims_Config {
           . __METHOD__ . ts(', contact your system administrator. Error message from API OptionValue getsingle: '.$ex->getMessage()));
       }
     }
+  }
+
+  /**
+   * Method to set the claim activity type id
+   *
+   */
+  private function setClaimActivityTypeId() {
+    try {
+      $this->_claimActivityTypeId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => 'activity_type',
+        'name' => 'Claim',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {}
   }
 
   /**

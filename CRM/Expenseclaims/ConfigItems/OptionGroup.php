@@ -48,12 +48,12 @@ class CRM_Expenseclaims_ConfigItems_OptionGroup {
       $this->_apiParams['title'] = ucfirst($this->_apiParams['name']);
     }
     try {
-      $optionGroup = civicrm_api3('OptionGroup', 'Create', $this->_apiParams);
-      if (isset($params['option_values'])) {
-        $this->createOptionValues($optionGroup['id'], $params['option_values']);
-      }
+      civicrm_api3('OptionGroup', 'Create', $this->_apiParams);
+      //if (isset($params['option_values'])) {
+        //$this->createOptionValues($this->_apiParams['name'], $params['option_values']);
+      //}
     } catch (CiviCRM_API3_Exception $ex) {
-      throw new Exception(ts('Could not create or update option_group with name'
+      throw new Exception(ts('Could not create or update option_group with name '
           .$this->_apiParams['name'].', error from API OptionGroup Create: ') . $ex->getMessage());
     }
   }
@@ -61,12 +61,12 @@ class CRM_Expenseclaims_ConfigItems_OptionGroup {
   /**
    * Method to create option values for option group
    *
-   * @param int $optionGroupId
+   * @param string $optionGroupName
    * @param array $optionValueParams
    */
-  protected function createOptionValues($optionGroupId, $optionValueParams) {
+  protected function createOptionValues($optionGroupName, $optionValueParams) {
     foreach ($optionValueParams as $optionValueName => $params) {
-      $params['option_group_id'] = $optionGroupId;
+      $params['option_group_id'] = $optionGroupName;
       $optionValue = new CRM_Expenseclaims_ConfigItems_OptionValue();
       $optionValue->create($params);
     }

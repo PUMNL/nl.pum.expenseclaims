@@ -29,7 +29,7 @@
         <tr id="row{$rowCount}" class={$rowClass}>
           <td hidden="1">{$levelId}
           <td>{$level.label}</td>
-          <td>{$level.max_amount}</td>
+          <td>{$level.max_amount|crmMoney}</td>
           <td>{$level.valid_types}</td>
           <td>{$level.valid_main_activities}</td>
           <td>{$level.authorizing_level}</td>
