@@ -36,8 +36,8 @@ class CRM_Expenseclaims_DAO_ClaimLevel extends CRM_Core_DAO {
           'type' => CRM_Utils_Type::T_INT,
           'required' => true
         ) ,
-        'label' => array(
-          'name' => 'label',
+        'level' => array(
+          'name' => 'level',
           'type' => CRM_Utils_Type::T_STRING,
         ),
         'max_amount' => array(
@@ -63,7 +63,7 @@ class CRM_Expenseclaims_DAO_ClaimLevel extends CRM_Core_DAO {
     if (!(self::$_fieldKeys)) {
       self::$_fieldKeys = array(
         'id' => 'id',
-        'label' => 'label',
+        'level' => 'level',
         'max_amount' => 'max_amount',
         'authorizing_level' => 'authorizing_level'
       );

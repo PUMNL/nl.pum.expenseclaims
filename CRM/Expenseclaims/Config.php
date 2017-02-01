@@ -13,6 +13,7 @@ class CRM_Expenseclaims_Config {
 
   protected $_validMainActivities = array();
   protected $_claimActivityTypeId = NULL;
+  protected $_cpoContactId = NULL;
 
   /**
    * CRM_Expenseclaims_Config constructor.
@@ -20,6 +21,17 @@ class CRM_Expenseclaims_Config {
   function __construct() {
     $this->setValidMainActivities();
     $this->setClaimActivityTypeId();
+    $this->setCpoContactId();
+  }
+
+  /**
+   * Getter for CPO contact id
+   *
+   * @return string
+   * @access public
+   */
+  public function getCpoContactId() {
+    return $this->_cpoContactId;
   }
 
   /**
@@ -75,6 +87,24 @@ class CRM_Expenseclaims_Config {
         'return' => 'value'
       ));
     } catch (CiviCRM_API3_Exception $ex) {}
+  }
+
+  /**
+   * Method to set the CPO
+   *
+   * @throws Exception when API getvalue error (not found, more than one)
+   */
+  private function setCpoContactId() {
+    try {
+      $this->_cpoContactId = civicrm_api3('Contact', 'getvalue', array(
+        'current_employer_id' => 1,
+        'job_title' => 'CPO',
+        'return' => 'id'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a contact with the job title CPO and contact_id 1 as employer in '.__METHOD__
+        .', contact your system administrator');
+    }
   }
 
   /**

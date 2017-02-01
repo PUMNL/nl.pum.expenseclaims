@@ -1,0 +1,14 @@
+{
+  "senior_project_officer": {
+    "name_a_b": "senior_project_officer",
+    "label_a_b": "Senior Project Officer",
+    "contact_type_a": "Organization",
+    "contact_sub_type_a": "Country",
+    "name_b_a": "senior_project_officer_is",
+    "label_b_a": "Senior Project Officer is",
+    "contact_type_b": "Individual",
+    "contact_sub_type_b": "",
+    "is_active": 1,
+    "is_reserved": 1
+  }
+}

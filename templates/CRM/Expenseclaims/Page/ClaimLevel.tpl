@@ -28,7 +28,7 @@
         {assign var="rowCount" value=$rowCount+1}
         <tr id="row{$rowCount}" class={$rowClass}>
           <td hidden="1">{$levelId}
-          <td>{$level.label}</td>
+          <td>{$level.level}</td>
           <td>{$level.max_amount|crmMoney}</td>
           <td>{$level.valid_types}</td>
           <td>{$level.valid_main_activities}</td>

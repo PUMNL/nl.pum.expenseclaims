@@ -31,6 +31,7 @@ class CRM_Expenseclaims_ConfigItems_ConfigItems {
    */
   public function install() {
     $this->installOptionGroups();
+    $this->installRelationshipTypes();
   }
 
   /**
@@ -38,8 +39,23 @@ class CRM_Expenseclaims_ConfigItems_ConfigItems {
    */
   public function uninstall() {
     $this->uninstallOptionGroups();
+    $this->uninstallRelationshipTypes();
   }
 
+  /**
+   * Method to remove relationship types
+   */
+  private function uninstallRelationshipTypes() {
+    $jsonFile = $this->_resourcesPath.'relationship_types.json';
+    if (file_exists($jsonFile)) {
+      $relationshipTypesJson = file_get_contents($jsonFile);
+      $relationshipTypes = json_decode($relationshipTypesJson, true);
+      foreach ($relationshipTypes as $name => $relationshipTypeParams) {
+        $relationshipType = new CRM_Expenseclaims_ConfigItems_RelationshipType();
+        $relationshipType->uninstall($relationshipTypeParams);
+      }
+    }
+  }
   /**
    * Method to remove option groups
    *
@@ -88,6 +104,26 @@ class CRM_Expenseclaims_ConfigItems_ConfigItems {
     foreach ($optionGroups as $name => $optionGroupParams) {
       $optionGroup = new CRM_Expenseclaims_ConfigItems_OptionGroup();
       $optionGroup->create($optionGroupParams);
+    }
+  }
+
+  /**
+   * Method to create relationship types
+   *
+   * @throws Exception when resource file not found
+   * @access protected
+   */
+  protected function installRelationshipTypes() {
+    $jsonFile = $this->_resourcesPath.'relationship_types.json';
+    if (!file_exists($jsonFile)) {
+      throw new Exception(ts('Could not load relationship_types configuration file for extension,
+      contact your system administrator!'));
+    }
+    $relationshipTypesJson = file_get_contents($jsonFile);
+    $relationshipTypes = json_decode($relationshipTypesJson, true);
+    foreach ($relationshipTypes as $name => $relationshipTypeParams) {
+      $relationshipType = new CRM_Expenseclaims_ConfigItems_RelationshipType();
+      $relationshipType->create($relationshipTypeParams);
     }
   }
 }

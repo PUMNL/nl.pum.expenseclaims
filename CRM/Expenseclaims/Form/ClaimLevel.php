@@ -19,13 +19,13 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
   public function buildQuickForm() {
     // add form elements
     $this->add('hidden', 'claim_level_id');
-    $this->add('select', 'label', ts('Label'), $this->getClaimLevelLabels(), true);
+    $this->add('select', 'level', ts('Level'), $this->getClaimLevelLevels(), true);
     $this->add('text', 'max_amount', ts('Max Amount'), array('size' => 14), true);
     $this->add('select', 'valid_types', ts('Valid Types'), $this->getValidTypes(), true,
       array('id' => 'valid_types', 'multiple' => 'multiple','class' => 'crm-select2'));
     $this->add('select', 'valid_main_activities', ts('Valid Main Activities'), $this->getValidMainActivities(), true,
       array('id' => 'valid_main_activities', 'multiple' => 'multiple','class' => 'crm-select2'));
-    $this->add('select', 'authorizing_level', ts('Authorizing Level'), $this->getClaimLevelLabels());
+    $this->add('select', 'authorizing_level', ts('Authorizing Level'), $this->getClaimLevelLevels());
     // add buttons
     $this->addButtons(array(
       array('type' => 'next', 'name' => ts('Save'), 'isDefault' => true,),
@@ -39,7 +39,7 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
    *
    * @return array
    */
-  private function getClaimLevelLabels() {
+  private function getClaimLevelLevels() {
     $result = array();
     $result[0] = '- select -';
     try {
@@ -51,7 +51,22 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
         $result[$claimLevel['value']] = $claimLevel['label'];
       }
     } catch (CiviCRM_API3_Exception $ex) {}
+    if ($this->_action == CRM_Core_Action::UPDATE) {
+      $this->removeOwnLevelFromList($result);
+    }
     return $result;
+  }
+
+  /**
+   * Method to remove level being edited from select list
+   *
+   * @param $result
+   */
+  private function removeOwnLevelFromList(&$result) {
+    if (!empty($this->_claimLevel['level'])) {
+      $claimLevelLevel = $this->_claimLevel['level'];
+      unset($result[$claimLevelLevel]);
+    }
   }
 
   /**
@@ -143,7 +158,7 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
     $defaults = array();
     $defaults['claim_level_id'] = $this->_claimLevelId;
     if ($this->_action == CRM_Core_Action::UPDATE) {
-      $defaults['label'] = $this->_claimLevel['label'];
+      $defaults['level'] = $this->_claimLevel['level'];
       $defaults['max_amount'] = $this->_claimLevel['max_amount'];
       $defaults['valid_types'] = $this->_claimLevel['level_types'];
       $defaults['valid_main_activities'] = $this->_claimLevel['level_main_activities'];
@@ -168,8 +183,69 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
    * Overridden parent method to set validation rules
    */
   public function addRules() {
-    //$this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateLabel'));
-    //$this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateAuthorizingLevel'));
-    //$this->addFormRule(array('CRM_Epxenseclaims_Form_ClaimLevel', 'validateMaxAmount'));
+    $this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateLabel'));
+    $this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateAuthorizingLevel'));
+    $this->addFormRule(array('CRM_Epxenseclaims_Form_ClaimLevel', 'validateMaxAmount'));
+  }
+
+  /**
+   * Method to validate authorizing level
+   *
+   * @param $fields
+   * @return bool|array
+   */
+  public static function validateAuthorizingLevel($fields) {
+    if (isset($fields['authorizing_level'])) {
+      if (empty($fields['authorizing_level']) && $fields['max_amount'] != 'no max') {
+        $errors['authorizing_level'] = ts('Authorizing Level can only be empty if max amount is set to no max');
+        return $errors;
+      }
+    }
+    return TRUE;
+  }
+  /**
+   * Method to validate max amount
+   *
+   * @param $fields
+   * @return bool|array
+   */
+  public static function validateMaxAmount($fields) {
+    // empty value is already validated as max_amount is a required field
+    if (isset($fields['max_amount']) && !empty($fields['max_amount'])) {
+      // value can only contain numbers or 'no max'
+      if ($fields['max_amount'] != "no max") {
+        if (!is_numeric($fields['max_amount'])) {
+          $errors['max_amount'] = ts('Max Amount can only contain numbers or the value no max');
+          return $errors;
+        }
+        if ($fields['max_amount'] < 0) {
+          $errors['max_amount'] = ts('Max Amount can only contain positive values');
+          return $errors;
+        }
+      }
+      $count = civicrm_api3('ClaimLevel', 'getcount', array('max_amount' => $fields['max_amount']));
+      if ($count > 0) {
+        $errors['level'] = ts('MAx amount is already used in another claim level. A certain max amount can only exist once');
+        return $errors;
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   * Method to validate that label does not have a claim level yet
+   *
+   * @param $fields
+   * @return array|bool
+   */
+  public static function validateLabel($fields) {
+    if (isset($fields['level']) && !empty($fields['level'])) {
+      $count = civicrm_api3('ClaimLevel', 'getcount', array('level' => $fields['level']));
+      if ($count > 0) {
+        $errors['level'] = ts('Level is already used in another claim level. A certain level can only exist once');
+        return $errors;
+      }
+    }
+    return TRUE;
   }
 }

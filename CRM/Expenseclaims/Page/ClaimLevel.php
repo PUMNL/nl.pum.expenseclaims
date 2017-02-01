@@ -38,9 +38,9 @@ class CRM_Expenseclaims_Page_ClaimLevel extends CRM_Core_Page {
     while ($dao->fetch()) {
       $row = array();
       try {
-        $row['label'] = civicrm_api3('OptionValue', 'getvalue', array(
+        $row['level'] = civicrm_api3('OptionValue', 'getvalue', array(
           'option_group_id' => 'pum_claim_level',
-          'name' => $dao->label,
+          'value' => $dao->level,
           'return' => 'label'));
       } catch (CiviCRM_API3_Exception $ex) {}
       $row['max_amount'] = $dao->max_amount;
@@ -49,7 +49,7 @@ class CRM_Expenseclaims_Page_ClaimLevel extends CRM_Core_Page {
       try {
         $row['authorizing_level'] = civicrm_api3('OptionValue', 'getvalue', array(
           'option_group_id' => 'pum_claim_level',
-          'name' => $dao->authorizing_level,
+          'value' => $dao->authorizing_level,
           'return' => 'label'));
       } catch (CiviCRM_API3_Exception $ex) {}
       $row['actions'] = $this->setRowActions($dao->id);

@@ -5,9 +5,9 @@
   <div class="crm-submit-buttons">
     {include file="CRM/common/formButtons.tpl" location="top"}
   </div>
-  <div class="crm-section pum_claim_level_label">
-    <div class="label">{$form.label.label}</div>
-    <div class="content">{$form.label.html}</div>
+  <div class="crm-section pum_claim_level_level">
+    <div class="label">{$form.level.label}</div>
+    <div class="content">{$form.level.html}</div>
     <div class="clear"></div>
   </div>
   <div class="crm-section pum_claim_level_max_amount">
