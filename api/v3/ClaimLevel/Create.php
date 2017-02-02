@@ -14,14 +14,14 @@ function _civicrm_api3_lcaim_level_create_spec(&$spec) {
     'title' => 'id',
     'type' => CRM_Utils_Type::T_INT
   );
-  $spec['label'] = array(
-    'name' => 'label',
-    'title' => 'label',
+  $spec['level'] = array(
+    'name' => 'level',
+    'title' => 'level',
     'type' => CRM_Utils_Type::T_STRING,
     'api.required' => 1
   );
   $spec['max_amount'] = array(
-    'name' => 'max_amounte',
+    'name' => 'max_amount',
     'title' => 'max_amount',
     'type' => CRM_Utils_Type::T_MONEY,
     'api.required' => 1,

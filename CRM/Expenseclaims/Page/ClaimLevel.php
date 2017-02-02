@@ -25,7 +25,7 @@ class CRM_Expenseclaims_Page_ClaimLevel extends CRM_Core_Page {
   /**
    * Function to get the claim levels
    *
-   * @return array $displaySegments
+   * @return array $claimLevels
    * @access protected
    */
   protected function getClaimLevels() {
@@ -43,7 +43,11 @@ class CRM_Expenseclaims_Page_ClaimLevel extends CRM_Core_Page {
           'value' => $dao->level,
           'return' => 'label'));
       } catch (CiviCRM_API3_Exception $ex) {}
-      $row['max_amount'] = $dao->max_amount;
+      if ($dao->max_amount == 999999999.99) {
+        $row['max_amount'] = 'no max';
+      } else {
+        $row['max_amount'] = $dao->max_amount;
+      }
       $row['valid_types'] = $this->getClaimLevelTypes($dao->id);
       $row['valid_main_activities'] = $this->getClaimLevelMainActivities($dao->id);
       try {
@@ -125,7 +129,7 @@ class CRM_Expenseclaims_Page_ClaimLevel extends CRM_Core_Page {
     $actions = array();
     $editUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimlevel', 'action=update&id='.$claimLevelId, true);
     $deleteUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimlevel', 'action=delete&id='.$claimLevelId, true);
-    $contactsUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/page/levelcontact', 'reset=1&id='.$claimLevelId, true);
+    $contactsUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/page/claimlevelcontact', 'reset=1&id='.$claimLevelId, true);
     $actions[] = '<a class="action-item" title="Contacts" href="'.$contactsUrl.'">Contacts</a>';
     $actions[] = '<a class="action-item" title="Edit" href="'.$editUrl.'">Edit</a>';
     $actions[] = '<a class="action-item" title="Delete" href="'.$deleteUrl.'">Delete</a>';

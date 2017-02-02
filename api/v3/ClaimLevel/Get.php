@@ -14,13 +14,13 @@ function _civicrm_api3_claim_level_get_spec(&$spec) {
     'title' => 'id',
     'type' => CRM_Utils_Type::T_INT
   );
-  $spec['label'] = array(
-    'name' => 'label',
-    'title' => 'label',
+  $spec['level'] = array(
+    'name' => 'level',
+    'title' => 'level',
     'type' => CRM_Utils_Type::T_STRING
   );
   $spec['max_amount'] = array(
-    'name' => 'max_amounte',
+    'name' => 'max_amount',
     'title' => 'max_amount',
     'type' => CRM_Utils_Type::T_MONEY,
   );

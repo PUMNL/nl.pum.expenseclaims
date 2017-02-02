@@ -48,10 +48,10 @@ class CRM_Expenseclaims_ConfigItems_OptionGroup {
       $this->_apiParams['title'] = ucfirst($this->_apiParams['name']);
     }
     try {
-      civicrm_api3('OptionGroup', 'Create', $this->_apiParams);
-      //if (isset($params['option_values'])) {
-        //$this->createOptionValues($this->_apiParams['name'], $params['option_values']);
-      //}
+      $optionGroup = civicrm_api3('OptionGroup', 'Create', $this->_apiParams);
+      if (isset($params['option_values'])) {
+        $this->createOptionValues($optionGroup['id'], $params['option_values']);
+      }
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception(ts('Could not create or update option_group with name '
           .$this->_apiParams['name'].', error from API OptionGroup Create: ') . $ex->getMessage());
@@ -61,15 +61,58 @@ class CRM_Expenseclaims_ConfigItems_OptionGroup {
   /**
    * Method to create option values for option group
    *
-   * @param string $optionGroupName
+   * @param int $optionGroupId
    * @param array $optionValueParams
    */
-  protected function createOptionValues($optionGroupName, $optionValueParams) {
+  protected function createOptionValues($optionGroupId, $optionValueParams) {
+    $weight = 1;
     foreach ($optionValueParams as $optionValueName => $params) {
-      $params['option_group_id'] = $optionGroupName;
-      $optionValue = new CRM_Expenseclaims_ConfigItems_OptionValue();
-      $optionValue->create($params);
+      if (!isset($params['label'])) {
+        $params['label'] = $this->generateLabelFromName($optionValueName);
+      }
+      $countSql = 'SELECT COUNT(*) FROM civicrm_option_value WHERE option_group_id = %1 AND name = %2';
+      $count = CRM_Core_DAO::singleValueQuery($countSql, array(
+        1 => array((int) $optionGroupId, 'Integer'),
+        2 => array($optionValueName, 'String')));
+      if ($count > 0) {
+        $sql = 'UPDATE civicrm_option_value SET value = %1, label = %2, is_active = %3, is_reserved = %4 
+          WHERE option_group_id = %5 AND name = %6';
+        $sqlParams = array(
+          1 => array($params['value'], 'String'),
+          2 => array($params['label'], 'String'),
+          3 => array(1, 'Integer'),
+          4 => array(1, 'Integer'),
+          5 => array((int) $optionGroupId, 'Integer'),
+          6 => array($optionValueName, 'String'));
+      } else {
+        $sql = 'INSERT INTO civicrm_option_value (option_group_id, name, value, label, is_active, is_reserved, weight) VALUES(%1, %2, %3, %4, %5, %6, %7)';
+        $sqlParams = array(
+          1 => array((int) $optionGroupId, 'Integer'),
+          2 => array($optionValueName, 'String'),
+          3 => array($params['value'], 'String'),
+          4 => array($params['label'], 'String'),
+          5 => array(1, 'Integer'),
+          6 => array(1, 'Integer'),
+          7 => array($weight, 'Integer'));
+        $weight++;
+      }
+      CRM_Core_DAO::executeQuery($sql, $sqlParams);
     }
+  }
+
+  /**
+   * Method to generate label from name
+   *
+   * @param $name
+   * @return string
+   */
+  private function generateLabelFromName($name) {
+    $result = array();
+    $parts = explode('_', $name);
+    foreach ($parts as $part) {
+      $result[]= uc_first($part);
+    }
+    return implode(' ', $result);
   }
 
   /**
@@ -98,8 +141,8 @@ class CRM_Expenseclaims_ConfigItems_OptionGroup {
     try {
       $optionGroupId = civicrm_api3('OptionGroup', 'getvalue', array('name' => $params['name']));
       // first remove all option values from the option group if there are any
-      $optionValue = new CRM_Expenseclaims_ConfigItems_OptionValue();
-      $optionValue->uninstall($params['name']);
+      $sql = 'DELETE FROM civicrm_option_value WHERE option_group_id = %1';
+      CRM_Core_DAO::executeQuery($sql, array(1 => array((int) $optionGroupId), 'Integer'));
       // then remove option group
       civicrm_api3('OptionGroup', 'delete', array('id' => $optionGroupId));
     } catch (CiviCRM_API3_Exception $ex) {}

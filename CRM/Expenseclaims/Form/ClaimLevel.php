@@ -12,6 +12,7 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
 
   protected $_claimLevelId = NULL;
   protected $_claimLevel = array();
+  protected $_claimLevelList = array();
 
   /**
    * Method to build the QuickForm
@@ -19,13 +20,13 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
   public function buildQuickForm() {
     // add form elements
     $this->add('hidden', 'claim_level_id');
-    $this->add('select', 'level', ts('Level'), $this->getClaimLevelLevels(), true);
+    $this->add('select', 'level', ts('Level'), $this->_claimLevelList, true);
     $this->add('text', 'max_amount', ts('Max Amount'), array('size' => 14), true);
     $this->add('select', 'valid_types', ts('Valid Types'), $this->getValidTypes(), true,
       array('id' => 'valid_types', 'multiple' => 'multiple','class' => 'crm-select2'));
     $this->add('select', 'valid_main_activities', ts('Valid Main Activities'), $this->getValidMainActivities(), true,
       array('id' => 'valid_main_activities', 'multiple' => 'multiple','class' => 'crm-select2'));
-    $this->add('select', 'authorizing_level', ts('Authorizing Level'), $this->getClaimLevelLevels());
+    $this->add('select', 'authorizing_level', ts('Authorizing Level'), $this->_claimLevelList);
     // add buttons
     $this->addButtons(array(
       array('type' => 'next', 'name' => ts('Save'), 'isDefault' => true,),
@@ -40,33 +41,17 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
    * @return array
    */
   private function getClaimLevelLevels() {
-    $result = array();
-    $result[0] = '- select -';
+    $this->_claimLevelList = array();
+    $this->_claimLevelList[0] = '- select -';
     try {
       $claimLevels = civicrm_api3('OptionValue', 'get', array(
         'option_group_id' => 'pum_claim_level',
         'is_active' => 1,
         'options' => array('sort' => 'label', 'limit' => 0)));
       foreach ($claimLevels['values'] as $claimLevelId => $claimLevel) {
-        $result[$claimLevel['value']] = $claimLevel['label'];
+        $this->_claimLevelList[$claimLevel['value']] = $claimLevel['label'];
       }
     } catch (CiviCRM_API3_Exception $ex) {}
-    if ($this->_action == CRM_Core_Action::UPDATE) {
-      $this->removeOwnLevelFromList($result);
-    }
-    return $result;
-  }
-
-  /**
-   * Method to remove level being edited from select list
-   *
-   * @param $result
-   */
-  private function removeOwnLevelFromList(&$result) {
-    if (!empty($this->_claimLevel['level'])) {
-      $claimLevelLevel = $this->_claimLevel['level'];
-      unset($result[$claimLevelLevel]);
-    }
   }
 
   /**
@@ -116,6 +101,10 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
    */
   private function saveClaimLevel($values) {
     if (!empty($values)) {
+      // replace no max if necessary
+      if (isset($values['max_amount']) && $values['max_amount'] == 'no max') {
+        $values['max_amount'] = 999999999.99;
+      }
       $this->_claimLevel = civicrm_api3('ClaimLevel', 'create', $values);
     }
   }
@@ -126,6 +115,7 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
    * @access public
    */
   function preProcess() {
+    $this->getClaimLevelLevels();
     $this->_claimLevelId = CRM_Utils_Request::retrieve('id', 'Integer');
     if ($this->_action != CRM_Core_Action::ADD && $this->_claimLevelId) {
       $this->_claimLevel = civicrm_api3('ClaimLevel', 'Getsingle', array('id' => $this->_claimLevelId));
@@ -138,7 +128,7 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
         $actionHeader = "Add Expense Claim Level";
         break;
       case CRM_Core_Action::UPDATE:
-        $actionHeader = "Edit Expense Claim Level";
+        $actionHeader = "Edit Expense Claim Level ".$this->_claimLevelList[$this->_claimLevel['level']];
         break;
       default:
         $actionHeader = 'Expense Claim Level';
@@ -159,9 +149,13 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
     $defaults['claim_level_id'] = $this->_claimLevelId;
     if ($this->_action == CRM_Core_Action::UPDATE) {
       $defaults['level'] = $this->_claimLevel['level'];
-      $defaults['max_amount'] = $this->_claimLevel['max_amount'];
-      $defaults['valid_types'] = $this->_claimLevel['level_types'];
-      $defaults['valid_main_activities'] = $this->_claimLevel['level_main_activities'];
+      if ($this->_claimLevel['max_amount'] == 999999999.99) {
+        $defaults['max_amount'] = 'no max';
+      } else {
+        $defaults['max_amount'] = $this->_claimLevel['max_amount'];
+      }
+      $defaults['valid_types'] = $this->_claimLevel['valid_types'];
+      $defaults['valid_main_activities'] = $this->_claimLevel['valid_main_activities'];
       $defaults['authorizing_level'] = $this->_claimLevel['authorizing_level'];
     }
     return $defaults;
@@ -174,7 +168,7 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
   protected function deleteClaimLevelAndReturn() {
     civicrm_api3('ClaimLevel', 'Delete', array('id' => $this->_claimLevelId));
     $session = CRM_Core_Session::singleton();
-    $session->setStatus(ts('Deleted Claim Level').' '.$this->_claimLevel['label'].' '.ts('from the database'),
+    $session->setStatus(ts('Deleted Claim Level').' '.$this->_claimLevel['level'].' '.ts('from the database'),
       'Deleted Claim Level', 'success');
     CRM_Utils_System::redirect($session->readUserContext());
   }
@@ -185,7 +179,7 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
   public function addRules() {
     $this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateLabel'));
     $this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateAuthorizingLevel'));
-    $this->addFormRule(array('CRM_Epxenseclaims_Form_ClaimLevel', 'validateMaxAmount'));
+    $this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateMaxAmount'));
   }
 
   /**
@@ -199,6 +193,24 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
       if (empty($fields['authorizing_level']) && $fields['max_amount'] != 'no max') {
         $errors['authorizing_level'] = ts('Authorizing Level can only be empty if max amount is set to no max');
         return $errors;
+      }
+      if (!empty($fields['authorizing_level'])) {
+        $count = civicrm_api3('ClaimLevel', 'getcount', array('level' => $fields['authorizing_level']));
+        if ($count == 0) {
+          $errors['authorizing_level'] = ts('The authorizing level has to be configured as a Claim Level');
+          return $errors;
+        } else {
+          try {
+            $authorizingMaxAmount = civicrm_api3('ClaimLevel', 'getvalue', array(
+              'level' => $fields['authorizing_level'],
+              'return' => 'max_amount'));
+            if ($authorizingMaxAmount < $fields['max_amount']) {
+              $errors['authorizing_level'] = ts('The authorizing level has to have a higher max amount than the one it is authorizing');
+              return $errors;
+            }
+          } catch (CiviCRM_API3_Exception $ex) {
+          }
+        }
       }
     }
     return TRUE;
@@ -223,9 +235,12 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
           return $errors;
         }
       }
+      if ($fields['max_amount'] == 'no max') {
+        $fields['max_amount'] = 999999999.99;
+      }
       $count = civicrm_api3('ClaimLevel', 'getcount', array('max_amount' => $fields['max_amount']));
       if ($count > 0) {
-        $errors['level'] = ts('MAx amount is already used in another claim level. A certain max amount can only exist once');
+        $errors['max_amount'] = ts('Max amount is already used in another claim level. A certain max amount can only exist once');
         return $errors;
       }
     }

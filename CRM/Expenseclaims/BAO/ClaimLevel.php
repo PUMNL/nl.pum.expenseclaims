@@ -32,8 +32,8 @@ class CRM_Expenseclaims_BAO_ClaimLevel extends CRM_Expenseclaims_DAO_ClaimLevel 
       $row = array();
       self::storeValues($claimLevel, $row);
       // now add claim level types and main activitities
-      $row['level_types'] = $claimLevel->getLevelTypes($claimLevel->id);
-      $row['level_main_activities'] = $claimLevel->getLevelMainActivities($claimLevel->id);
+      $row['valid_types'] = $claimLevel->getLevelTypes($claimLevel->id);
+      $row['valid_main_activities'] = $claimLevel->getLevelMainActivities($claimLevel->id);
       $result[$row['id']] = $row;
     }
     return $result;
@@ -95,11 +95,63 @@ class CRM_Expenseclaims_BAO_ClaimLevel extends CRM_Expenseclaims_DAO_ClaimLevel 
       }
     }
     $claimLevel->save();
-    self::storeValues($claimLine, $result);
+    self::storeValues($claimLevel, $result);
     // now add or update the types and main activities for the level
-    $claimLevel->addTypes($params['types']);
-    $claimLevel->addMainActivities($params['main_activities']);
+    $claimLevel->addValidTypes($claimLevel->id, $params['valid_types']);
+    $claimLevel->addValidMainActivities($claimLevel->id, $params['valid_main_activities']);
     return $result;
+  }
+
+  /**
+   * Method to first delete the existing set of claim level types for the claim level and then
+   * save the new set
+   *
+   * @param $claimLevelId
+   * @param $validTypes
+   */
+  private function addValidTypes($claimLevelId, $validTypes) {
+    // first delete existing set
+    $oldClaimLevelType = new CRM_Expenseclaims_DAO_ClaimLevelType();
+    $oldClaimLevelType->claim_level_id = $claimLevelId;
+    $oldClaimLevelType->find();
+    while ($oldClaimLevelType->fetch()) {
+      $oldClaimLevelType->delete();
+    }
+    // then save new set
+    if (!empty($validTypes)) {
+      foreach ($validTypes as $validType) {
+        $claimLevelType = new CRM_Expenseclaims_DAO_ClaimLevelType();
+        $claimLevelType->claim_level_id = $claimLevelId;
+        $claimLevelType->type_value = $validType;
+        $claimLevelType->save();
+      }
+    }
+  }
+
+  /**
+   * Method to first delete the existing set of claim level main activities for the claim level and then
+   * save the new set
+   *
+   * @param $claimLevelId
+   * @param $validMainActivities
+   */
+  private function addValidMainActivities($claimLevelId, $validMainActivities) {
+    // first delete existing set
+    $oldClaimLevelMain = new CRM_Expenseclaims_DAO_ClaimLevelMain();
+    $oldClaimLevelMain->claim_level_id = $claimLevelId;
+    $oldClaimLevelMain->find();
+    while ($oldClaimLevelMain->fetch()) {
+      $oldClaimLevelMain->delete();
+    }
+    // then save new set
+    if (!empty($validMainActivities)) {
+      foreach ($validMainActivities as $validMainActivity) {
+        $claimLevelMain = new CRM_Expenseclaims_DAO_ClaimLevelMain();
+        $claimLevelMain->claim_level_id = $claimLevelId;
+        $claimLevelMain->main_activity_type_id = $validMainActivity;
+        $claimLevelMain->save();
+      }
+    }
   }
 
   /**
@@ -113,7 +165,7 @@ class CRM_Expenseclaims_BAO_ClaimLevel extends CRM_Expenseclaims_DAO_ClaimLevel 
       throw new Exception('claim level id can not be empty when attempting to delete a claim level in '.__METHOD__);
     }
     $claimLevel = new CRM_Expenseclaims_BAO_ClaimLevel();
-    // first delete all types
+    // first delete all types and main activities
     $claimLevelType = new CRM_Expenseclaims_DAO_ClaimLevelType();
     $claimLevelType->claim_level_id = $claimLevelId;
     $claimLevelType->find();

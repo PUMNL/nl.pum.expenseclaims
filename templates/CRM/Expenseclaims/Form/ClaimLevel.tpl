@@ -5,11 +5,14 @@
   <div class="crm-submit-buttons">
     {include file="CRM/common/formButtons.tpl" location="top"}
   </div>
-  <div class="crm-section pum_claim_level_level">
+  {* show level only in add mode *}
+  {if $action eq 1}
+    <div class="crm-section pum_claim_level_level">
     <div class="label">{$form.level.label}</div>
     <div class="content">{$form.level.html}</div>
     <div class="clear"></div>
-  </div>
+    </div>
+  {/if}
   <div class="crm-section pum_claim_level_max_amount">
     <div class="label">{$form.max_amount.label}</div>
     <div class="content">{$form.max_amount.html}</div>
