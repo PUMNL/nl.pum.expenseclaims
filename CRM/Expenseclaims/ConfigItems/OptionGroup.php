@@ -136,13 +136,11 @@ class CRM_Expenseclaims_ConfigItems_OptionGroup {
    * @param $params
    */
   public function uninstall($params) {
-    $this->validateParams($params);
-    // only if I can pinpoint option group with name
     try {
-      $optionGroupId = civicrm_api3('OptionGroup', 'getvalue', array('name' => $params['name']));
+      $optionGroupId = civicrm_api3('OptionGroup', 'getvalue', array('name' => $params['name'], 'return' => 'id'));
       // first remove all option values from the option group if there are any
       $sql = 'DELETE FROM civicrm_option_value WHERE option_group_id = %1';
-      CRM_Core_DAO::executeQuery($sql, array(1 => array((int) $optionGroupId), 'Integer'));
+      CRM_Core_DAO::executeQuery($sql, array(1 => array($optionGroupId, 'Integer')));
       // then remove option group
       civicrm_api3('OptionGroup', 'delete', array('id' => $optionGroupId));
     } catch (CiviCRM_API3_Exception $ex) {}

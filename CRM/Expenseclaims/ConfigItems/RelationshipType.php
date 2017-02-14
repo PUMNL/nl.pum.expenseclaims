@@ -24,6 +24,7 @@ class CRM_Expenseclaims_ConfigItems_RelationshipType {
     if (empty($params['name_a_b']) || empty($params['name_b_a'])) {
       throw new Exception("Missing mandatory parameter 'name_a_b' and/or 'name_b_a' in " .__METHOD__. ".");
     }
+    $this->_apiParams = $params;
   }
 
   /**
@@ -59,6 +60,7 @@ class CRM_Expenseclaims_ConfigItems_RelationshipType {
       $this->_apiParams['id'] = $existing['id'];
     }
     $this->_apiParams['is_active'] = 1;
+    CRM_Core_Error::debug('api params', $this->_apiParams);
     try {
       civicrm_api3('RelationshipType', 'Create', $this->_apiParams);
     } catch (CiviCRM_API3_Exception $ex) {
