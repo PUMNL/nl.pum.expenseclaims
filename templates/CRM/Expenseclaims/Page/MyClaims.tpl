@@ -1,35 +1,39 @@
 <div class="crm-content-block crm-block">
-  {if !empty($pageHeader)}
-    <div id="help">
-      {ts}{$pageHeader}{/ts}
-    </div>
-  {/if}
-  <div class="action-link">
-    <a class="button new-option" href="{$addUrl}">
-      <span><div class="icon add-icon"></div>New Contact(s) for Claim Level</span>
-    </a>
+  <div id="help">
+    {ts}My Claims (needing approval or rejected).{/ts}
   </div>
   {include file="CRM/common/pager.tpl" location="top"}
   {include file='CRM/common/jsortable.tpl'}
-  <div id="claim_level_contact-wrapper" class="dataTables_wrapper">
-    <table id="claim_level_contact-table" class="display">
+  <div id="my_claims-wrapper" class="dataTables_wrapper">
+    <table id="my_claims-table" class="display">
       <thead>
       <tr>
-        <th>{ts}Contact{/ts}</th>
+        <th>{ts}Claim ID{/ts}</th>
+        <th>{ts}Claim Type{/ts}</th>
+        <th>{ts}Submitted By{/ts}</th>
+        <th>{ts}Submitted Date{/ts}</th>
+        <th>{ts}Link{/ts}</th>
+        <th>{ts}Total Amount{/ts}</th>
+        <th>{ts}Status{/ts}</th>
         <th id="nosort"></th>
       </tr>
       </thead>
       <tbody>
       {assign var="rowClass" value="odd-row"}
       {assign var="rowCount" value=0}
-      {foreach from=$claimLevelContacts key=claimLevelContactId item=contact}
+      {foreach from=$myClaims key=claimId item=myClaim}
         {assign var="rowCount" value=$rowCount+1}
         <tr id="row{$rowCount}" class={$rowClass}>
-          <td hidden="1">{$claimLevelContactId}
-          <td>{$contact.contact_name}</td>
+          <td>{$claimId}</td>
+          <td>{$myClaim.type}</td>
+          <td>{$myClaim.submitted_by}</td>
+          <td>{$myClaim.submitted_date|crmDate}</td>
+          <td>{$myClaim.link}</td>
+          <td>{$myClaim.total_amount|crmMoney}</td>
+          <td>{$myCLaim.status}</td>
           <td>
               <span>
-                {foreach from=$contact.actions item=actionLink}
+                {foreach from=$myClaim.actions item=actionLink}
                   {$actionLink}
                 {/foreach}
               </span>
@@ -45,9 +49,4 @@
     </table>
   </div>
   {include file="CRM/common/pager.tpl" location="bottom"}
-  <div class="action-link">
-    <a class="button new-option" href="{$addUrl}">
-      <span><div class="icon add-icon"></div>New Contact(s) for Claim Level</span>
-    </a>
-  </div>
 </div>

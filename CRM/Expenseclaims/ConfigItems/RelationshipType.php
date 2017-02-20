@@ -60,7 +60,6 @@ class CRM_Expenseclaims_ConfigItems_RelationshipType {
       $this->_apiParams['id'] = $existing['id'];
     }
     $this->_apiParams['is_active'] = 1;
-    CRM_Core_Error::debug('api params', $this->_apiParams);
     try {
       civicrm_api3('RelationshipType', 'Create', $this->_apiParams);
     } catch (CiviCRM_API3_Exception $ex) {

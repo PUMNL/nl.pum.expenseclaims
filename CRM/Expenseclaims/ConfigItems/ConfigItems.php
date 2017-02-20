@@ -126,4 +126,196 @@ class CRM_Expenseclaims_ConfigItems_ConfigItems {
       $relationshipType->create($relationshipTypeParams);
     }
   }
+
+  /**
+   * Method to change the custom fields in the claim information custom group (which should already exist)
+   */
+  public static function changeCustomClaimInformation() {
+    // check if custom group claim information exists, create if not
+    $claimInformationCustomGroup = self::getClaimInformationCustomGroup();
+    // switch deprecated custom fields to disabled
+    $disabled = array('Currency', 'Pay_Receive');
+    foreach ($disabled as $disableName) {
+      try {
+        $disabledId = civicrm_api3('CustomField', 'getvalue', array(
+          'custom_group_id' => $claimInformationCustomGroup['id'],
+          'name' => $disableName,
+          'return' => 'id'));
+        civicrm_api3('CustomField', 'create', array('id' => $disabledId, 'is_active' => 0));
+      } catch (CiviCRM_API3_Exception $ex) {}
+    }
+    // check fields that have to remain
+    self::checkRemainingClaimCustomFields($claimInformationCustomGroup['id']);
+    // create new ones
+    self::createNewClaimCustomFields($claimInformationCustomGroup['id']);
+  }
+
+  /**
+   * Method to check if the custom fields of claim information that have to remain exist and update, and create if they do not
+   *
+   * @param $customGroupId
+   */
+  private static function checkRemainingClaimCustomFields($customGroupId) {
+    // custom field to hold claim link
+    try {
+      $claimLinkCustomField = civicrm_api3('CustomField', 'getsingle', array(
+        'custom_group_id' => $customGroupId,
+        'name' => 'PUM_Projectnumber_Referencenumber'));
+      civicrm_api3('CustomField', 'create', array(
+        'id' => $claimLinkCustomField['id'],
+        'label' => 'Claim Linked to',
+        'is_active' => 1,
+        'is_view' => 1));
+    } catch (CiviCRM_API3_Exception $ex) {
+      $claimTypeParams = array(
+        'custom_group_id' => $customGroupId,
+        'name' => 'PUM_Projectnumber_Referencenumber',
+        'label' => 'Claim Linked to',
+        'data_type' => 'String',
+        'html_type' => 'Text',
+        'column_name' => 'pum_projectnumber_referencenumbe_387',
+        'is_active' => 1,
+        'is_view' => 1
+      );
+      civicrm_api3('CustomField', 'create', $claimTypeParams);
+    }
+    // custom field for total amount
+    try {
+      $claimLinkCustomField = civicrm_api3('CustomField', 'getsingle', array(
+        'custom_group_id' => $customGroupId,
+        'name' => 'Total_Expenses'));
+      civicrm_api3('CustomField', 'create', array(
+        'id' => $claimLinkCustomField['id'],
+        'label' => 'Total Amount',
+        'is_active' => 1,
+        'is_view' => 1));
+    } catch (CiviCRM_API3_Exception $ex) {
+      $claimTypeParams = array(
+        'custom_group_id' => $customGroupId,
+        'name' => 'Total_Expenses',
+        'label' => 'Total Amount',
+        'data_type' => 'Money',
+        'html_type' => 'Text',
+        'column_name' => 'total_expenses_389',
+        'is_active' => 1,
+        'is_view' => 1
+      );
+      civicrm_api3('CustomField', 'create', $claimTypeParams);
+    }
+    // custom field for description
+    try {
+      $claimLinkCustomField = civicrm_api3('CustomField', 'getsingle', array(
+        'custom_group_id' => $customGroupId,
+        'name' => 'Description'));
+      civicrm_api3('CustomField', 'create', array(
+        'id' => $claimLinkCustomField['id'],
+        'is_active' => 1,
+        'is_view' => 1));
+    } catch (CiviCRM_API3_Exception $ex) {
+      $claimTypeParams = array(
+        'custom_group_id' => $customGroupId,
+        'name' => 'Description',
+        'label' => 'Description',
+        'data_type' => 'String',
+        'html_type' => 'Text',
+        'column_name' => 'description_391',
+        'is_active' => 1,
+        'is_view' => 1
+      );
+      civicrm_api3('CustomField', 'create', $claimTypeParams);
+    }
+  }
+
+  /**
+   * Method to create new claim information custom fields
+   *
+   * @param $customGroupId
+   */
+  private static function createNewClaimCustomFields($customGroupId) {
+    $config = CRM_Expenseclaims_Config::singleton();
+    // new custom field type
+    try {
+      civicrm_api3('CustomField', 'getsingle', array('custom_group_id' => $customGroupId, 'name' => 'pum_claim_type'));
+    } catch (CiviCRM_API3_Exception $ex) {
+      $claimTypeParams = array(
+        'custom_group_id' => $customGroupId,
+        'name' => 'pum_claim_type',
+        'label' => 'Claim Type',
+        'data_type' => 'String',
+        'html_type' => 'Select',
+        'column_name' => 'pum_claim_type',
+        'is_active' => 1,
+        'is_view' => 1,
+        'weight' => -500
+      );
+      $claimType = civicrm_api3('CustomField', 'create', $claimTypeParams);
+      // now clean up option group that was f***ed up by api
+      self::cleanOptionGroupForCustomField($claimType['id'], $config->getClaimTypeOptionGroup('id'));
+    }
+    // new custom field status id
+    try {
+      civicrm_api3('CustomField', 'getsingle', array('custom_group_id' => $customGroupId, 'name' => 'pum_claim_status'));
+    } catch (CiviCRM_API3_Exception $ex) {
+      $claimStatusParams = array(
+        'custom_group_id' => $customGroupId,
+        'name' => 'pum_claim_status',
+        'label' => 'Claim Status',
+        'data_type' => 'String',
+        'html_type' => 'Select',
+        'column_name' => 'pum_claim_status',
+        'is_active' => 1,
+        'is_view' => 1,
+        'weight' => -510
+      );
+      $claimStatus = civicrm_api3('CustomField', 'create', $claimStatusParams);
+      self::cleanOptionGroupForCustomField($claimStatus['id'], $config->getClaimStatusOptionGroup('id'));
+    }
+  }
+
+  /**
+   * Method to revert core error in custom field create api with option groups
+   *
+   * @param $customFieldId
+   * @param $optionGroupId
+   */
+  private static function cleanOptionGroupForCustomField($customFieldId, $optionGroupId) {
+    // first get custom field to find option group that was falsely created
+    $customFieldOptionGroupId = civicrm_api3('CustomField', 'getvalue', array('id' => $customFieldId, 'return' => 'option_group_id'));
+    // now delete option group
+    civicrm_api3('OptionGroup', 'delete', array('id' => $customFieldOptionGroupId));
+    // then link valid option group
+    $sql = "UPDATE civicrm_custom_field SET option_group_id = %1 WHERE id = %2";
+    CRM_Core_DAO::executeQuery($sql, array(
+      1 => array($optionGroupId, 'Integer'),
+      2 => array($customFieldId, 'Integer')
+    ));
+  }
+
+  /**
+   * Method to get or create data on custom group Claim Information
+   *
+   * @return array
+   * @throws Exception
+   */
+  public static function getClaimInformationCustomGroup() {
+    $config = CRM_Expenseclaims_Config::singleton();
+    try {
+      return civicrm_api3('CustomGroup', 'getsingle', array('name' => 'Claiminformation'));
+    } catch (CiviCRM_API3_Exception $ex) {
+      $params = array(
+        'name' => 'Claiminformation',
+        'title' => 'Claiminformation',
+        'extends' => 'Activity',
+        'extends_entity_column_value' => $config->getClaimActivityTypeId(),
+        'style' => 'Inline',
+        'table_name' => 'civicrm_value_claiminformation_70');
+      try {
+        $created = civicrm_api3('CustomGroup', 'create', $params);
+        return $created['values'];
+      } catch (CiviCRM_API3_Exception $ex) {
+        throw new Exception('Could not find or create custom group with name Claiminformation in '.__METHOD__
+          .', contact your ssystem administrator. Error from API CustomGroup Create: '.$ex->getMessage());
+      }
+    }
+  }
 }

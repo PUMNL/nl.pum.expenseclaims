@@ -2,8 +2,8 @@
   "pum_claim_type": {
     "name": "pum_claim_type",
     "title": "PUM Senior Experts Claim Types",
-    "is_active": "1",
-    "is_reserved": "0",
+    "is_active": 1,
+    "is_reserved": 1,
     "option_values": {
       "main_activity": {
         "name": "pum_main_activity",
@@ -52,8 +52,8 @@
   "pum_claim_level": {
     "name": "pum_claim_level",
     "title": "PUM Senior Experts Claim Levels",
-    "is_active": "1",
-    "is_reserved": "0",
+    "is_active": 1,
+    "is_reserved": 1,
     "option_values": {
       "project_officer": {
         "name": "project_officer",
@@ -77,6 +77,56 @@
         "name": "cpo",
         "value": 4,
         "label": "CPO",
+        "is_active": 1
+      }
+    }
+  },
+  "pum_claim_status": {
+    "name": "pum_claim_status",
+    "title": "PUM Senior Experts Claim Status",
+    "is_active": 1,
+    "is_reserved": 1,
+    "option_values": {
+      "waiting_for_approval": {
+        "name": "waiting_for_approval",
+        "value": 1,
+        "label": "Waiting For Approval",
+        "is_active": 1
+      },
+      "initially_approved": {
+        "name": "initially_approved",
+        "value": 2,
+        "label": "Initially Approved",
+        "is_active": 1
+      },
+      "approved": {
+        "name": "approved",
+        "value": 3,
+        "label": "Approved",
+        "is_active": 1
+      },
+      "rejected": {
+        "name": "rejected",
+        "value": 4,
+        "label": "Rejected",
+        "is_active": 1
+      },
+      "exported": {
+        "name": "exported",
+        "value": 5,
+        "label": "Exported",
+        "is_active": 1
+      },
+      "payable": {
+        "name": "payable",
+        "value": 6,
+        "label": "Payable",
+        "is_active": 1
+      },
+      "paid": {
+        "name": "paid",
+        "value": 7,
+        "label": "Paid",
         "is_active": 1
       }
     }

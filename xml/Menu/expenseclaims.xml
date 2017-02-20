@@ -24,4 +24,10 @@
     <title>ClaimLevelContact</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/pumexpenseclaims/page/myclaims</path>
+    <page_callback>CRM_Expenseclaims_Page_MyClaims</page_callback>
+    <title>MyClaims</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>

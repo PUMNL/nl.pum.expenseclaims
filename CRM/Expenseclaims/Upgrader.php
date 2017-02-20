@@ -11,6 +11,7 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
    */
   public function install() {
     $this->executeSqlFile('sql/create_pum_claim_line.sql');
+    $this->executeSqlFile('sql/create_pum_claim_log.sql');
     $this->executeSqlFile('sql/create_pum_claim_level.sql');
     $this->executeSqlFile('sql/create_pum_claim_level_main.sql');
     $this->executeSqlFile('sql/create_pum_claim_level_type.sql');
@@ -22,7 +23,9 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
    */
   public function postInstall() {
     $configItems = CRM_Expenseclaims_ConfigItems_ConfigItems::singleton();
+    // change custom fields in existing custom group claiminformation
     $configItems->install();
+    CRM_Expenseclaims_ConfigItems_ConfigItems::changeCustomClaimInformation();
   }
 
   /**
