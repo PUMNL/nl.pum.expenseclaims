@@ -1,6 +1,6 @@
 <div class="crm-content-block crm-block">
   <div id="help">
-    {ts}My Claims (needing approval or rejected).{/ts}
+    {ts}My Claims (needing approval or were rejected).{/ts}
   </div>
   {include file="CRM/common/pager.tpl" location="top"}
   {include file='CRM/common/jsortable.tpl'}
@@ -15,6 +15,7 @@
         <th>{ts}Link{/ts}</th>
         <th>{ts}Total Amount{/ts}</th>
         <th>{ts}Status{/ts}</th>
+        <th>{ts}Description{/ts}</th>
         <th id="nosort"></th>
       </tr>
       </thead>
@@ -30,7 +31,8 @@
           <td>{$myClaim.submitted_date|crmDate}</td>
           <td>{$myClaim.link}</td>
           <td>{$myClaim.total_amount|crmMoney}</td>
-          <td>{$myCLaim.status}</td>
+          <td>{$myClaim.status}</td>
+          <td>{$myClaim.description}</td>
           <td>
               <span>
                 {foreach from=$myClaim.actions item=actionLink}

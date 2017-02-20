@@ -62,84 +62,27 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL OR pclog.i
       $row['submitted_date'] = $dao->claim_submitted_date;
       $row['link'] = $dao->claim_link;
       $row['total_amount'] = $dao->claim_total_amount;
-      $row['status'] = $dao->calim_status;
-      $row['actions'] = $this->setRowActions($dao->id);
-      $claimLevels[$dao->claim_activity_id] = $row;
+      $row['status'] = $dao->claim_status;
+      $row['description'] = $dao->claim_description;
+      $row['actions'] = $this->setRowActions($dao->claim_activity_id);
+      $myClaims[$dao->claim_activity_id] = $row;
     }
     return $myClaims;
   }
 
   /**
-   * Method to get all claim level types in a string field
-   *
-   * @param $claimLevelId
-   * @return null
-   * @access protected
-   */
-  protected function getClaimLevelTypes($claimLevelId) {
-    $result = NULL;
-    $types = array();
-    $claimLevelType = new CRM_Expenseclaims_DAO_ClaimLevelType();
-    $claimLevelType->claim_level_id = $claimLevelId;
-    $claimLevelType->find();
-    while ($claimLevelType->fetch()) {
-      try {
-        $types[] = civicrm_api3('OptionValue', 'getvalue', array(
-          'option_group_id' => 'pum_claim_type',
-          'value' => $claimLevelType->type_value,
-          'return' => 'label'
-        ));
-      } catch (CiviCRM_API3_Exception $ex) {}
-    }
-    if (!empty($types)) {
-      $result = implode("; ", $types);
-    }
-    return $result;
-  }
-
-  /**
-   * Method to get all claim level main activities in a string field
-   *
-   * @param $claimLevelId
-   * @return null
-   * @access protected
-   */
-  protected function getClaimLevelMainActivities($claimLevelId) {
-    $result = NULL;
-    $mainActivities = array();
-    $claimLevelMain = new CRM_Expenseclaims_DAO_ClaimLevelMain();
-    $claimLevelMain->claim_level_id = $claimLevelId;
-    $claimLevelMain->find();
-    while ($claimLevelMain->fetch()) {
-      try {
-        $mainActivities[] = civicrm_api3('OptionValue', 'getvalue', array(
-          'option_group_id' => 'case_type',
-          'value' => $claimLevelMain->main_activity_type_id,
-          'return' => 'label'
-        ));
-      } catch (CiviCRM_API3_Exception $ex) {}
-    }
-    if (!empty($mainActivities)) {
-      $result = implode("; ", $mainActivities);
-    }
-    return $result;
-  }
-
-  /**
    * Function to set the row action urls and links for each row
    *
-   * @param int $claimLevelId
+   * @param int $claimId
    * @return array $actions
    * @access protected
    */
-  protected function setRowActions($claimLevelId) {
+  protected function setRowActions($claimId) {
     $actions = array();
-    $editUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimlevel', 'action=update&id='.$claimLevelId, true);
-    $deleteUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimlevel', 'action=delete&id='.$claimLevelId, true);
-    $contactsUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/page/claimlevelcontact', 'reset=1&id='.$claimLevelId, true);
-    $actions[] = '<a class="action-item" title="Contacts" href="'.$contactsUrl.'">Contacts</a>';
-    $actions[] = '<a class="action-item" title="Edit" href="'.$editUrl.'">Edit</a>';
-    $actions[] = '<a class="action-item" title="Delete" href="'.$deleteUrl.'">Delete</a>';
+    $manageUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=update&id='.$claimId, true);
+    $approveUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=enable&id='.$claimId, true);
+    $actions[] = '<a class="action-item" title="Manage" href="'.$manageUrl.'">Manage</a>';
+    $actions[] = '<a class="action-item" title="Approve" href="'.$approveUrl.'">Approve</a>';
     return $actions;
   }
 
@@ -149,11 +92,10 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL OR pclog.i
    * @access protected
    */
   protected function setPageConfiguration() {
-    CRM_Utils_System::setTitle(ts("PUM Senior Experts Expense Claim Authorization Levels"));
-    $this->assign('addUrl', CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimlevel', 'action=add', true));
+    CRM_Utils_System::setTitle(ts("PUM Senior Experts Expense My Claims"));
     $session = CRM_Core_Session::singleton();
     $this->_userContactId = $session->get('userID');
-    $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/claimlevel', 'reset=1', true));
+    $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', true));
   }
 
   /**
