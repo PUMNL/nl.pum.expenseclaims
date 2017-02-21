@@ -26,7 +26,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     $this->add('text', 'claim_description', ts('Description'), true);
     // add buttons
     $this->addButtons(array(
-      array('type' => 'save', 'name' => ts('Save'), 'isDefault' => true,),
+      array('type' => 'submit', 'name' => ts('Save'), 'isDefault' => true,),
       array('type' => 'next', 'name' => ts('Save and Approve')),
       array('type' => 'cancel', 'name' => ts('Cancel'))));
 
@@ -37,10 +37,10 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
    * Method to process results from the form
    */
   public function postProcess() {
-    $this->_claimId = $this->_submitValues['claim_id'];
-    if ($this->_action != CRM_Core_Action::VIEW) {
-      $this->saveClaimLevel($this->_submitValues);
+    if (isset($this->_submitValues['claim_id'])) {
+      $this->_claimId = $this->_submitValues['claim_id'];
     }
+    $this->saveClaim();
     parent::postProcess();
   }
 
@@ -76,10 +76,20 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
   /**
    * Method to save the claim
    *
-   * @param $values
    */
-  private function saveClaim($values) {
-    if (!empty($values)) {
+  private function saveClaim() {
+    if (!empty($this->_submitValues)) {
+      $config = CRM_Expenseclaims_Config::singleton();
+      // if save, save the claim and each claim line
+      if (isset($this->_submitValues['_qf_Claim_submit']) && $this->_submitValues['_qf_Claim_submit'] == 'Save') {
+        $sql = "UPDATE ".$config->getClaimInformationCustomGroup('id')." SET ".$config->getClaimDescriptionCustomField('column_name')
+          ." = %1, ".$config->getClaimLinkCustomField('column_name')." = %2 WHERE entity_id = %3";
+        CRM_Core_DAO::executeQuery($sql, array(
+          1 => array($this->_submitValues['claim_description'], 'String'),
+          2 => array($this->_claimLinkList[$this->_submitValues['claim_link']], 'String'),
+          3 => array($this->_claimId, 'Integer')
+        ));
+      }
     }
   }
 
@@ -89,7 +99,14 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
    * @access public
    */
   function preProcess() {
-    $this->_claimId = CRM_Utils_Request::retrieve('id', 'Integer');
+    $values = CRM_Utils_Request::exportValues();
+    if (isset($values['claim_id'])) {
+      $this->_claimId = $values['claim_id'];
+    } else {
+      if (isset($values['id'])) {
+        $this->_claimId = $values['id'];
+      }
+    }
     if ($this->_action == CRM_Core_Action::UPDATE) {
       $claim = new CRM_Expenseclaims_BAO_Claim();
       $this->_claim = $claim->getWithId($this->_claimId);
