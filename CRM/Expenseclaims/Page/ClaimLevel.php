@@ -29,6 +29,7 @@ class CRM_Expenseclaims_Page_ClaimLevel extends CRM_Core_Page {
    * @access protected
    */
   protected function getClaimLevels() {
+    $config = CRM_Expenseclaims_Config::singleton();
     $claimLevels = array();
     list($offset, $limit) = $this->_pager->getOffsetAndRowCount();
     $query = "SELECT * FROM pum_claim_level LIMIT %1, %2";
@@ -39,7 +40,7 @@ class CRM_Expenseclaims_Page_ClaimLevel extends CRM_Core_Page {
       $row = array();
       try {
         $row['level'] = civicrm_api3('OptionValue', 'getvalue', array(
-          'option_group_id' => 'pum_claim_level',
+          'option_group_id' => $config->getClaimLevelOptionGroup('id'),
           'value' => $dao->level,
           'return' => 'label'));
       } catch (CiviCRM_API3_Exception $ex) {}
@@ -52,7 +53,7 @@ class CRM_Expenseclaims_Page_ClaimLevel extends CRM_Core_Page {
       $row['valid_main_activities'] = $this->getClaimLevelMainActivities($dao->id);
       try {
         $row['authorizing_level'] = civicrm_api3('OptionValue', 'getvalue', array(
-          'option_group_id' => 'pum_claim_level',
+          'option_group_id' => $config->getClaimLevelOptionGroup('id'),
           'value' => $dao->authorizing_level,
           'return' => 'label'));
       } catch (CiviCRM_API3_Exception $ex) {}
@@ -70,6 +71,7 @@ class CRM_Expenseclaims_Page_ClaimLevel extends CRM_Core_Page {
    * @access protected
    */
   protected function getClaimLevelTypes($claimLevelId) {
+    $config = CRM_Expenseclaims_Config::singleton();
     $result = NULL;
     $types = array();
     $claimLevelType = new CRM_Expenseclaims_DAO_ClaimLevelType();
@@ -78,7 +80,7 @@ class CRM_Expenseclaims_Page_ClaimLevel extends CRM_Core_Page {
     while ($claimLevelType->fetch()) {
       try {
         $types[] = civicrm_api3('OptionValue', 'getvalue', array(
-          'option_group_id' => 'pum_claim_type',
+          'option_group_id' => $config->getClaimTypeOptionGroup('id'),
           'value' => $claimLevelType->type_value,
           'return' => 'label'
         ));

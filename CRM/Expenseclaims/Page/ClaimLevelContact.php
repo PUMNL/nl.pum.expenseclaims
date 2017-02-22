@@ -58,10 +58,11 @@ class CRM_Expenseclaims_Page_ClaimLevelContact extends CRM_Core_Page {
    * @access protected
    */
   protected function setPageConfiguration() {
+    $config = CRM_Expenseclaims_Config::singleton();
     $this->_claimLevelId = CRM_Utils_Request::retrieve('id', 'Integer');
     try {
       $claimLevelLevel = civicrm_api3('ClaimLevel', 'getvalue', array('id' => $this->_claimLevelId, 'return' => 'level'));
-      $levelLabel = civicrm_api3('OptionValue', 'getvalue', array('option_group_id' => 'pum_claim_level', 'value' => $claimLevelLevel, 'return' => 'label'));
+      $levelLabel = civicrm_api3('OptionValue', 'getvalue', array('option_group_id' => $config->getClaimLevelOptionGroup('id'), 'value' => $claimLevelLevel, 'return' => 'label'));
       $this->assign('pageHeader', ts("Contact for Expense Claim Level")." ".$levelLabel);
     } catch (CiviCRM_API3_Exception $ex) {}
     CRM_Utils_System::setTitle("PUM Senior Experts Expense Claim Level Contacts");

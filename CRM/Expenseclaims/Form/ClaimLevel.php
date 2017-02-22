@@ -44,8 +44,9 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
     $this->_claimLevelList = array();
     $this->_claimLevelList[0] = '- select -';
     try {
+      $config = CRM_Expenseclaims_Config::singleton();
       $claimLevels = civicrm_api3('OptionValue', 'get', array(
-        'option_group_id' => 'pum_claim_level',
+        'option_group_id' => $config->getClaimLevelOptionGroup('id'),
         'is_active' => 1,
         'options' => array('sort' => 'label', 'limit' => 0)));
       foreach ($claimLevels['values'] as $claimLevelId => $claimLevel) {
@@ -62,8 +63,9 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
   private function getValidTypes() {
     $result = array();
     try {
+      $config = CRM_Expenseclaims_Config::singleton();
       $claimTypes = civicrm_api3('OptionValue', 'get', array(
-        'option_group_id' => 'pum_claim_type',
+        'option_group_id' => $config->getClaimTypeOptionGroup('id'),
         'is_active' => 1,
         'options' => array('sort' => 'label', 'limit' => 0)));
       foreach ($claimTypes['values'] as $claimTypeId => $claimType) {

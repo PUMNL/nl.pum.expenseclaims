@@ -1,4 +1,30 @@
 {
+  "pum_claim_line_type": {
+    "name": "pum_claim_line_type",
+    "title": "PUM Senior Experts Claim Line Types",
+    "is_active": 1,
+    "is_reserved": 1,
+    "option_values": {
+      "public_transport": {
+        "name": "public_transport",
+        "value": 1,
+        "label": "Public Transport",
+        "is_active": 1
+      },
+      "accommodation": {
+        "name": "accommodation",
+        "value": 2,
+        "label": "Accommodation",
+        "is_active": 1
+      },
+      "food_drink": {
+        "name": "food_drink",
+        "value": 3,
+        "label": "Food & Drinks",
+        "is_active": 1
+      }
+    }
+  },
   "pum_claim_type": {
     "name": "pum_claim_type",
     "title": "PUM Senior Experts Claim Types",

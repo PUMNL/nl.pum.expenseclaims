@@ -182,4 +182,45 @@ class CRM_Expenseclaims_BAO_ClaimLevel extends CRM_Expenseclaims_DAO_ClaimLevel 
     $claimLevel->id = $claimLevelId;
     $claimLevel->delete();
   }
+
+  /**
+   * Method to get the contact for the next level authorization
+   *
+   * @param int $claimId
+   * @param string $authorizingLevel
+   * @return bool|int
+   */
+  public static function getNextLevelContactId($claimId, $authorizingLevel) {
+    if (empty($claimId) || empty($authorizingLevel)) {
+      return FALSE;
+    }
+    // check authorizing level
+    switch ($authorizingLevel) {
+      // if cfo, return cfo contact
+      case 'cfo':
+        $config = CRM_Threepeas_CaseRelationConfig::singleton();
+        return $config->getPumCfo();
+        break;
+      // if cpo, return cpo contact
+      case 'cpo':
+        $config = CRM_Expenseclaims_Config::singleton();
+        return $config->getPumCpo();
+        break;
+      // if senior project officer, get country for claim and then relevant senior project officer
+      case 'senior_project_officer':
+        $countryId = CRM_Expenseclaims_Utils::getCountryForClaimCustomer($claimId);
+        if ($countryId) {
+          return CRM_Expenseclaims_Utils::getSeniorProjectOfficerForCountry($countryId);
+        }
+        break;
+      // if project officer, get country for claim and then relevant project officer
+      case 'project_officer':
+        $countryId = CRM_Expenseclaims_Utils::getCountryForClaimCustomer($claimId);
+        if ($countryId) {
+          return CRM_Expenseclaims_Utils::getProjectOfficerForCountry($countryId);
+        }
+        break;
+    }
+    return FALSE;
+  }
 }

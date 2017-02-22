@@ -36,4 +36,10 @@
     <title>Claim</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/pumexpenseclaims/form/claimline</path>
+    <page_callback>CRM_Expenseclaims_Form_ClaimLine</page_callback>
+    <title>ClaimLine</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>

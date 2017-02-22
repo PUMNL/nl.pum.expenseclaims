@@ -86,6 +86,7 @@ class CRM_Expenseclaims_Form_ClaimLevelContact extends CRM_Core_Form {
    * @access public
    */
   function preProcess() {
+    $config = CRM_Expenseclaims_Config::singleton();
     // process delete first
     if ($this->_action == CRM_Core_Action::DELETE) {
       $this->deleteClaimLevelContactAndReturn();
@@ -98,7 +99,7 @@ class CRM_Expenseclaims_Form_ClaimLevelContact extends CRM_Core_Form {
     CRM_Utils_System::setTitle(ts('PUM Senior Experts Add Contacts for Expense Claim Level'));
     try {
       $claimLevelLevel = civicrm_api3('ClaimLevel', 'getvalue', array('id' => $this->_claimLevelId, 'return' => 'level'));
-      $levelLabel = civicrm_api3('OptionValue', 'getvalue', array('option_group_id' => 'pum_claim_level', 'value' => $claimLevelLevel, 'return' => 'label'));
+      $levelLabel = civicrm_api3('OptionValue', 'getvalue', array('option_group_id' => $config->getClaimLevelOptionGroup('id'), 'value' => $claimLevelLevel, 'return' => 'label'));
       $this->assign('actionHeader', ts("Add Contacts for Level")." ".$levelLabel);
     } catch (CiviCRM_API3_Exception $ex) {}
   }

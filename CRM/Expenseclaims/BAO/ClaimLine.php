@@ -70,6 +70,9 @@ class CRM_Expenseclaims_BAO_ClaimLine extends CRM_Expenseclaims_DAO_ClaimLine {
       }
     }
     $claimLine->save();
+    // update total amount of claim whenever a claim line is added or updated
+    $claim = new CRM_Expenseclaims_BAO_Claim();
+    $claim->updateTotalAmount($claimLine->activity_id);
     self::storeValues($claimLine, $result);
     return $result;
   }
@@ -81,7 +84,7 @@ class CRM_Expenseclaims_BAO_ClaimLine extends CRM_Expenseclaims_DAO_ClaimLine {
    * @return bool
    */
   private function validClaimActivity($activityId) {
-    $activityTypeId = civicrm_api3('Acitivity', 'getvalue', array(
+    $activityTypeId = civicrm_api3('Activity', 'getvalue', array(
       'id' => $activityId,
       'return' => 'activity_type_id'
     ));
@@ -124,5 +127,34 @@ class CRM_Expenseclaims_BAO_ClaimLine extends CRM_Expenseclaims_DAO_ClaimLine {
     while ($claimLine->fetch()) {
       $claimLine->delete();
     }
+  }
+
+  /**
+   * Method to get a single claim line with id
+   *
+   * @param $claimLineId
+   * @return array
+   */
+  public static function getWithId($claimLineId) {
+    $result = array();
+    if (!empty($claimLineId)) {
+      $claimLine = new CRM_Expenseclaims_BAO_ClaimLine();
+      $claimLine->id = $claimLineId;
+      $claimLine->find();
+      if ($claimLine->fetch()) {
+        $result = array(
+          'id' => $claimLine->id,
+          'activity_id' =>  $claimLine->activity_id,
+          'expense_date' => $claimLine->expense_date,
+          'expense_type' => $claimLine->expense_type,
+          'currency_id' => $claimLine->currency_id,
+          'currency_amount' => $claimLine->currency_amount,
+          'euro_amount' => $claimLine->euro_amount,
+          'description' => $claimLine->description,
+          'exchange_rate' => $claimLine->exchange_rate
+        );
+      }
+    }
+    return $result;
   }
 }

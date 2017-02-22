@@ -113,17 +113,6 @@ class CRM_Expenseclaims_BAO_Claim {
   }
 
   /**
-   * Method to get all claims where the contact should approve
-   *
-   * @param int $contactId
-   * @return array $result
-   */
-  public function getMyClaims($contactId) {
-    $result = array();
-    return $result;
-  }
-
-  /**
    * Method to get claim with id
    * @param $claimId
    * @return bool|Object
@@ -147,11 +136,109 @@ class CRM_Expenseclaims_BAO_Claim {
       return FALSE;
     }
   }
-  public function getExportableClaims() {
 
+  /**
+   * Method to approve a claim, resulting in either next step or final approval
+   *
+   * @param $claimId
+   * @param $contactId
+   */
+  public function approve($claimId, $contactId) {
+    if (!empty($claimId) || empty($contactId)) {
+      // get my role and then my level
+      $myRole = CRM_Expenseclaims_Utils::getMyRole($claimId, $contactId);
+      if ($myRole) {
+        $myLevel = civicrm_api3('ClaimLevel', 'getsingle', array('level' => $myRole));
+        // if my limit is 999999999.99 then final approval
+        if ($myLevel['max_amount'] == 999999999.99) {
+          $this->finalApprove($claimId, $contactId);
+        } else {
+          // if the claim total amount is less than my max amount, final approve else next step
+          $totalAmount = $this->getTotalAmount($claimId);
+          if ($totalAmount <= $myLevel['max_amount']) {
+            $this->finalApprove($claimId, $contactId);
+          } else {
+            $this->nextStep($claimId, $contactId, $myLevel['authorizing_level']);
+          }
+        }
+      }
+    }
   }
-  public function nextStepForClaim($claimId) {
 
+  /**
+   * Method to determine what the next step should be and processing that in the database
+   *
+   * @param $claimId
+   * @param $contactId
+   * @param $authorizingLevel
+   * @throws Exception when one of the params is empty
+   */
+  private function nextStep($claimId, $contactId, $authorizingLevel) {
+    if (empty($claimId) || empty($contactId) || empty($authorizingLevel)) {
+      throw new Exception('ClaimId, ContactId or AuthorizingLevel empty when trying to determine next claim approval step in '.__METHOD__
+        .', contact your system administrator');
+    }
+    $config = CRM_Expenseclaims_Config::singleton();
+    // first complete current log record
+    try {
+      $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
+        'claim_activity_id' => $claimId,
+        'approval_contact_id' => $contactId));
+      civicrm_api3('ClaimLog', 'create', array(
+        'id' => $claimLog['id'],
+        'new_status_id' => $config>getInitiallyApprovedClaimStatusValue(),
+        'is_payable' => 0,
+        'is_approved' => 1,
+        'processed_date' => date('Y-m-d')));
+      // now set next log record for the authorizing level contact
+      $nextContactId = CRM_Expenseclaims_BAO_ClaimLevel::getNextLevelContactId($claimId, $authorizingLevel);
+      if ($nextContactId) {
+        civicrm_api3('ClaimLog', 'create', array(
+          'claim_activity_id' => $claimId,
+          'approval_contact_id' => $nextContactId,
+          'old_status_id' => $config->getApprovedClaimStatusValue(),
+          'is_approved' => 0,
+          'is_payable' => 0,
+          'is_rejected' => 0
+        ));
+      }
+    } catch (CiviCRM_API3_Exception $ex) {}
+    // finally update claim status
+    $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_value')
+      .' = %1 WHERE entity_id = %2';
+    CRM_Core_DAO::executeQuery($sql, array(
+      1 => array($config->getInitiallyApprovedClaimStatusValue(), 'String'),
+      2 => array($claimId, 'Integer')));
+  }
+
+  /**
+   * Method to process final approval
+   *
+   * @param $claimId
+   * @param $contactId
+   * @throws Exception when claim id or contact id empty
+   */
+  private function finalApprove($claimId, $contactId) {
+    if (empty($claimId) || empty($contactId)) {
+      throw new Exception('ClaimId or ContactId empty when trying to final approve claim in '.__METHOD__.', contact your system administrator');
+    }
+    $config = CRM_Expenseclaims_Config::singleton();
+    $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_value')
+      .' = %1 WHERE entity_id = %2';
+    CRM_Core_DAO::executeQuery($sql, array(
+      1 => array($config->getApprovedClaimStatusValue(), 'String'),
+      2 => array($claimId, 'Integer')));
+    // now update claim log line for this approval
+    try {
+      $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
+        'claim_activity_id' => $claimId,
+        'approval_contact_id' => $contactId));
+      civicrm_api3('ClaimLog', 'create', array(
+        'id' => $claimLog['id'],
+        'new_status_id' => $config>getApprovedClaimStatusValue(),
+        'is_payable' => 1,
+        'processed_date' => date('Y-m-d')));
+    } catch (CiviCRM_API3_Exception $ex) {}
   }
 
   /**
@@ -216,5 +303,102 @@ class CRM_Expenseclaims_BAO_Claim {
       }
     }
     return $result;
+  }
+
+  /**
+   * Method to update claim
+   *
+   * @param $params
+   * @throws Exception when no claim_id in params
+   */
+  public function update($params) {
+    if (!isset($params['claim_id']) || empty($params['claim_line'])) {
+      throw new Exception('Mandatory parameter claim_id missing in array $params in '.__METHOD__.', contact your system administrator');
+    }
+    $config = CRM_Expenseclaims_Config::singleton();
+    $clauses = array();
+    $clausesParams = array();
+    $index = 0;
+    // if claim_description has to be updated
+    if (isset($params['claim_description'])) {
+      $index++;
+      $clauses[] = $config->getClaimDescriptionCustomField('column_name').' = %'.$index;
+      $clauseParams[$index] = array($params['claim_description'], 'String');
+    }
+    // if claim_link has to be updated
+    if (isset($params['claim_link'])) {
+      $index++;
+      $clauses[] = $config->getClaimLinkCustomField('column_name').' = %'.$index;
+      $clauseParams[$index] = array($params['claim_link'], 'String');
+    }
+    $index++;
+    $sql = "UPDATE ".$config->getClaimInformationCustomGroup('id')." SET ".implode(',', $clauses)." WHERE entity_id = %".$index;
+    $clausesParams[$index] = array($params['claim_id'], 'Integer');
+    CRM_Core_DAO::executeQuery($sql, $clausesParams);
+  }
+
+  /**
+   * Method to update the total amount of the claim with the euro amounts of all claim lines
+   *
+   * @param $claimId
+   */
+  public function updateTotalAmount($claimId) {
+    if (!empty($claimId)) {
+      $totalAmount = 0;
+      $claimLines = civicrm_api3('ClaimLine', 'get', array('activity_id' => $claimId));
+      foreach ($claimLines['values'] as $claimLineId => $claimLine) {
+        $totalAmount = $totalAmount + $claimLine['euro_amount'];
+      }
+      $config = CRM_Expenseclaims_Config::singleton();
+      $totalAmount = round($totalAmount, 2);
+      $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.
+        $config->getClaimTotalAmountCustomField('column_name').' = %1 WHERE entity_id = %2';
+      CRM_Core_DAO::executeQuery($sql, array(
+        1 => array($totalAmount, 'Money'),
+        2 => array($claimId, 'Integer')
+        ));
+    }
+    return;
+  }
+
+  /**
+   * Method to return a case id from the claim link field
+   *
+   * @param $claimId
+   * @return bool|string
+   */
+  public function getProjectClaimCaseId($claimId) {
+    if (!empty($claimId)) {
+      $config = CRM_Expenseclaims_Config::singleton();
+      $sql = 'SELECT ' . $config->getClaimLinkCustomField('column_name') . ' FROM ' . $config->getClaimInformationCustomGroup('table_name')
+        . ' WHERE entity_id = %1 AND ' . $config->getClaimTypeCustomField('column_name') . ' = %2';
+      $claimLink = CRM_Core_DAO::singleValueQuery($sql, array(
+        1 => array($claimId, 'Integer'),
+        2 => array('project' => 'String')));
+      if ($claimLink) {
+        return $claimLink;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Method to get total amount of a claim
+   *
+   * @param $claimId
+   * @return bool|string
+   */
+  public function getTotalAmount($claimId) {
+    if (empty($claimId)) {
+      return FALSE;
+    }
+    $config = CRM_Expenseclaims_Config::singleton();
+    $sql = 'SELECT '.$config->getClaimTotalAmountCustomField('column_name').' FROM '.$config->getClaimInformationCustomGroup('table_name')
+      .' WHERE entity_id = %1';
+    $totalAmount = CRM_Core_DAO::singleValueQuery($sql, array(1 => array($claimId, 'Integer')));
+    if ($totalAmount) {
+      return $totalAmount;
+    }
+    return FALSE;
   }
 }

@@ -11,22 +11,77 @@ class CRM_Expenseclaims_Config {
 
   static private $_singleton = NULL;
 
-  protected $_validMainActivities = array();
-  protected $_claimActivityTypeId = NULL;
-  protected $_cpoContactId = NULL;
-  protected $_claimTypeOptionGroup = array();
-  protected $_claimStatusOptionGroup = array();
-  protected $_claimInformationCustomGroup = array();
+  private $_validMainActivities = array();
+  private $_claimActivityTypeId = NULL;
+  private $_cpoContactId = NULL;
+  private $_claimTypeOptionGroup = array();
+  private $_claimStatusOptionGroup = array();
+  private $_claimLevelOptionGroup = array();
+  private $_claimInformationCustomGroup = array();
+  private $_claimLineTypeOptionGroup = array();
+  private $_seniorProjectOfficerRelationshipTypeId = NULL;
+  private $_projectOfficerRelationshipTypeId = NULL;
+  private $_approvedClaimStatusValue = NULL;
+  private $_initallyApprovedClaimStatusValue = NULL;
 
   /**
    * CRM_Expenseclaims_Config constructor.
    */
   function __construct() {
+    $this->setSeniorProjectOfficerRelationshipTypeId();
+    $this->setProjectOfficerRelationshipTypeId();
     $this->setValidMainActivities();
     $this->setClaimActivityTypeId();
     $this->setCpoContactId();
     $this->setOptionGroups();
     $this->setCustomGroup();
+    try {
+      $this->_approvedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'name' => 'approved',
+        'return' => 'value'
+      ));
+      $this->_initallyApprovedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'name' => 'initially_approved',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a claim status in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
+  }
+
+  /**
+   * Getter for initially approved claims status value
+   * @return null
+   */
+  public function getInitiallyApprovedClaimStatusValue() {
+    return $this->_initallyApprovedClaimStatusValue;
+  }
+
+  /**
+   * Getter for approved claims status value
+   * @return null
+   */
+  public function getApprovedClaimStatusValue() {
+    return $this->_approvedClaimStatusValue;
+  }
+
+  /**
+   * Getter for senior project officer relationship type id
+   * @return null
+   */
+  public function getSeniorProjectOfficerRelationshipTypeId() {
+    return $this->_seniorProjectOfficerRelationshipTypeId;
+  }
+
+  /**
+   * Getter for project officer relationship type id
+   * @return null
+   */
+  public function getProjectOfficerRelationshipTypeId() {
+    return $this->_projectOfficerRelationshipTypeId;
   }
 
   /**
@@ -135,12 +190,32 @@ class CRM_Expenseclaims_Config {
   }
 
   /**
+   * Getter for claim level option group
+   *
+   * @param string $key default = id
+   * @return mixed
+   */
+  public function getClaimLevelOptionGroup($key = 'id') {
+    return $this->_claimLevelOptionGroup[$key];
+  }
+
+  /**
+   * Getter for claim line type option group
+   *
+   * @param string $key default = id
+   * @return mixed
+   */
+  public function getClaimLineTypeOptionGroup($key = 'id') {
+    return $this->_claimLineTypeOptionGroup[$key];
+  }
+
+  /**
    * Getter for CPO contact id
    *
    * @return string
    * @access public
    */
-  public function getCpoContactId() {
+  public function getPumCpo() {
     return $this->_cpoContactId;
   }
 
@@ -226,6 +301,8 @@ class CRM_Expenseclaims_Config {
     try {
       $this->_claimStatusOptionGroup = civicrm_api3('OptionGroup', 'getsingle', array('name' => 'pum_claim_status'));
       $this->_claimTypeOptionGroup = civicrm_api3('OptionGroup', 'getsingle', array('name' => 'pum_claim_type'));
+      $this->_claimLevelOptionGroup = civicrm_api3('OptionGroup', 'getsingle', array('name' => 'pum_claim_level'));
+      $this->_claimLineTypeOptionGroup = civicrm_api3('OptionGroup', 'getsingle', array('name' => 'pum_claim_line_type'));
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception('Could not find an option group with name pum_claim_status or pum_claim_type in '.__METHOD__
         .', is required for PUm Senior Experts Claim Processing. Contact your system administrator, 
@@ -254,6 +331,42 @@ class CRM_Expenseclaims_Config {
         'custom_group_id' => $this->_claimInformationCustomGroup['id']));
       $this->_claimInformationCustomGroup['custom_fields'] = $customFields['values'];
     } catch (CiviCRM_API3_Exception $ex) {}
+  }
+
+  /**
+   * Method to set the relationship type id of the senior project officer
+   *
+   * @throws Exception
+   */
+  private function setSeniorProjectOfficerRelationshipTypeId() {
+    try {
+      $this->_seniorProjectOfficerRelationshipTypeId = civicrm_api3('RelationshipType', 'getvalue', array(
+        'name_a_b' => 'senior_project_officer',
+        'name_b_a' => 'senior_project_officer_is',
+        'return' => 'id'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a relationship Senior Project Officer in '.__METHOD__
+        .', contact your system administrator. Error from API RelationshipType getvalue: '.$ex->getMessage());
+    }
+  }
+
+  /**
+   * Method to set the relationship type id of the project officer
+   *
+   * @throws Exception
+   */
+  private function setProjectOfficerRelationshipTypeId() {
+    try {
+      $this->_projectOfficerRelationshipTypeId = civicrm_api3('RelationshipType', 'getvalue', array(
+        'name_a_b' => 'Project Officer for',
+        'name_b_a' => 'Project Officer is',
+        'return' => 'id'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a relationship Project Officer in '.__METHOD__
+        .', contact your system administrator. Error from API RelationshipType getvalue: '.$ex->getMessage());
+    }
   }
 
   /**

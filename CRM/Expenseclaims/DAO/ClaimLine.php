@@ -45,6 +45,10 @@ class CRM_Expenseclaims_DAO_ClaimLine extends CRM_Core_DAO {
           'name' => 'expense_date',
           'type' => CRM_Utils_Type::T_DATE,
         ),
+        'expense_type' => array(
+          'name' => 'expense_type',
+          'type' => CRM_Utils_Type::T_STRING,
+        ),
         'currency_id' => array(
           'name' => 'currency_id',
           'type' => CRM_Utils_Type::T_INT,
@@ -55,6 +59,10 @@ class CRM_Expenseclaims_DAO_ClaimLine extends CRM_Core_DAO {
         ),
         'euro_amount' => array(
           'name' => 'euro_amount',
+          'type' => CRM_Utils_Type::T_MONEY,
+        ),
+        'exchange_rate' => array(
+          'name' => 'exchange_rate',
           'type' => CRM_Utils_Type::T_MONEY,
         ),
         'description' => array(
@@ -78,9 +86,11 @@ class CRM_Expenseclaims_DAO_ClaimLine extends CRM_Core_DAO {
         'id' => 'id',
         'activity_id' => 'activity_id',
         'expense_date' => 'expense_date',
+        'expense_type' => 'expense_type',
         'currency_id' => 'currency_id',
         'currency_amount' => 'currency_amount',
         'euro_amount' => 'euro_amount',
+        'exchange_rate' => 'exchange_rate',
         'description' => 'description'
       );
     }

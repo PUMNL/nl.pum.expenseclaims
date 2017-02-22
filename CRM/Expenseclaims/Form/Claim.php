@@ -24,13 +24,62 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     $this->add('text', 'claim_submitted_by', ts('Claimed By'));
     $this->add('text', 'claim_submitted_date', ts('Date Submitted'));
     $this->add('text', 'claim_description', ts('Description'), true);
+    $this->add('text', 'claim_total_amount', ts('Total Amount'), true);
     // add buttons
     $this->addButtons(array(
       array('type' => 'submit', 'name' => ts('Save'), 'isDefault' => true,),
       array('type' => 'next', 'name' => ts('Save and Approve')),
       array('type' => 'cancel', 'name' => ts('Cancel'))));
 
+    $this->addClaimLines();
     parent::buildQuickForm();
+  }
+
+  /**
+   * Method to get the claim lines of the claim and put them on the form
+   */
+  private function addClaimLines() {
+    $result = array();
+    $config = CRM_Expenseclaims_Config::singleton();
+    $claimLines = CRM_Expenseclaims_BAO_ClaimLine::getValues(array('activity_id' => $this->_claimId));
+    foreach ($claimLines as $claimLineId => $claimLine) {
+      $result[$claimLineId] = array();
+      if (isset($claimLine['expense_date'])) {
+        $result[$claimLineId]['date'] = $claimLine['expense_date'];
+      }
+      if (isset($claimLine['expense_type'])) {
+        try {
+          $result[$claimLineId]['type'] = civicrm_api3('OptionValue', 'getvalue', array(
+            'option_group_id' => $config->getClaimLineTypeOptionGroup('id'),
+            'value' => $claimLine['expense_type'],
+            'return' => 'label'
+          ));
+        } catch (CiviCRM_API3_Exception $ex) {}
+      }
+      if (isset($claimLine['currency_id'])) {
+        $sql = 'SELECT name FROM civicrm_currency WHERE id = %1';
+        $result[$claimLineId]['currency'] = CRM_Core_DAO::singleValueQuery($sql,
+          array(1 => array($claimLine['currency_id'], 'Integer')));
+      }
+      if (isset($claimLine['currency_amount'])) {
+        $result[$claimLineId]['currency_amount'] = $claimLine['currency_amount'];
+      }
+      if (isset($claimLine['euro_amount'])) {
+        $result[$claimLineId]['euro_amount'] = $claimLine['euro_amount'];
+      }
+      if (isset($claimLine['exchange_rate'])) {
+        $result[$claimLineId]['exchange_rate'] = $claimLine['exchange_rate'];
+      }
+      if (isset($claimLine['description'])) {
+        $result[$claimLineId]['description'] = $claimLine['description'];
+      }
+      // add action item
+      if (!empty($result[$claimLineId])) {
+        $editUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimline', 'action=update&id='.$claimLineId, true);
+        $result[$claimLineId]['actions'][] = '<a class="action-item" title="Edit" href="'.$editUrl.'">Edit</a>';
+      }
+    }
+    $this->assign('claimLines', $result);
   }
 
   /**
@@ -62,6 +111,9 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     if (isset($this->_claim->claim_description)) {
       $defaults['claim_description'] = $this->_claim->claim_description;
     }
+    if (isset($this->_claim->claim_total_amount)) {
+      $defaults['claim_total_amount'] = $this->_claim->claim_total_amount;
+    }
     if (isset($this->_claim->claim_link)) {
       $index = $this->_elementIndex['claim_link'];
       foreach ($this->_elements[$index]->_options as $optionId => $option) {
@@ -79,17 +131,20 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
    */
   private function saveClaim() {
     if (!empty($this->_submitValues)) {
-      $config = CRM_Expenseclaims_Config::singleton();
-      // if save, save the claim and each claim line
-      if (isset($this->_submitValues['_qf_Claim_submit']) && $this->_submitValues['_qf_Claim_submit'] == 'Save') {
-        $sql = "UPDATE ".$config->getClaimInformationCustomGroup('id')." SET ".$config->getClaimDescriptionCustomField('column_name')
-          ." = %1, ".$config->getClaimLinkCustomField('column_name')." = %2 WHERE entity_id = %3";
-        CRM_Core_DAO::executeQuery($sql, array(
-          1 => array($this->_submitValues['claim_description'], 'String'),
-          2 => array($this->_claimLinkList[$this->_submitValues['claim_link']], 'String'),
-          3 => array($this->_claimId, 'Integer')
-        ));
+      if (isset($this->_submitValues['claim_description'])) {
+        $claimParams['claim_description'] = $this->_submitValues['claim_description'];
       }
+      if (isset($this->_submitValues['claim_link'])) {
+        $claimParams['claim_link'] = $this->_claimLinkList[$this->_submitValues['claim_link']];
+      }
+      $claimParams['claim_id'] = $this->_claimId;
+      // if save or save and approve, save the claim
+      if (isset($this->_submitValues['_qf_Claim_submit']) || isset($this->_submitValues['_qf_Claim_next'])) {
+        $claim = new CRM_Expenseclaims_BAO_Claim();
+        $claim->update($claimParams);
+      }
+      // if save and approve, also change claim status to approval
+      // todo implement function to approve claim
     }
   }
 
