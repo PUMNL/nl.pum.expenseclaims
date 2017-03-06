@@ -401,4 +401,32 @@ class CRM_Expenseclaims_BAO_Claim {
     }
     return FALSE;
   }
+
+  /**
+   * Method to create a new claim :
+   * - add activity with custom data
+   * - add claim log entry for the correct approval contact id
+   *
+   * @param array $params
+   * @return bool
+   */
+  public function createNew($params) {
+    // mandatory params
+
+  }
+
+  /**
+   * Method to process buildForm hook:
+   * - hide activity_date_time with jQuery in template in update mode
+   *
+   * @param $formName
+   * @param $form
+   */
+  public static function buildForm($formName, &$form) {
+    if ($formName = 'CRM_Activity_Form_Activity') {
+      if (isset($form->_activityTypeName) && $form->_activityTypeName == 'Claim') {
+        CRM_Core_Region::instance('page-body')->add(array('template' => 'CRM/Expenseclaims/ClaimActivityDateTime.tpl'));
+      }
+    }
+  }
 }

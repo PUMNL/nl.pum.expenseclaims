@@ -22,7 +22,10 @@ class CRM_Expenseclaims_Config {
   private $_seniorProjectOfficerRelationshipTypeId = NULL;
   private $_projectOfficerRelationshipTypeId = NULL;
   private $_approvedClaimStatusValue = NULL;
-  private $_initallyApprovedClaimStatusValue = NULL;
+  private $_initiallyApprovedClaimStatusValue = NULL;
+  private $_waitingForApprovalClaimStatusValue = NULL;
+  private $_targetRecordTypeId = NULL;
+  private $_scheduledActivityStatusId = NULL;
 
   /**
    * CRM_Expenseclaims_Config constructor.
@@ -41,9 +44,24 @@ class CRM_Expenseclaims_Config {
         'name' => 'approved',
         'return' => 'value'
       ));
-      $this->_initallyApprovedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+      $this->_initiallyApprovedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
         'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
         'name' => 'initially_approved',
+        'return' => 'value'
+      ));
+      $this->_waitingForApprovalClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'name' => 'waiting_for_approval',
+        'return' => 'value'
+      ));
+      $this->_targetRecordTypeId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => 'activity_contacts',
+        'name' => 'Activity Targets',
+        'return' => 'value'
+      ));
+      $this->_scheduledActivityStatusId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => 'activity_status',
+        'name' => 'Scheduled',
         'return' => 'value'
       ));
     } catch (CiviCRM_API3_Exception $ex) {
@@ -53,11 +71,35 @@ class CRM_Expenseclaims_Config {
   }
 
   /**
+   * Getter for scheduled activity status
+   * @return array|null
+   */
+  public function getScheduledActivityStatusId() {
+    return $this->_scheduledActivityStatusId;
+  }
+
+  /**
+   * Getter for target record type id (activity contact)
+   * @return array|null
+   */
+  public function getTargetRecordTypeId() {
+    return $this->_targetRecordTypeId;
+  }
+
+  /**
+   * Getter for waiting for approval claims status value
+   * @return null
+   */
+  public function getWaitingForApprovalClaimStatusValue() {
+    return $this->_waitingForApprovalClaimStatusValue;
+  }
+
+  /**
    * Getter for initially approved claims status value
    * @return null
    */
   public function getInitiallyApprovedClaimStatusValue() {
-    return $this->_initallyApprovedClaimStatusValue;
+    return $this->_initiallyApprovedClaimStatusValue;
   }
 
   /**

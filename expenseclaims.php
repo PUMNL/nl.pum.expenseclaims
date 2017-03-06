@@ -3,6 +3,14 @@
 require_once 'expenseclaims.civix.php';
 
 /**
+ * Implements hook_civicrm_buildForm().
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_buildForm
+ */
+function expenseclaims_civicrm_buildForm($formName, &$form) {
+  CRM_Expenseclaims_BAO_Claim::buildForm($formName, $form);
+}
+/**
  * Implements hook_civicrm_config().
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_config
