@@ -11,6 +11,7 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
    */
   public function install() {
     $this->executeSqlFile('sql/create_pum_claim_batch.sql');
+    $this->executeSqlFile('sql/create_pum_claim_batch_entity.sql');
     $this->executeSqlFile('sql/create_pum_claim_line.sql');
     $this->executeSqlFile('sql/create_pum_claim_log.sql');
     $this->executeSqlFile('sql/create_pum_claim_level.sql');

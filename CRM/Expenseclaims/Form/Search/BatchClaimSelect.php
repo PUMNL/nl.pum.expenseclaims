@@ -1,32 +1,27 @@
 <?php
 /**
- * Custom search to Find Batch for PUM Senior Experts Expense Claims
+ * Custom search to select and find claims in batch
  * PUM Senior Experts
  *
  * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
- * @date 7 March 2017
+ * @date 20 March 2017
  * @license AGPL-3.0
  */
-class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
+class CRM_Expenseclaims_Form_Search_BatchClaimSelect extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
 
-  // properties for clauses, params, searchColumns and likes
   private $_whereClauses = array();
   private $_whereParams = array();
   private $_whereIndex = NULL;
-
-  // properties for select lists
-  private $_claimStatusList = array();
   private $_claimTypeList = array();
+  private $_batchData = array();
 
   /**
-   * CRM_Expenseclaims_Form_Search_FindBatch constructor.
+   * CRM_Expenseclaims_Form_Search_BatchClaimSelect constructor.
    *
    * @param $formValues
    */
   function __construct(&$formValues) {
-    $this->setClaimStatusList();
     $this->setClaimTypeList();
-
     parent::__construct($formValues);
   }
 
@@ -37,56 +32,112 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
    * @return void
    */
   function buildForm(&$form) {
-    try {
-      $batchClaimSelectId = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => 'custom_search',
-        'name' => 'CRM_Expenseclaims_Form_Search_BatchClaimSelect',
-        'return' => 'value'
-      ));
-      $form->assign('batchClaimSelectId', $batchClaimSelectId);
-    } catch (CiviCRM_API3_Exception $ex) {
-      $form->assign('batchClaimSelectId', '');
-    }
-
+    $this->getBatchInfo();
     CRM_Utils_System::setTitle(ts('Find PUM Senior Experts Expense Claim Batch'));
-
+    if (!empty($this->_batchData)) {
+      $form->assign('batchDescription', $this->_batchData['description']);
+      $form->assign('batchCreatedDate', $this->_batchData['created_date']);
+      $form->assign('batchStatus', $this->_batchData['batch_status']);
+    }
+    // find current claims in batch
+    $form->assign('currentClaims', $this->getCurrentClaimsForBatch());
     // search on from .... to
-    $form->addDate('batch_date_from', ts('Date From'), FALSE);
-    $form->addDate('batch_date_to', ts('...to'), FALSE);
-
-    // search on claim status
-    $form->add('select', 'claim_status', ts('Claim Status(es)'), $this->_claimStatusList, FALSE,
-      array('id' => 'claim_status', 'multiple' => 'multiple', 'title' => ts('- select -'))
-    );
-
+    $form->addDate('claim_date_from', ts('Date From'), FALSE);
+    $form->addDate('claim_date_to', ts('...to'), FALSE);
     // search on claim type
     $form->add('select', 'claim_type', ts('Claim Type(s)'), $this->_claimTypeList, FALSE,
       array('id' => 'claim_type', 'multiple' => 'multiple', 'title' => ts('- select -'))
     );
-
-    $form->assign('elements', array('batch_date_from', 'batch_date_to', 'claim_status', 'claim_type'));
-    $form->assign('addUrl', CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimbatch', 'action=add&reset=1', true));
-
+    $form->add('hidden', 'batch_id');
+    $form->assign('elements', array('claim_date_from', 'claim_date_to', 'claim_type', 'batch_id'));
     $form->addButtons(array(array('type' => 'refresh', 'name' => ts('Search'), 'isDefault' => TRUE,),));
+  }
+  function setDefaultValues() {
+    $defaults = array();
+    if (isset($this->_batchData['id'])) {
+      $defaults['batch_id'] = $this->_batchData['id'];
+    }
+    return $defaults;
   }
 
   /**
-   * Method to get the list of claim statuses
+   * Method to get the claims currently in selected batch
+   *
+   * @return array
+   */
+  private function getCurrentClaimsForBatch() {
+    $currentClaims = array();
+    $config = CRM_Expenseclaims_Config::singleton();
+    $query = "SELECT pcbe.entity_id AS claim_id, cc.display_name AS claim_submitted_by, 
+      cvci.{$config->getClaimDescriptionCustomField('column_name')} AS claim_description, act.activity_date_time AS claim_submitted_date,
+      cvci.{$config->getClaimLinkCustomField('column_name')} AS claim_link, cvci.{$config->getClaimTotalAmountCustomField('column_name')}
+      AS claim_total_amount, csov.label AS claim_status, cvci.{$config->getClaimTypeCustomField('column_name')} AS claim_type
+      FROM pum_claim_batch_entity pcbe
+      JOIN civicrm_activity_contact cac ON pcbe.entity_id = cac.activity_id AND cac.record_type_id = %1
+      JOIN civicrm_activity act ON pcbe.entity_id = act.id
+      JOIN civicrm_contact cc ON cac.contact_id = cc.id
+      LEFT JOIN {$config->getClaimInformationCustomGroup('table_name')} cvci ON pcbe.entity_id = cvci.entity_id
+      LEFT JOIN civicrm_option_value csov ON cvci.{$config->getClaimStatusCustomField('column_name')} = csov.value AND csov.option_group_id = %2
+      WHERE pcbe.batch_id = %3 AND pcbe.entity_table = %4";
+    $params = array(
+      1 => array(3, 'Integer'),
+      2 => array($config->getClaimStatusOptionGroup('id'), 'Integer'),
+      3 => array($this->_batchData['id'], 'Integer'),
+      4 => array('civicrm_activity', 'String')
+    );
+    $dao = CRM_Core_DAO::executeQuery($query, $params);
+    while ($dao->fetch()) {
+      $claimLink = $dao->claim_link;
+      // get case subject with claim_link if claim_type = project
+      if ($dao->claim_type == 'project') {
+        try {
+          $claimLink = civicrm_api3('Case', 'getvalue', array('id' => $dao->claim_link, 'return' => 'subject'));
+        } catch (CiviCRM_API3_Exception $ex) {
+          $claimLink = ts('not found');
+        }
+      }
+      $currentClaims[] = array(
+        'claim_id' => $dao->claim_id,
+        'claim_description' => $dao->claim_description,
+        'claim_submitted_by' => $dao->claim_submitted_by,
+        'claim_submitted_date' => $dao->claim_submitted_date,
+        'claim_link' => $claimLink,
+        'claim_total_amount' => $dao->claim_total_amount,
+        'claim_status' => $dao->claim_status
+      );
+    }
+    return $currentClaims;
+  }
+
+  /**
+   * Method to get the batch data and store in property
    *
    * @return array
    * @access private
    */
-  private function setClaimStatusList() {
-    $config = CRM_Expenseclaims_Config::singleton();
-    $claimStatuses = civicrm_api3('OptionValue', 'get', array(
-      'option_group_id' => $config->getClaimStatusOptionGroup('id'),
-      'is_active' => 1
-    ));
-    foreach ($claimStatuses['values'] as $claimStatus) {
-      $this->_claimStatusList[$claimStatus['value']] = $claimStatus['label'];
+  private function getBatchInfo() {
+    $requestValues = CRM_Utils_Request::exportValues();
+    // get batch id from request or form
+    if (isset($requestValues['bid'])) {
+      $batchId = $requestValues['bid'];
+    } else {
+      if (isset($requestValues['batch_id'])) {
+        $batchId = $requestValues['batch_id'];
+      } else {
+        if (isset($this->_formValues['batch_id'])) {
+          $batchId = $this->_formValues['batch_id'];
+        }
+      }
     }
-    asort($this->_claimStatusList);
-    return;
+    try {
+      $this->_batchData = civicrm_api3('ClaimBatch', 'getsingle', array('id' => $batchId));
+      $config = CRM_Expenseclaims_Config::singleton();
+      $this->_batchData['batch_status'] = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $config->getClaimStatusOptionGroup('id'),
+        'value' => $this->_batchData['batch_status_id'],
+        'return' => 'label'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {}
   }
 
   /**
@@ -156,8 +207,7 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
   function from() {
     $config = CRM_Expenseclaims_Config::singleton();
     return "FROM pum_claim_batch batch
-    LEFT JOIN civicrm_option_value ov ON batch.batch_status_id COLLATE utf8_unicode_ci = ov.value AND ov.option_group_id = "
-      .$config->getBatchStatusOptionGroup();
+    LEFT JOIN civicrm_option_value ov ON batch.batch_status_id COLLATE utf8_unicode_ci = ov.value AND ov.option_group_id = ".$config->getBatchStatusOptionGroup();
   }
 
   /**
@@ -262,7 +312,7 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
    * @return string, template path (findable through Smarty template path)
    */
   function templateFile() {
-    return 'CRM/Expenseclaims/Form/FindBatch.tpl';
+    return 'CRM/Expenseclaims/Form/BatchClaimSelect.tpl';
   }
 
   /**

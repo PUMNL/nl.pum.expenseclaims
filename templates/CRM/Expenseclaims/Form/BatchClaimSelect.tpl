@@ -4,13 +4,8 @@
 
 <div class="crm-form-block crm-search-form-block">
   <div id="searchForm">
-    {include file="CRM/Expenseclaims/Form/FindBatchCriteria.tpl"}
+    {include file="CRM/Expenseclaims/Form/BatchClaimSelectCriteria.tpl"}
   </div>
-</div>
-<div class="crm-submit-buttons">
-  <a class="button new-option" href="{$addUrl}">
-    <span><div class="icon add-icon"></div>New Claim Batch</span>
-  </a>
 </div>
 
 {if $rowsEmpty}
@@ -36,8 +31,10 @@
       {include file="CRM/common/pagerAToZ.tpl"}
 
       {strip}
+
     <table class="selector" summary="{ts}Search results listings.{/ts}">
       <thead class="sticky">
+      <th scope="col" title="Select All Rows">{$form.toggleSelect.html}</th>
       {foreach from=$columnHeaders item=header}
         <th scope="col">
           {if $header.sort}
@@ -53,21 +50,17 @@
 
       {counter start=0 skip=1 print=false}
       {foreach from=$rows item=row}
-        <tr id='rowid{$row.batch_id}' class="{cycle values="odd-row,even-row"}">
+        <tr id='rowid{$row.claim_id}' class="{cycle values="odd-row,even-row"}">
+          {assign var=cbName value=$row.checkbox}
+          <td>{$form.$cbName.html}</td>
           {foreach from=$columnHeaders item=header}
             {assign var=fName value=$header.sort}
             <td>{$row.$fName}</td>
           {/foreach}
           <td>
-              {if (!empty($batchClaimSelectId))}
             <span>
-              <a href="{crmURL p='civicrm/pumexpenseclaims/page/batchclaimselect' q="reset=1&bid=`$row.batch_id`"}"
-                 class="action-item action-item-first" title="claims">{ts}Claims{/ts}</a>
-            </span>
-              {/if}
-            <span>
-              <a href="{crmURL p='civicrm/pumexpenseclaims/claimexport' q="reset=1&bid=`$row.batch_id`"}"
-                 class="action-item action-item-first" title="export">{ts}Export{/ts}</a>
+              <a href="{crmURL p='civicrm/pumexpenseclaims/form/claim' q="action=update&id=`$row.claim_id`"}"
+                 class="action-item action-item-first" title="claims">{ts}Manage{/ts}</a>
             </span>
           </td>
         </tr>

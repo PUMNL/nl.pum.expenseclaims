@@ -23,56 +23,40 @@
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
 *}
-{* Search criteria form elements - Find Experts *}
 
 {* Set title for search criteria accordion *}
-{capture assign=editTitle}{ts}Edit Search Criteria for Expense Claim Batch{/ts}{/capture}
+{capture assign=editTitle}{ts}Edit Search Criteria for Claims{/ts}{/capture}
 
 {strip}
+
+  {* add batch data on top *}
+  {include file="CRM/Expenseclaims/Form/BatchData.tpl"}
+  {* add current claims in batch section *}
+  {include file="CRM/Expenseclaims/Form/BatchCurrentClaims.tpl"}
+
+
   <div class="crm-block crm-form-block crm-basic-criteria-form-block">
     <div class="crm-accordion-wrapper crm-case_search-accordion {if $rows}collapsed{/if}">
       <div class="crm-accordion-header crm-master-accordion-header">
         {$editTitle}
       </div><!-- /.crm-accordion-header -->
       <div class="crm-accordion-body">
-
-        {if $form.batch_date_from or $form.batch_date_to}
-          <div class="crm-section batch_date-from-section">
+        {if $form.claim_date_from or $form.claim_date_to}
+          <div class="crm-section claim_date-from-section">
             <div class="label">
-              <label for="batch_date-from">{$form.batch_date_from.label}</label>
+              <label for="claim_date-from">{$form.claim_date_from.label}</label>
             </div>
-            <div class="content" id="batch_date-from">
-              {include file="CRM/common/jcalendar.tpl" elementName='batch_date_from'}
+            <div class="content" id="claim_date-from">
+              {include file="CRM/common/jcalendar.tpl" elementName='claim_date_from'}
             </div>
             <div class="clear"></div>
           </div>
-          <div class="crm-section batch-date-to-section">
+          <div class="crm-section claim-date-to-section">
             <div class="label">
-              <label for="batch-date-to">{$form.batch_date_to.label}</label>
+              <label for="claim-date-to">{$form.claim_date_to.label}</label>
             </div>
-            <div class="content" id="batch-date-to">
-              {include file="CRM/common/jcalendar.tpl" elementName='batch_date_to'}
-            </div>
-            <div class="clear"></div>
-          </div>
-        {/if}
-
-        {if $form.claim_status}
-          <div class="crm-section claim_status-section">
-            <div class="label">
-              <label for="claim_status-select">{ts}Claim Status(es){/ts}</label>
-            </div>
-            <div class="content" id="claim_status-select">
-              {$form.claim_status.html}
-              {literal}
-                <script type="text/javascript">
-                cj(function() {
-                  cj("select#claim_status").crmasmSelect({
-                    respectParents: true
-                  });
-                });
-                </script>
-              {/literal}
+            <div class="content" id="claim-date-to">
+              {include file="CRM/common/jcalendar.tpl" elementName='claim_date_to'}
             </div>
             <div class="clear"></div>
           </div>

@@ -44,7 +44,10 @@ class CRM_Expenseclaims_Form_ClaimBatch extends CRM_Core_Form {
         'batch_status_id' => $config->getOpenBatchStatusId(),
         'description' => $this->_submitValues['description']
       );
-      CRM_Expenseclaims_BAO_ClaimBatch::add($params);
+      $created = CRM_Expenseclaims_BAO_ClaimBatch::add($params);
+      // redirect to batch claim select
+      $batchClaimSelectURL = CRM_Utils_System::url('civicrm/pumexpenseclaims/page/batchclaimselect', 'reset=1&bid='.$created['id'], true);
+      CRM_Utils_System::redirect($batchClaimSelectURL);
     }
   }
 

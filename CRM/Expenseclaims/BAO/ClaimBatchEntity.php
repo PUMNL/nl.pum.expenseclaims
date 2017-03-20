@@ -1,13 +1,13 @@
 <?php
 /**
- * Class BAO Claim Batch
+ * Class BAO Claim Batch Entity
  *
  * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
- * @date 7 March 2017
+ * @date 20 March 2017
  * @license AGPL-3.0
  */
 
-class CRM_Expenseclaims_BAO_ClaimBatch extends CRM_Expenseclaims_DAO_ClaimBatch {
+class CRM_Expenseclaims_BAO_ClaimBatchEntity extends CRM_Expenseclaims_DAO_ClaimBatchEntity {
 
   /**
    * Function to get values
@@ -19,19 +19,19 @@ class CRM_Expenseclaims_BAO_ClaimBatch extends CRM_Expenseclaims_DAO_ClaimBatch 
    */
   public static function getValues($params) {
     $result = array();
-    $claimBatch = new CRM_Expenseclaims_BAO_ClaimBatch();
+    $claimBatchEntity = new CRM_Expenseclaims_BAO_ClaimBatchEntity();
     if (!empty($params)) {
       $fields = self::fields();
       foreach ($params as $key => $value) {
         if (isset($fields[$key])) {
-          $claimBatch->$key = $value;
+          $claimBatchEntity->$key = $value;
         }
       }
     }
-    $claimBatch->find();
-    while ($claimBatch->fetch()) {
+    $claimBatchEntity->find();
+    while ($claimBatchEntity->fetch()) {
       $row = array();
-      self::storeValues($claimBatch, $row);
+      self::storeValues($claimBatchEntity, $row);
       $result[$row['id']] = $row;
     }
     return $result;
@@ -51,17 +51,17 @@ class CRM_Expenseclaims_BAO_ClaimBatch extends CRM_Expenseclaims_DAO_ClaimBatch 
     CRM_Core_Error::debug('params', $params);
     $result = array();
     if (empty($params)) {
-      throw new Exception('Params can not be empty when adding or updating a claim batch in '.__METHOD__);
+      throw new Exception('Params can not be empty when adding or updating a claim batch entity in '.__METHOD__);
     }
-    $claimBatch = new CRM_Expenseclaims_BAO_ClaimBatch();
+    $claimBatchEntity = new CRM_Expenseclaims_BAO_ClaimBatchEntity();
     $fields = self::fields();
     foreach ($params as $key => $value) {
       if (isset($fields[$key])) {
-        $claimBatch->$key = $value;
+        $claimBatchEntity->$key = $value;
       }
     }
-    $claimBatch->save();
-    self::storeValues($claimBatch, $result);
+    $claimBatchEntity->save();
+    self::storeValues($claimBatchEntity, $result);
     return $result;
   }
 }
