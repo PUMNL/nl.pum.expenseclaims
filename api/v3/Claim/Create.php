@@ -15,10 +15,10 @@ function _civicrm_api3_claim_create_spec(&$spec) {
     'type' => CRM_Utils_Type::T_DATE,
     'api.required' => 1,
   );
-  $spec['claim_type_id'] = array(
-    'name' => 'claim_type_id',
-    'title' => 'claim_type_id',
-    'type' => CRM_Utils_Type::T_INT,
+  $spec['claim_type'] = array(
+    'name' => 'claim_type',
+    'title' => 'claim_type',
+    'type' => CRM_Utils_Type::T_STRING,
     'api.required' => 1,
   );
   $spec['claim_contact_id'] = array(
@@ -58,63 +58,12 @@ function _civicrm_api3_claim_create_spec(&$spec) {
  * @throws API_Exception
  */
 function civicrm_api3_claim_create($params) {
-  $result = array();
-  $config = CRM_Expenseclaims_Config::singleton();
-  $params['activity_type_id'] = $config->getClaimActivityTypeId();
-  // create activity
-  $activityParams = array(
-    'activity_type_id' => $config->getClaimActivityTypeId(),
-    'activity_date_time' => date('Y-m-d', strtotime($params['expense_date'])),
-    'status_id' => $config->getScheduledActivityStatusId(),
-    'target_contact_id' => $params['claim_contact_id'],
-    'subject' => 'Claim entered on website'
-  );
-  try {
-    $activity = civicrm_api3('Activity', 'create', $activityParams);
-  } catch (CiviCRM_API3_Exception $ex) {
-    civicrm_api3_create_error('Could not create claim activity in '.__METHOD__, array('params' => $params));
+  $claim = new CRM_Expenseclaims_BAO_Claim();
+  $result = $claim->createNew($params);
+  if ($result == FALSE) {
+    return civicrm_api3_create_error('Could not create claim activity in '.__METHOD__, array('params' => $params));
+  } else {
+    return civicrm_api3_create_success($result, $params, 'Claim', 'Create');
   }
-  // then add custom data
-  $result = $activity['values'][0];
-  addCustomData($activity['id'], $params, $result);
-  return civicrm_api3_create_success($result, $params, 'Claim', 'Create');
-}
-
-/**
- * Function to insert custom record for claim activity
- *
- * @param $activityId
- * @param $params
- * @param $result
- */
-function addCustomData($activityId, $params, &$result) {
-  $config = CRM_Expenseclaims_Config::singleton();
-  $sqlClauses = array('entity_id = %1');
-  $sqlParams[1] = array($activityId, 'Integer');
-  $sqlClauses[] = $config->getClaimStatusCustomField('column_name').' = %2';
-  $sqlParams[2] = array($config->getWaitingForApprovalClaimStatusValue(), 'String');
-  $index = 2;
-  if (isset($params['claim_type_id'])) {
-    $index++;
-    $sqlClauses[] = $config->getClaimTypeCustomField('column_name').' = %'.$index;
-    $sqlParams[$index] = array($params['claim_type_id'], 'String');
-  }
-  if (isset($params['claim_link'])) {
-    $index++;
-    $sqlClauses[] = $config->getClaimLinkCustomField('column_name').' = %'.$index;
-    $sqlParams[$index] = array($params['claim_link'], 'String');
-  }
-  if (isset($params['claim_total_amount'])) {
-    $index++;
-    $sqlClauses[] = $config->getClaimTotalAmountCustomField('column_name').' = %'.$index;
-    $sqlParams[$index] = array($params['claim_total_amount'], 'Money');
-  }
-  if (isset($params['claim_description'])) {
-    $index++;
-    $sqlClauses[] = $config->getClaimDescriptionCustomField('column_name').' = %'.$index;
-    $sqlParams[$index] = array($params['claim_description'], 'String');
-  }
-  $sql = 'INSERT INTO '.$config->getClaimInformationCustomGroup('table_name').' SET '.implode(', ', $sqlClauses);
-  CRM_Core_DAO::executeQuery($sql, $sqlParams);
 }
 

@@ -250,4 +250,33 @@ class CRM_Expenseclaims_Utils {
       return FALSE;
     }
   }
+
+  /**
+   * Method to check if the claim was submitted by SC
+   * - get activity target contact, assuming there is only one (limit 1)
+   * - check if activity target contact is sector coordinator on the case of the claim (case_id in link)
+   *
+   * @param $claimId
+   * @param $caseId
+   * @return bool
+   */
+  public static function isClaimEnteredBySC($claimId, $caseId) {
+    $config = CRM_Expenseclaims_Config::singleton();
+    $sql = "SELECT contact_id FROM civicrm_activity_contact WHERE activity_id = %1 AND record_type_id = %2 LIMIT 1";
+    $claimEnteredById = CRM_Core_DAO::singleValueQuery($sql, array(
+      1 => array($claimId, 'Integer'),
+      2 => array($config->getTargetRecordTypeId(), 'Integer')
+    ));
+    if ($claimEnteredById) {
+      $count = civicrm_api3('Relationship', 'getcount', array(
+        'case_id' => $caseId,
+        'relationship_type_id' => $config->getSectorCoordinatorRelationshipTypeId(),
+        'contact_id_b' => $claimEnteredById
+      ));
+      if ($count > 0) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
 }

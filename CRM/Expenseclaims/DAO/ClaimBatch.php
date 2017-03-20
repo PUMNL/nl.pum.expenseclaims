@@ -1,13 +1,13 @@
 <?php
 /**
- * Class DAO Claim Line
+ * Class DAO Claim Batch
  *
  * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
- * @date 30 Jan 2017
+ * @date 7 March 2017
  * @license AGPL-3.0
  */
 
-class CRM_Expenseclaims_DAO_ClaimLine extends CRM_Core_DAO {
+class CRM_Expenseclaims_DAO_ClaimBatch extends CRM_Core_DAO {
   /**
    * static instance to hold the field values
    *
@@ -20,7 +20,7 @@ class CRM_Expenseclaims_DAO_ClaimLine extends CRM_Core_DAO {
    * empty definition for virtual function
    */
   static function getTableName() {
-    return 'pum_claim_line';
+    return 'pum_claim_batch';
   }
   /**
    * returns all the column names of this table
@@ -36,43 +36,24 @@ class CRM_Expenseclaims_DAO_ClaimLine extends CRM_Core_DAO {
           'type' => CRM_Utils_Type::T_INT,
           'required' => true
         ) ,
-        'activity_id' => array(
-          'name' => 'activity_id',
-          'type' => CRM_Utils_Type::T_INT,
-          'required' => true
-        ) ,
-        'expense_date' => array(
-          'name' => 'expense_date',
-          'type' => CRM_Utils_Type::T_DATE,
-        ),
-        'expense_type' => array(
-          'name' => 'expense_type',
-          'type' => CRM_Utils_Type::T_STRING,
-        ),
-        'currency_id' => array(
-          'name' => 'currency_id',
-          'type' => CRM_Utils_Type::T_INT,
-        ) ,
-        'currency_amount' => array(
-          'name' => 'currency_amount',
-          'type' => CRM_Utils_Type::T_MONEY,
-        ),
-        'euro_amount' => array(
-          'name' => 'euro_amount',
-          'type' => CRM_Utils_Type::T_MONEY,
-        ),
-        'exchange_rate' => array(
-          'name' => 'exchange_rate',
-          'type' => CRM_Utils_Type::T_MONEY,
-        ),
         'description' => array(
           'name' => 'description',
           'type' => CRM_Utils_Type::T_STRING,
+          'required' => true
         ),
+        'created_date' => array(
+          'name' => 'created_date',
+          'type' => CRM_Utils_Type::T_DATE
+        ),
+        'batch_status_id' => array(
+          'name' => 'batch_status_id',
+          'type' => CRM_Utils_Type::T_STRING
+        )
       );
     }
     return self::$_fields;
   }
+
   /**
    * Returns an array containing, for each field, the array key used for that
    * field in self::$_fields.
@@ -84,14 +65,9 @@ class CRM_Expenseclaims_DAO_ClaimLine extends CRM_Core_DAO {
     if (!(self::$_fieldKeys)) {
       self::$_fieldKeys = array(
         'id' => 'id',
-        'activity_id' => 'activity_id',
-        'expense_date' => 'expense_date',
-        'expense_type' => 'expense_type',
-        'currency_id' => 'currency_id',
-        'currency_amount' => 'currency_amount',
-        'euro_amount' => 'euro_amount',
-        'exchange_rate' => 'exchange_rate',
-        'description' => 'description'
+        'description' => 'description',
+        'created_date' => 'created_date',
+        'batch_status_id' => 'batch_status_id'
       );
     }
     return self::$_fieldKeys;

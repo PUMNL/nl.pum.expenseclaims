@@ -2,7 +2,7 @@
 /**
  * Class DAO Claim Level Main
  *
- * @author Erik Hommel (CiviCooP)
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
  * @date 30 Jan 2017
  * @license AGPL-3.0
  */

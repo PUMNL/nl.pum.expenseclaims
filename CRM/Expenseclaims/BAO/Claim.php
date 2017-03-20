@@ -10,7 +10,6 @@
 class CRM_Expenseclaims_BAO_Claim {
 
   private $_caseErrorStatusId = NULL;
-  private $_countryCoordinatorRelationshipTypeId = NULL;
   private $_countryCoordinatorLinkLabel = NULL;
   private $_hbfLinkLabel = NULL;
   private $_sectorCoordinatorLinkLabel = NULL;
@@ -23,10 +22,7 @@ class CRM_Expenseclaims_BAO_Claim {
   private $_recruitmentLinkValue = NULL;
   private $_programmeManagerLinkValue = NULL;
   private $_aspectAdvisorsLinkValue = NULL;
-  private $_sectorCoordinatorRelationshipTypeId = NULL;
-  private $_grantCoordinatorRelationshipTypeId = NULL;
-  private $_recruitmentTeamRelationshipTypeId = NULL;
-  private $_programmeManagerGroupId = NULL;
+  private $_newClaim = array();
 
 
   /**
@@ -34,30 +30,6 @@ class CRM_Expenseclaims_BAO_Claim {
    */
   public function __construct()   {
     try {
-      $this->_countryCoordinatorRelationshipTypeId = civicrm_api3('RelationshipType', 'getvalue', array(
-        'name_a_b' => 'Country Coordinator is',
-        'name_b_a' => 'Country Coordinator for',
-        'return' => 'id'
-      ));
-      $this->_grantCoordinatorRelationshipTypeId = civicrm_api3('RelationshipType', 'getvalue', array(
-        'name_a_b' => 'Grant Coordinator',
-        'name_b_a' => 'Grant Coordinator',
-        'return' => 'id'
-      ));
-      $this->_recruitmentTeamRelationshipTypeId = civicrm_api3('RelationshipType', 'getvalue', array(
-        'name_a_b' => 'Recruitment Team Member',
-        'name_b_a' => 'Recruitment Team Member',
-        'return' => 'id'
-      ));
-      $this->_sectorCoordinatorRelationshipTypeId = civicrm_api3('RelationshipType', 'getvalue', array(
-        'name_a_b' => 'Sector Coordinator',
-        'name_b_a' => 'Sector Coordinator',
-        'return' => 'id'
-      ));
-      $this->_programmeManagerGroupId = civicrm_api3('Group', 'getvalue', array(
-        'name' => 'Programme_Managers_58',
-        'return' => 'id'
-      ));
       $this->_caseErrorStatusId = civicrm_api3('OptionValue', 'getvalue', array(
         'option_group_id' => 'case_status',
         'name' => 'Error',
@@ -179,7 +151,7 @@ class CRM_Expenseclaims_BAO_Claim {
         .', contact your system administrator');
     }
     $config = CRM_Expenseclaims_Config::singleton();
-    // first complete current log record
+    // first complete current log record if there is one or create new one
     try {
       $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
         'claim_activity_id' => $claimId,
@@ -235,7 +207,7 @@ class CRM_Expenseclaims_BAO_Claim {
         'approval_contact_id' => $contactId));
       civicrm_api3('ClaimLog', 'create', array(
         'id' => $claimLog['id'],
-        'new_status_id' => $config>getApprovedClaimStatusValue(),
+        'new_status_id' => $config->getApprovedClaimStatusValue(),
         'is_payable' => 1,
         'processed_date' => date('Y-m-d')));
     } catch (CiviCRM_API3_Exception $ex) {}
@@ -253,6 +225,12 @@ class CRM_Expenseclaims_BAO_Claim {
     if (empty($contactId)) {
       return FALSE;
     }
+    $config = CRM_Expenseclaims_Config::singleton();
+    $countryCoordinatorRelationshipTypeId = $config->getCountryCoordinatorRelationshipTypeId();
+    $grantCoordinatorRelationshipTypeId = $config->getGrantCoordinatorRelationshipTypeId();
+    $recruitmentTeamRelationshipTypeId = $config->getRecruitmentTeamRelationshipTypeId();
+    $sectorCoordinatorRelationshipTypeId = $config->getSectorCoordinatorRelationshipTypeId();
+
     $result = array();
     // get all case ids and relationship type that are not deleted where the contact has (had) a role
     $caseSql = "SELECT cc.id AS case_id, cc.subject AS case_subject, rel.relationship_type_id 
@@ -266,22 +244,22 @@ class CRM_Expenseclaims_BAO_Claim {
       $result['case_id-'.$cases->case_id] = 'Main Activity '.$cases->case_subject;
       // add additional options based on case relationship
       switch ($cases->relationship_type_id) {
-        case $this->_countryCoordinatorRelationshipTypeId:
+        case $countryCoordinatorRelationshipTypeId:
           if (!array_key_exists($this->_countryCoordinatorLinkValue, $result)) {
             $result[$this->_countryCoordinatorLinkValue] = $this->_countryCoordinatorLinkLabel;
           }
           break;
-        case $this->_grantCoordinatorRelationshipTypeId:
+        case $grantCoordinatorRelationshipTypeId:
           if (!array_key_exists($this->_hbfLinkValue, $result)) {
             $result[$this->_hbfLinkValue] = $this->_hbfLinkLabel;
           }
           break;
-        case $this->_recruitmentTeamRelationshipTypeId:
+        case $recruitmentTeamRelationshipTypeId:
           if (!array_key_exists($this->_recruitmentLinkValue, $result)) {
             $result[$this->_recruitmentLinkValue] = $this->_recruitmentLinkLabel;
           }
           break;
-        case $this->_sectorCoordinatorRelationshipTypeId:
+        case $sectorCoordinatorRelationshipTypeId:
           if (!array_key_exists($this->_sectorCoordinatorLinkValue, $result)) {
             $result[$this->_sectorCoordinatorLinkValue] = $this->_sectorCoordinatorLinkLabel;
           }
@@ -295,7 +273,7 @@ class CRM_Expenseclaims_BAO_Claim {
     $groupSql = 'SELECT COUNT(*) FROM civicrm_group_contact WHERE contact_id = %1 AND group_id = %2';
     $groupCount = CRM_Core_DAO::singleValueQuery($groupSql, array(
       1 => array($contactId, 'Integer'),
-      2 => array($this->_programmeManagerGroupId, 'Integer')
+      2 => array($config->getProgrammeManagerGroupId(), 'Integer')
     ));
     if ($groupCount > 0) {
       if (!array_key_exists($this->_programmeManagerLinkValue, $result)) {
@@ -411,8 +389,156 @@ class CRM_Expenseclaims_BAO_Claim {
    * @return bool
    */
   public function createNew($params) {
-    // mandatory params
+    $config = CRM_Expenseclaims_Config::singleton();
+    $params['activity_type_id'] = $config->getClaimActivityTypeId();
+    // create activity
+    $activityParams = array(
+      'activity_type_id' => $config->getClaimActivityTypeId(),
+      'activity_date_time' => date('Y-m-d', strtotime($params['expense_date'])),
+      'status_id' => $config->getScheduledActivityStatusId(),
+      'target_contact_id' => $params['claim_contact_id'],
+      'subject' => 'Claim entered on website'
+    );
+    try {
+      $activity = civicrm_api3('Activity', 'create', $activityParams);
+    } catch (CiviCRM_API3_Exception $ex) {
+      return FALSE;
+    }
+    // then add custom data
+    $this->_newClaim = $activity['values'][$activity['id']];
+    $this->createCustomData($params);
+    // finally determine who needs to approve claim and create claim log entry
+    $this->createFirstStep();
+    return $this->_newClaim;
+  }
 
+  /**
+   * Method to find approval contact and set claim log for new claim
+   */
+  private function createFirstStep() {
+    $config = CRM_Expenseclaims_Config::singleton();
+    // find approval contact based on claim link
+    $approvalContactId = $this->findFirstApprovalContact();
+    if ($approvalContactId) {
+      civicrm_api3('ClaimLog', 'create', array(
+        'claim_activity_id' => $this->_newClaim['id'],
+        'approval_contact_id' => $approvalContactId,
+        'old_status_id' => $config->getWaitingForApprovalClaimStatusValue(),
+        'is_approved' => 0,
+        'is_payable' => 0,
+        'is_rejected' => 0
+      ));
+    } else {
+      $errorTxt = array();
+      foreach ($this->_newClaim as $key => $value) {
+        $errorTxt[] = 'parameter '.$key.' and value '.$value;
+      }
+      throw new Exception('Could not create a claim in '.__METHOD__.' with values '.implode('; ', $errorTxt));
+    }
+  }
+
+  /**
+   * Method to determine the first approval contact based on claim type
+   *
+   * @return bool|int
+   */
+  private function findFirstApprovalContact() {
+    switch ($this->_newClaim['claim_type']) {
+      // if claim type is 7162 or 7165 approval by CFO
+      case "7162":
+        $config = CRM_Threepeas_CaseRelationConfig::singleton();
+        return $config->getPumCfo();
+        break;
+      case "7165":
+        $config = CRM_Threepeas_CaseRelationConfig::singleton();
+        return $config->getPumCfo();
+        break;
+      // if claim type is 7163 or 7164 approval bij CPO
+      case "7163":
+        $config = CRM_Expenseclaims_Config::singleton();
+        return $config->getPumCpo();
+        break;
+      case "7164":
+        $config = CRM_Expenseclaims_Config::singleton();
+        return $config->getPumCpo();
+        break;
+      // if project, check my role (if SC then approval by CPO) else approval based on levels
+      case "project":
+        if (CRM_Expenseclaims_Utils::isClaimEnteredBySC($this->_newClaim['id'], $this->_newClaim['claim_link']) == TRUE) {
+          $config = CRM_Expenseclaims_Config::singleton();
+          return $config->getPumCpo();
+        } else {
+          return $this->findFirstApprovalProjectContact();
+        }
+        break;
+      default:
+        return FALSE;
+        break;
+    }
+  }
+
+  /**
+   * Method to find out who needs to approve the new claim for a main activity
+   * - always fall back to cfo if no other contact found
+   * - always use project officer as first approval step
+   *
+   * @return mixed
+   */
+  private function findFirstApprovalProjectContact() {
+    // in case of doubt go to CFO
+    $config = CRM_Threepeas_CaseRelationConfig::singleton();
+    $contactId = $config->getPumCfo();
+    $config = CRM_Expenseclaims_Config::singleton();
+    // get project officer for case
+    $relation = civicrm_api3('Relationship', 'get', array(
+      'relationship_type_id' => $config->getProjectOfficerRelationshipTypeId(),
+      'case_id' => $this->_newClaim['claim_link'],
+      'options' => array('limit' => 1)
+    ));
+    if (!empty($relation['values'][$relation['id']]['contact_id_b'])) {
+      $contactId = $relation['values'][$relation['id']]['contact_id_b'];
+    }
+    return $contactId;
+  }
+
+  /**
+   * Function to insert custom record for claim activity and save in $this->_newClaim
+   *
+   * @param $params
+   */
+  private function createCustomData($params) {
+    $config = CRM_Expenseclaims_Config::singleton();
+    $sqlClauses = array('entity_id = %1');
+    $sqlParams[1] = array($this->_newClaim['id'], 'Integer');
+    $sqlClauses[] = $config->getClaimStatusCustomField('column_name').' = %2';
+    $sqlParams[2] = array($config->getWaitingForApprovalClaimStatusValue(), 'String');
+    $index = 2;
+    if (isset($params['claim_type'])) {
+      $index++;
+      $sqlClauses[] = $config->getClaimTypeCustomField('column_name').' = %'.$index;
+      $sqlParams[$index] = array($params['claim_type'], 'String');
+      $this->_newClaim['claim_type'] = $params['claim_type'];
+    }
+    if (isset($params['claim_link'])) {
+      $index++;
+      $sqlClauses[] = $config->getClaimLinkCustomField('column_name').' = %'.$index;
+      $sqlParams[$index] = array($params['claim_link'], 'String');
+      $this->_newClaim['claim_link'] = $params['claim_link'];
+    }
+    if (isset($params['claim_total_amount'])) {
+      $index++;
+      $sqlClauses[] = $config->getClaimTotalAmountCustomField('column_name').' = %'.$index;
+      $sqlParams[$index] = array($params['claim_total_amount'], 'Money');
+      $this->_newClaim['claim_total_amount'] = $params['claim_total_amount'];
+    }
+    if (isset($params['claim_description'])) {
+      $index++;
+      $sqlClauses[] = $config->getClaimDescriptionCustomField('column_name').' = %'.$index;
+      $sqlParams[$index] = array($params['claim_description'], 'String');
+      $this->_newClaim['claim_description'] = $params['claim_description'];
+    }
+    $sql = 'INSERT INTO '.$config->getClaimInformationCustomGroup('table_name').' SET '.implode(', ', $sqlClauses);
+    CRM_Core_DAO::executeQuery($sql, $sqlParams);
   }
 
   /**

@@ -4,4 +4,5 @@ CREATE TABLE IF NOT EXISTS `pum_claim_level_contact` (
   `contact_id` int(11) UNSIGNED DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARACTER SET = utf8
+  COLLATE = utf8_general_ci;

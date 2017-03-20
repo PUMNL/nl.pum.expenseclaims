@@ -19,6 +19,7 @@ class CRM_Expenseclaims_Config {
   private $_claimLevelOptionGroup = array();
   private $_claimInformationCustomGroup = array();
   private $_claimLineTypeOptionGroup = array();
+  private $_batchStatusOptionGroup = array();
   private $_seniorProjectOfficerRelationshipTypeId = NULL;
   private $_projectOfficerRelationshipTypeId = NULL;
   private $_approvedClaimStatusValue = NULL;
@@ -26,6 +27,14 @@ class CRM_Expenseclaims_Config {
   private $_waitingForApprovalClaimStatusValue = NULL;
   private $_targetRecordTypeId = NULL;
   private $_scheduledActivityStatusId = NULL;
+  private $_sectorCoordinatorRelationshipTypeId = NULL;
+  private $_grantCoordinatorRelationshipTypeId = NULL;
+  private $_recruitmentTeamRelationshipTypeId = NULL;
+  private $_countryCoordinatorRelationshipTypeId = NULL;
+  private $_programmeManagerGroupId = NULL;
+  private $_openBatchStatusId = NULL;
+
+
 
   /**
    * CRM_Expenseclaims_Config constructor.
@@ -33,6 +42,11 @@ class CRM_Expenseclaims_Config {
   function __construct() {
     $this->setSeniorProjectOfficerRelationshipTypeId();
     $this->setProjectOfficerRelationshipTypeId();
+    $this->setSectorCoordinatorRelationshipTypeId();
+    $this->setGrantCoordinatorRelationshipTypeId();
+    $this->setCountryCoordinatorRelationshipTypeId();
+    $this->setRecruitmentTeamRelationshipTypeId();
+    $this->setProgrammeManagerGroupId();
     $this->setValidMainActivities();
     $this->setClaimActivityTypeId();
     $this->setCpoContactId();
@@ -40,7 +54,7 @@ class CRM_Expenseclaims_Config {
     $this->setCustomGroup();
     try {
       $this->_approvedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'option_group_id' => $this->_claimStatusOptionGroup['id'],
         'name' => 'approved',
         'return' => 'value'
       ));
@@ -54,20 +68,83 @@ class CRM_Expenseclaims_Config {
         'name' => 'waiting_for_approval',
         'return' => 'value'
       ));
-      $this->_targetRecordTypeId = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => 'activity_contacts',
-        'name' => 'Activity Targets',
-        'return' => 'value'
-      ));
-      $this->_scheduledActivityStatusId = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => 'activity_status',
-        'name' => 'Scheduled',
+      $this->_openBatchStatusId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_batchStatusOptionGroup[ 'id'],
+        'name' => 'open',
         'return' => 'value'
       ));
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception('Could not find a claim status in '.__METHOD__
         .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
     }
+    try {
+      $this->_targetRecordTypeId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => 'activity_contacts',
+        'name' => 'Activity Targets',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a target record id type in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
+    try {
+      $this->_scheduledActivityStatusId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => 'activity_status',
+        'name' => 'Scheduled',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find an activity status Scheduled record id type in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
+  }
+
+  /**
+   * Getter for open batch status id
+   * @return array|null
+   */
+  public function getOpenBatchStatusId() {
+    return $this->_openBatchStatusId;
+  }
+
+  /**
+   * Getter for country coordinator relationship type id
+   * @return array|null
+   */
+  public function getCountryCoordinatorRelationshipTypeId() {
+    return $this->_countryCoordinatorRelationshipTypeId;
+  }
+
+  /**
+   * Getter for grant coordinator relationship type id
+   * @return array|null
+   */
+  public function getGrantCoordinatorRelationshipTypeId() {
+    return $this->_grantCoordinatorRelationshipTypeId;
+  }
+
+  /**
+   * Getter for recruitment team relationship type id
+   * @return array|null
+   */
+  public function getRecruitmentTeamRelationshipTypeId() {
+    return $this->_recruitmentTeamRelationshipTypeId;
+  }
+
+  /**
+   * Getter for sector coordinator relationship type id
+   * @return array|null
+   */
+  public function getSectorCoordinatorRelationshipTypeId() {
+    return $this->_sectorCoordinatorRelationshipTypeId;
+  }
+
+  /**
+   * Getter for programme manager group id
+   * @return array|null
+   */
+  public function getProgrammeManagerGroupId() {
+    return $this->_programmeManagerGroupId;
   }
 
   /**
@@ -212,6 +289,16 @@ class CRM_Expenseclaims_Config {
   }
 
   /**
+   * Getter for claim batch status option group
+   *
+   * @param string $key default = id
+   * @return mixed
+   */
+  public function getBatchStatusOptionGroup($key = 'id') {
+    return $this->_batchStatusOptionGroup[$key];
+  }
+
+  /**
    * Getter for claim status option group
    *
    * @param string $key default = id
@@ -345,10 +432,11 @@ class CRM_Expenseclaims_Config {
       $this->_claimTypeOptionGroup = civicrm_api3('OptionGroup', 'getsingle', array('name' => 'pum_claim_type'));
       $this->_claimLevelOptionGroup = civicrm_api3('OptionGroup', 'getsingle', array('name' => 'pum_claim_level'));
       $this->_claimLineTypeOptionGroup = civicrm_api3('OptionGroup', 'getsingle', array('name' => 'pum_claim_line_type'));
+      $this->_batchStatusOptionGroup = civicrm_api3('OptionGroup', 'getsingle', array('name' => 'pum_claim_batch_status'));
     } catch (CiviCRM_API3_Exception $ex) {
-      throw new Exception('Could not find an option group with name pum_claim_status or pum_claim_type in '.__METHOD__
-        .', is required for PUm Senior Experts Claim Processing. Contact your system administrator, 
-        error from API OptionGroup getsingle: '.$ex->getMessage());
+      throw new Exception('Could not find an option group with name pum_claim_status, pum_claim_level, pum_claim_line_type, 
+      pum_claim_batch_status or pum_claim_type in '.__METHOD__.', is required for PUM Senior Experts Claim Processing. 
+      Contact your system administrator, error from API OptionGroup getsingle: '.$ex->getMessage());
     }
   }
 
@@ -408,6 +496,95 @@ class CRM_Expenseclaims_Config {
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception('Could not find a relationship Project Officer in '.__METHOD__
         .', contact your system administrator. Error from API RelationshipType getvalue: '.$ex->getMessage());
+    }
+  }
+
+  /**
+   * Method to set the relationship type id of the country coordinator
+   *
+   * @throws Exception
+   */
+  private function setCountryCoordinatorRelationshipTypeId() {
+    try {
+      $this->_countryCoordinatorRelationshipTypeId = civicrm_api3('RelationshipType', 'getvalue', array(
+        'name_a_b' => 'Country Coordinator is',
+        'name_b_a' => 'Country Coordinator for',
+        'return' => 'id'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a relationship Country Coordinator in '.__METHOD__
+        .', contact your system administrator. Error from API RelationshipType getvalue: '.$ex->getMessage());
+    }
+  }
+
+  /**
+   * Method to set the relationship type id of the grant coordinator
+   *
+   * @throws Exception
+   */
+  private function setGrantCoordinatorRelationshipTypeId() {
+    try {
+      $this->_grantCoordinatorRelationshipTypeId = civicrm_api3('RelationshipType', 'getvalue', array(
+        'name_a_b' => 'Grant Coordinator',
+        'name_b_a' => 'Grant Coordinator',
+        'return' => 'id'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a relationship Grant Coordinator in '.__METHOD__
+        .', contact your system administrator. Error from API RelationshipType getvalue: '.$ex->getMessage());
+    }
+  }
+
+  /**
+   * Method to set the relationship type id of the sector coordinator
+   *
+   * @throws Exception
+   */
+  private function setSectorCoordinatorRelationshipTypeId() {
+    try {
+      $this->_sectorCoordinatorRelationshipTypeId = civicrm_api3('RelationshipType', 'getvalue', array(
+        'name_a_b' => 'Sector Coordinator',
+        'name_b_a' => 'Sector Coordinator',
+        'return' => 'id'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a relationship Sector Coordinator in '.__METHOD__
+        .', contact your system administrator. Error from API RelationshipType getvalue: '.$ex->getMessage());
+    }
+  }
+
+  /**
+   * Method to set the relationship type id of the recruitment team member
+   *
+   * @throws Exception
+   */
+  private function setRecruitmentTeamRelationshipTypeId() {
+    try {
+      $this->_recruitmentTeamRelationshipTypeId = civicrm_api3('RelationshipType', 'getvalue', array(
+        'name_a_b' => 'Recruitment Team Member',
+        'name_b_a' => 'Recruitment Team Member',
+        'return' => 'id'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a relationship Recruitment Team Member in '.__METHOD__
+        .', contact your system administrator. Error from API RelationshipType getvalue: '.$ex->getMessage());
+    }
+  }
+
+  /**
+   * Method to set the group id programme managers
+   *
+   * @throws Exception
+   */
+  private function setProgrammeManagerGroupId() {
+    try {
+      $this->_programmeManagerGroupId = civicrm_api3('Group', 'getvalue', array(
+        'name' => 'Programme_Managers_58',
+        'return' => 'id'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a group Programme Managers in '.__METHOD__
+        .', contact your system administrator. Error from API Group getvalue: '.$ex->getMessage());
     }
   }
 

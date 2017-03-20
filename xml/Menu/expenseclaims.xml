@@ -42,4 +42,16 @@
     <title>ClaimLine</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/pumexpenseclaims/page/claim</path>
+    <page_callback>CRM_Expenseclaims_Page_Claim</page_callback>
+    <title>Claim</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/pumexpenseclaims/form/claimbatch</path>
+    <page_callback>CRM_Expenseclaims_Form_ClaimBatch</page_callback>
+    <title>ClaimBatch</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>

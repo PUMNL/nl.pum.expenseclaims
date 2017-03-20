@@ -156,5 +156,31 @@
         "is_active": 1
       }
     }
+  },
+  "pum_claim_batch_status": {
+    "name": "pum_claim_batch_status",
+    "title": "PUM Senior Experts Expense Claim Batch Status",
+    "is_active": 1,
+    "is_reserved": 1,
+    "option_values": {
+      "open": {
+        "name": "open",
+        "value": 1,
+        "label": "Open",
+        "is_active": 1
+      },
+      "exported": {
+        "name": "exported",
+        "value": 2,
+        "label": "Exported",
+        "is_active": 1
+      },
+      "fully_paid": {
+        "name": "fully_paid",
+        "value": 3,
+        "label": "Fully paid",
+        "is_active": 1
+      }
+    }
   }
 }

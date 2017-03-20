@@ -10,6 +10,139 @@ require_once 'expenseclaims.civix.php';
 function expenseclaims_civicrm_buildForm($formName, &$form) {
   CRM_Expenseclaims_BAO_Claim::buildForm($formName, $form);
 }
+
+/**
+ * Implements hook_civicrm_permission
+ *
+ * @param $permissions
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_permission
+ */
+function expenseclaims_civicrm_permission(&$permissions) {
+  $prefix = ts('CiviCRM PUM Senior Experts Expense Claims') . ': ';
+  $permissions['pum expense claims'] = $prefix . ts('pum expense claims');
+}
+
+/**
+ * Implementation of hook civicrm_navigationMenu
+ * to create claims menu
+ *
+ * @param array $params
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
+ */
+function expenseclaims_civicrm_navigationMenu( &$params ) {
+  if (!class_exists('CRM_Expenseclaims_Config')) {
+    require_once('CRM/Expenseclaims/Config.php');
+  }
+  $config = CRM_Expenseclaims_Config::singleton();
+  $maxKey = (max(array_keys($params)));
+  $params[$maxKey+1] = array (
+    'attributes' => array (
+      'label'      => 'Claims',
+      'name'       => 'pum_expense_claims',
+      'url'        => null,
+      //'permission' => 'access CiviCRM',
+      'operator'   => null,
+      'separator'  => null,
+      'parentID'   => null,
+      'navID'      => $maxKey+1,
+      'active'     => 1
+    ),
+    'child' =>  array (
+      '1' => array (
+        'attributes' => array (
+          'label'      => 'My Claims',
+          'name'       => 'pum_expense_claims_my_claims',
+          'url'        => CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', true),
+          'operator'   => null,
+          'separator'  => 0,
+          'parentID'   => $maxKey+1,
+          'navID'      => 1,
+          'active'     => 1
+        ),
+        'child' => null
+      ),
+      '2' => array (
+        'attributes' => array (
+          'label'      => 'Claim Authorization',
+          'name'       => 'pum_expense_claim_authorization',
+          'url'        => CRM_Utils_System::url('civicrm/pumexpenseclaims/page/claimlevel', 'reset=1', true),
+          'operator'   => null,
+          'separator'  => 0,
+          'parentID'   => $maxKey+1,
+          'navID'      => 2,
+          'active'     => 1
+        ),
+        'child' => null
+      ),
+      '3' => array (
+        'attributes' => array (
+          'label'      => 'Claim Levels',
+          'name'       => 'pum_expense_claims_levels',
+          'url'        => CRM_Utils_System::url('civicrm/admin/optionValue', 'reset=1&gid='.$config->getClaimLevelOptionGroup('id'), true),
+          'operator'   => null,
+          'separator'  => 0,
+          'parentID'   => $maxKey+1,
+          'navID'      => 3,
+          'active'     => 1
+        ),
+        'child' => null
+      ),
+      '4' => array (
+        'attributes' => array (
+          'label'      => 'Claim Status',
+          'name'       => 'pum_expense_claims_status',
+          'url'        => CRM_Utils_System::url('civicrm/admin/optionValue', 'reset=1&gid='.$config->getClaimStatusOptionGroup('id'), true),
+          'operator'   => null,
+          'separator'  => 0,
+          'parentID'   => $maxKey+1,
+          'navID'      => 4,
+          'active'     => 1
+        ),
+        'child' => null
+      ),
+      '5' => array (
+        'attributes' => array (
+          'label'      => 'Claim Types',
+          'name'       => 'pum_expense_claims_types',
+          'url'        => CRM_Utils_System::url('civicrm/admin/optionValue', 'reset=1&gid='.$config->getClaimTypeOptionGroup('id'), true),
+          'operator'   => null,
+          'separator'  => 0,
+          'parentID'   => $maxKey+1,
+          'navID'      => 5,
+          'active'     => 1
+        ),
+        'child' => null
+      ),
+      '6' => array (
+        'attributes' => array (
+          'label'      => 'Claim Line Types',
+          'name'       => 'pum_expense_claims_line_types',
+          'url'        => CRM_Utils_System::url('civicrm/admin/optionValue', 'reset=1&gid='.$config->getClaimLineTypeOptionGroup('id'), true),
+          'operator'   => null,
+          'separator'  => 0,
+          'parentID'   => $maxKey+1,
+          'navID'      => 6,
+          'active'     => 1
+        ),
+        'child' => null
+      ),
+      '7' => array (
+        'attributes' => array (
+          'label'      => 'Claim Batch Status',
+          'name'       => 'pum_expense_claims_batch_status',
+          'url'        => CRM_Utils_System::url('civicrm/admin/optionValue', 'reset=1&gid='.$config->getBatchStatusOptionGroup('id'), true),
+          'operator'   => null,
+          'separator'  => 0,
+          'parentID'   => $maxKey+1,
+          'navID'      => 7,
+          'active'     => 1
+        ),
+        'child' => null
+      ),
+      ));
+}
+
+
 /**
  * Implements hook_civicrm_config().
  *
