@@ -20,11 +20,11 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
   public function buildQuickForm() {
     // add form elements
     $this->add('hidden', 'claim_level_id');
-    $this->add('select', 'level', ts('Level'), $this->_claimLevelList, true);
+    $this->add('select', 'level', ts('Level'), $this->_claimLevelList);
     $this->add('text', 'max_amount', ts('Max Amount'), array('size' => 14), true);
     $this->add('select', 'valid_types', ts('Valid Types'), $this->getValidTypes(), true,
       array('id' => 'valid_types', 'multiple' => 'multiple','class' => 'crm-select2'));
-    $this->add('select', 'valid_main_activities', ts('Valid Main Activities'), $this->getValidMainActivities(), true,
+    $this->add('select', 'valid_main_activities', ts('Valid Main Activities'), $this->getValidMainActivities(), FALSE,
       array('id' => 'valid_main_activities', 'multiple' => 'multiple','class' => 'crm-select2'));
     $this->add('select', 'authorizing_level', ts('Authorizing Level'), $this->_claimLevelList);
     // add buttons
@@ -107,6 +107,18 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
       if (isset($values['max_amount']) && $values['max_amount'] == 'no max') {
         $values['max_amount'] = 999999999.99;
       }
+      // gets level if necessary (on update level can not be changed so is retrieved from claim)
+      if (!isset($values['level']) && isset($values['claim_level_id'])) {
+        try {
+          $values['level'] = civicrm_api3('ClaimLevel', 'getvalue', array(
+            'id' => $values['claim_level_id'],
+            'return' => 'level'
+          ));
+        } catch (CiviCRM_API3_Exception $ex) {}
+      }
+      if (isset($values['claim_level_id'])) {
+        $values['id'] = $values['claim_level_id'];
+      }
       $this->_claimLevel = civicrm_api3('ClaimLevel', 'create', $values);
     }
   }
@@ -130,7 +142,11 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
         $actionHeader = "Add Expense Claim Level";
         break;
       case CRM_Core_Action::UPDATE:
-        $actionHeader = "Edit Expense Claim Level ".$this->_claimLevelList[$this->_claimLevel['level']];
+        if (isset($this->_claimLevel['level'])) {
+          $actionHeader = "Edit Expense Claim Level " . $this->_claimLevelList[$this->_claimLevel['level']];
+        } else {
+          $actionHeader = "Edit Expense Claim Level";
+        }
         break;
       default:
         $actionHeader = 'Expense Claim Level';
@@ -149,7 +165,7 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
   function setDefaultValues() {
     $defaults = array();
     $defaults['claim_level_id'] = $this->_claimLevelId;
-    if ($this->_action == CRM_Core_Action::UPDATE) {
+    if ($this->_action == CRM_Core_Action::UPDATE && !empty($this->_claimLevel)) {
       $defaults['level'] = $this->_claimLevel['level'];
       if ($this->_claimLevel['max_amount'] == 999999999.99) {
         $defaults['max_amount'] = 'no max';
@@ -179,6 +195,9 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
    * Overridden parent method to set validation rules
    */
   public function addRules() {
+    if ($this->_action == CRM_Core_Action::ADD) {
+      $this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateLevel'));
+    }
     $this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateLabel'));
     $this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateAuthorizingLevel'));
     $this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevel', 'validateMaxAmount'));
@@ -237,12 +256,9 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
           return $errors;
         }
       }
-      if ($fields['max_amount'] == 'no max') {
-        $fields['max_amount'] = 999999999.99;
-      }
-      $count = civicrm_api3('ClaimLevel', 'getcount', array('max_amount' => $fields['max_amount']));
-      if ($count > 0) {
-        $errors['max_amount'] = ts('Max amount is already used in another claim level. A certain max amount can only exist once');
+      // to do implement unique check (a claim should always only get one unique routing
+      if (CRM_Expenseclaims_Utils::checkAuthorizationExists($fields) == TRUE) {
+        $errors['max_amount'] = ts('The authorization level you are trying to enter already exists for the combination of maximum amount, valid types and main activities');
         return $errors;
       }
     }
@@ -262,6 +278,20 @@ class CRM_Expenseclaims_Form_ClaimLevel extends CRM_Core_Form {
         $errors['level'] = ts('Level is already used in another claim level. A certain level can only exist once');
         return $errors;
       }
+    }
+    return TRUE;
+  }
+
+  /**
+   * Method to validate if claim level can be empty
+   *
+   * @param $fields
+   * @return array|bool
+   */
+  public static function validateLevel($fields) {
+    if (empty($fields['level'])) {
+      $errors['level'] = ts('Level is mandatory for a new authorization level');
+      return $errors;
     }
     return TRUE;
   }

@@ -24,7 +24,7 @@
       {assign var="rowCount" value=0}
       {foreach from=$claimLevelContacts key=claimLevelContactId item=contact}
         {assign var="rowCount" value=$rowCount+1}
-        <tr id="row{$rowCount}" class={$rowClass}>
+        <tr id="row{$rowCount}" class="{cycle values="odd,even"}"}>
           <td hidden="1">{$claimLevelContactId}
           <td>{$contact.contact_name}</td>
           <td>

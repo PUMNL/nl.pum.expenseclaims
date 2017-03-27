@@ -279,4 +279,16 @@ class CRM_Expenseclaims_Utils {
     }
     return FALSE;
   }
+
+  /**
+   * Method to check if a certain authorization record already exists
+   *
+   * @param $authorizationData
+   * @return bool
+   */
+  public static function checkAuthorizationExists($authorizationData) {
+    // need to check if there already is an authorization for the max amount with each selected valid type and each selected
+    // main activity
+    return FALSE;
+  }
 }

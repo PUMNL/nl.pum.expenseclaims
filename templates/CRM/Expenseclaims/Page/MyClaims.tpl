@@ -24,7 +24,7 @@
       {assign var="rowCount" value=0}
       {foreach from=$myClaims key=claimId item=myClaim}
         {assign var="rowCount" value=$rowCount+1}
-        <tr id="row{$rowCount}" class={$rowClass}>
+        <tr id="row{$rowCount}" class="{cycle values="odd,even"}">
           <td>{$claimId}</td>
           <td>{$myClaim.type}</td>
           <td>{$myClaim.submitted_by}</td>

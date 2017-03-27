@@ -26,7 +26,7 @@
       {assign var="rowCount" value=0}
       {foreach from=$claimLevels key=levelId item=level}
         {assign var="rowCount" value=$rowCount+1}
-        <tr id="row{$rowCount}" class={$rowClass}>
+        <tr id="row{$rowCount}" class="{cycle values="odd,even"}">
           <td hidden="1">{$levelId}
           <td>{$level.level}</td>
           <td>{$level.max_amount|crmMoney}</td>

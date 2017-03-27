@@ -48,7 +48,6 @@ class CRM_Expenseclaims_BAO_ClaimBatch extends CRM_Expenseclaims_DAO_ClaimBatch 
    * @static
    */
   public static function add($params) {
-    CRM_Core_Error::debug('params', $params);
     $result = array();
     if (empty($params)) {
       throw new Exception('Params can not be empty when adding or updating a claim batch in '.__METHOD__);
