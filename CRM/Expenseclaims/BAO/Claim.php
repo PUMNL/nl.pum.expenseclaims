@@ -100,7 +100,7 @@ class CRM_Expenseclaims_BAO_Claim {
       LEFT JOIN {$config->getClaimInformationCustomGroup('table_name')} cust ON act.id = cust.entity_id
       WHERE act.id = %2";
     $dao = CRM_Core_DAO::executeQuery($sql, array(
-      1 => array(3, 'Integer'),
+      1 => array($config->getTargetRecordTypeId(), 'Integer'),
       2 => array($claimId, 'Integer')));
     if ($dao->fetch()) {
       return $dao;

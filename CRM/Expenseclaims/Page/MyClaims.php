@@ -46,7 +46,7 @@ LEFT JOIN civicrm_option_value ctov ON pcc.{$config->getClaimTypeCustomField('co
 
 WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL OR pclog.is_rejected = %5 LIMIT %6, %7";
     $queryParams = array(
-      1 => array(3, 'Integer'),
+      1 => array($config->getTargetRecordTypeId(), 'Integer'),
       2 => array($config->getClaimStatusOptionGroup('id'), 'Integer'),
       3 => array($config->getClaimTypeOptionGroup('id'), 'Integer'),
       4 => array($this->_userContactId, 'Integer'),
