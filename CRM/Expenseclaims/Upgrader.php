@@ -41,5 +41,6 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
    */
   public function upgrade_1001() {
     CRM_Expenseclaims_ConfigItems_ConfigItems::changeCustomClaimInformation();
+    return TRUE;
   }
 }
