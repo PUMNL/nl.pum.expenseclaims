@@ -18,12 +18,6 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
     $this->executeSqlFile('sql/create_pum_claim_level_main.sql');
     $this->executeSqlFile('sql/create_pum_claim_level_type.sql');
     $this->executeSqlFile('sql/create_pum_claim_level_contact.sql');
-  }
-
-  /**
-   * Once installed, make sure all config items are created
-   */
-  public function postInstall() {
     $configItems = CRM_Expenseclaims_ConfigItems_ConfigItems::singleton();
     // change custom fields in existing custom group claiminformation
     $configItems->install();
@@ -37,5 +31,15 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
     $configItems = CRM_Expenseclaims_ConfigItems_ConfigItems::singleton();
     $configItems->uninstall();
     $this->executeSqlFile('sql/drop_tables.sql');
+  }
+
+  /**
+   * Upgrade 1001 update custom fields (in some cases this will not have been called with install)
+   *
+   * @return TRUE on success
+   * @throws Exception
+   */
+  public function upgrade_1001() {
+    CRM_Expenseclaims_ConfigItems_ConfigItems::changeCustomClaimInformation();
   }
 }
