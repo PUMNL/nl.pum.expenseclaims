@@ -59,12 +59,10 @@
             <td>{$row.$fName}</td>
           {/foreach}
           <td>
-              {if (!empty($batchClaimSelectId))}
-            <span>
-              <a href="{crmURL p='civicrm/pumexpenseclaims/page/batchclaimselect' q="reset=1&bid=`$row.batch_id`"}"
-                 class="action-item action-item-first" title="claims">{ts}Claims{/ts}</a>
-            </span>
-              {/if}
+          <span>
+            <a href="{crmURL p='civicrm/pumexpenseclaims/form/batchclaimselect' q="action=update&bid=`$row.batch_id`"}"
+               class="action-item action-item-first" title="claims">{ts}Claims{/ts}</a>
+          </span>
             <span>
               <a href="{crmURL p='civicrm/pumexpenseclaims/claimexport' q="reset=1&bid=`$row.batch_id`"}"
                  class="action-item action-item-first" title="export">{ts}Export{/ts}</a>

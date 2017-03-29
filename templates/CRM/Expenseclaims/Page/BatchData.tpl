@@ -9,23 +9,23 @@
           {ts}This section shows the details of the batch you are working with.{/ts}
         </div>
         <div class="crm-section">
-          <div class="label">{ts}Date From{/ts}:</div>
+          <div class="label">{$form.batch_description.label}</div>
           <div class="content" id="batch_description">
-            <input class="form-text huge" readonly="readonly" type="text" name="batch_description" title="batch description" value="{$batchDescription}" />
+            {$form.batch_description.value}
           </div>
           <div class="clear"></div>
         </div>
         <div class="crm-section">
-          <div class="label">{ts}Created Date{/ts}:</div>
+          <div class="label">{$form.batch_created_date.label}</div>
           <div class="content" id="batch_created_date">
-            <input class="form-text" readonly="readonly" type="text" name="batch_created_date" title="batch created on date" value="{$batchCreatedDate|crmDate}"/>
+            {$form.batch_created_date.value}
           </div>
           <div class="clear"></div>
         </div>
         <div class="crm-section">
-          <div class="label">{ts}Status{/ts}:</div>
+          <div class="label">{$form.batch_status.label}</div>
           <div class="content" id="batch_status">
-            <input class="form-text" readonly="readonly" type="text" name="batch_status" title="batch status" value="{$batchStatus}"/>
+            {$form.batch_status.value}
           </div>
           <div class="clear"></div>
         </div>

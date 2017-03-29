@@ -37,17 +37,6 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
    * @return void
    */
   function buildForm(&$form) {
-    try {
-      $batchClaimSelectId = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => 'custom_search',
-        'name' => 'CRM_Expenseclaims_Form_Search_BatchClaimSelect',
-        'return' => 'value'
-      ));
-      $form->assign('batchClaimSelectId', $batchClaimSelectId);
-    } catch (CiviCRM_API3_Exception $ex) {
-      $form->assign('batchClaimSelectId', '');
-    }
-
     CRM_Utils_System::setTitle(ts('Find PUM Senior Experts Expense Claim Batch'));
 
     // search on from .... to
