@@ -29,7 +29,11 @@
           <td>{$myClaim.type}</td>
           <td>{$myClaim.submitted_by}</td>
           <td>{$myClaim.submitted_date|crmDate}</td>
-          <td>{$myClaim.link}</td>
+          {if !empty($myClaim.link_url)}
+            <td><a href="{$myClaim.link_url}">{$myClaim.link}</a></td>
+          {else}
+            <td>{$myClaim.link}</td>
+          {/if})
           <td>{$myClaim.total_amount|crmMoney}</td>
           <td>{$myClaim.status}</td>
           <td>{$myClaim.description}</td>

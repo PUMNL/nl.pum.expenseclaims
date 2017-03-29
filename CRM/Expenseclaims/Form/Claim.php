@@ -154,6 +154,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
    * @access public
    */
   function preProcess() {
+    $session = CRM_Core_Session::singleton();
     $values = CRM_Utils_Request::exportValues();
     if (isset($values['claim_id'])) {
       $this->_claimId = $values['claim_id'];
@@ -162,12 +163,18 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
         $this->_claimId = $values['id'];
       }
     }
+    // action enable means approve claim!
+    if ($this->_action == CRM_Core_Action::ENABLE) {
+      $claim = new CRM_Expenseclaims_BAO_Claim();
+      $claim->approve($this->_claimId, $session->get('userID'));
+      CRM_Core_Session::setStatus('Claim '.$this->_claimId.' approved', 'Claim Approved', 'success');
+      CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE));
+    }
     if ($this->_action == CRM_Core_Action::UPDATE) {
       $claim = new CRM_Expenseclaims_BAO_Claim();
       $this->_claim = $claim->getWithId($this->_claimId);
     }
     CRM_Utils_System::setTitle(ts('PUM Senior Experts Expense Manage Claim'));
-    $session = CRM_Core_Session::singleton();
     $this->_claimLinkList = $this->getClaimLinkList($session->get('userID'));
   }
 

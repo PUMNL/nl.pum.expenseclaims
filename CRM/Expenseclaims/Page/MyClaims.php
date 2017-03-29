@@ -60,7 +60,13 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL OR pclog.i
       $row['type'] = $dao->claim_type;
       $row['submitted_by'] = CRM_Threepeas_Utils::getContactName($dao->claim_submitted_by);
       $row['submitted_date'] = $dao->claim_submitted_date;
-      $row['link'] = $dao->claim_link;
+      if ($dao->claim_type_id == 'project') {
+        $row['link'] = $this->getLinkCaseSubject($dao->claim_link);
+        $row['link_url'] = $this->getLinkUrl($dao->claim_link);
+      } else {
+        $row['link'] = $dao->claim_link;
+        $row['link_url'] = NULL;
+      }
       $row['total_amount'] = $dao->claim_total_amount;
       $row['status'] = $dao->claim_status;
       $row['description'] = $dao->claim_description;
@@ -68,6 +74,44 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL OR pclog.i
       $myClaims[$dao->claim_activity_id] = $row;
     }
     return $myClaims;
+  }
+
+  /**
+   * Method to get the URL for Case View Summary
+   *
+   * @param $caseId
+   * @return string
+   */
+  private function getLinkUrl($caseId) {
+    if (method_exists('CRM_Threepeas_Utils', 'getCaseClientId')) {
+      $caseClientId = CRM_Threepeas_Utils::getCaseClientId($caseId);
+    } else {
+      $sql = "SELECT contact_id FROM civicrm_case_contact WHERE case_id = %1";
+      $caseClientId = CRM_Core_DAO::singleValueQuery($sql, array(1 => array($caseId, 'Integer')));
+    }
+    return CRM_Utils_System::url('civicrm/contact/view/case', 'reset=1&action=view&id='.$caseId.'&cid='
+      .$caseClientId, TRUE);
+  }
+  /**
+   * Method to get the case subject for a main activity claim link
+   *
+   * @param $claimLinkCaseId
+   * @return string
+   */
+  private function getLinkCaseSubject($claimLinkCaseId) {
+    $link = 'Main Activity: ';
+    if (!is_numeric($claimLinkCaseId)) {
+      $link .= ' (could not find main activity with ID '.$claimLinkCaseId.')';
+    }
+    try {
+      $link .= civicrm_api3('Case', 'getvalue', array(
+        'id' => $claimLinkCaseId,
+        'return' => 'subject'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      $link .= ' (could not find main activity with ID '.$claimLinkCaseId.')';
+    }
+    return $link;
   }
 
   /**

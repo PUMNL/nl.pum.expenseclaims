@@ -116,7 +116,7 @@ class CRM_Expenseclaims_BAO_Claim {
    * @param $contactId
    */
   public function approve($claimId, $contactId) {
-    if (!empty($claimId) || empty($contactId)) {
+    if (!empty($claimId) || !empty($contactId)) {
       // get my role and then my level
       $myRole = CRM_Expenseclaims_Utils::getMyRole($claimId, $contactId);
       if ($myRole) {
@@ -195,7 +195,7 @@ class CRM_Expenseclaims_BAO_Claim {
       throw new Exception('ClaimId or ContactId empty when trying to final approve claim in '.__METHOD__.', contact your system administrator');
     }
     $config = CRM_Expenseclaims_Config::singleton();
-    $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_value')
+    $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
       .' = %1 WHERE entity_id = %2';
     CRM_Core_DAO::executeQuery($sql, array(
       1 => array($config->getApprovedClaimStatusValue(), 'String'),
@@ -352,7 +352,7 @@ class CRM_Expenseclaims_BAO_Claim {
         . ' WHERE entity_id = %1 AND ' . $config->getClaimTypeCustomField('column_name') . ' = %2';
       $claimLink = CRM_Core_DAO::singleValueQuery($sql, array(
         1 => array($claimId, 'Integer'),
-        2 => array('project' => 'String')));
+        2 => array('project', 'String')));
       if ($claimLink) {
         return $claimLink;
       }
