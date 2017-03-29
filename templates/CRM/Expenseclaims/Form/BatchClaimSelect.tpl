@@ -23,19 +23,6 @@
         <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=claim_to_date}</div>
         <div class="clear"></div>
       </div>
-      <div class="crm-section">
-        <div class="label">{$form.claim_type.label}</div>
-        <div class="content" id="claim_type-select">{$form.claim_type.html}
-          {literal}
-            <script type="text/javascript">
-              cj("select#claim_type").crmasmSelect({
-                respectParents: true
-              });
-            </script>
-          {/literal}
-        </div>
-        <div class="clear"></div>
-      </div>
       {* FOOTER *}
       <div class="crm-submit-buttons">
         {include file="CRM/common/formButtons.tpl" location="bottom"}
@@ -116,14 +103,25 @@
             var batchId = cj('#batch_id').val();
             CRM.api3('ClaimBatchEntity', 'create', {'batch_id':batchId, 'entity_id':claimId, 'entity_table':'civicrm_activity'})
               .done(function () {
-                CRM.alert('Added claim ' + claimId + ' to the batch', 'Claim added to Batch', 'success');
-              })
-              .fail(function () {
-                CRM.alert('Could not add claim to batch', 'Error adding claim', 'error');
               });
           };
         };
       });
+      // rebuild form to show newly added claims
+      window.location.reload();
+    });
+    // toggle all checkboxes with select all
+    cj('#toggleSelectAll').change(function() {
+      var checkboxes = cj(this).closest('form').find(':checkbox');
+      if(cj(this).is(':checked')) {
+        checkboxes.prop('checked', true);
+      } else {
+        checkboxes.prop('checked', false);
+      }
+    });
+    // uncheck all checkboxes when loading from
+    cj(document).ready(function(){
+      cj('input[type=checkbox]').prop("checked", false);
     });
   </script>
 {/literal}

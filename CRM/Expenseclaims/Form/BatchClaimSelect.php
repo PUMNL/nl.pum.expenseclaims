@@ -11,6 +11,8 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
   private $_batchData = NULL;
   private $_subsetIndex = NULL;
   private $_subsetParams = array();
+  private $_searchDateFrom = NULL;
+  private $_searchDateTo = NULL;
 
   /**
    * Method to build the QuickForm
@@ -24,9 +26,6 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
     // add form element for selection criteria
     $this->addDate('claim_from_date', ts('Claim Date from'), false);
     $this->addDate('claim_to_date', ts('Claim Date to'), false);
-    $this->add('select', 'claim_type', ts('Claim Type(s)'), $this->getClaimTypes(), FALSE,
-      array('id' => 'claim_type', 'multiple' => 'multiple', 'title' => ts('- select -'))
-    );
     // add buttons
     $this->addButtons(array(
       array('type' => 'next', 'name' => ts('Search'), 'isDefault' => true,)));
@@ -60,6 +59,13 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
     $defaults['batch_description'] = $this->_batchData['description'];
     $defaults['batch_created_date'] = date('Y M d', strtotime($this->_batchData['created_date']));
     $defaults['batch_status'] = $this->_batchData['batch_status'];
+    // set selection criteria if set
+    if (!empty($this->_searchDateFrom)) {
+      list($defaults['claim_from_date']) = CRM_Utils_Date::setDateDefaults($this->_searchDateFrom);
+    }
+    if (!empty($this->_searchDateTo)) {
+      list($defaults['claim_to_date']) = CRM_Utils_Date::setDateDefaults($this->_searchDateTo);
+    }
     return $defaults;
   }
 
@@ -95,55 +101,36 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
   }
 
   /**
-   * Method to get the list of claim types
-   *
-   * @return array
-   */
-  private function getClaimTypes() {
-    $config = CRM_Expenseclaims_Config::singleton();
-    $result = array();
-    try {
-      $claimTypes = civicrm_api3('OptionValue', 'get', array(
-        'option_group_id' => $config->getClaimTypeOptionGroup('id'),
-        'is_active' => 1,
-        'options' => array('limit' => 0)
-      ));
-      foreach ($claimTypes['values'] as $claimType) {
-        $result[$claimType['value']] = $claimType['label'];
-      }
-    } catch (CiviCRM_API3_Exception $ex) {}
-    asort($result);
-    return $result;
-  }
-
-  /**
    * Method to process results from the form
    */
   public function postProcess() {
     if (isset($this->_submitValues['batch_id'])) {
       $this->_batchId = $this->_submitValues['batch_id'];
     }
-    // todo redirect back to itself with search criteria as params
+    // set search criteria and redirect
+    $this->setSearchCriteria($this->_submitValues);
     parent::postProcess();
   }
 
   /**
-   * Method to save the claim batch
+   * Method to set the search criteria and reload form to filter the approved claims with criteria
    *
+   * @param $values
    */
-  private function saveClaimBatch() {
-    if (!empty($this->_submitValues)) {
-      $config = CRM_Expenseclaims_Config::singleton();
-      $nowDate = new DateTime();
-      $params = array(
-        'created_date' => $nowDate->format('Ymd'),
-        'batch_status_id' => $config->getOpenBatchStatusId(),
-        'description' => $this->_submitValues['description']
-      );
-      $created = CRM_Expenseclaims_BAO_ClaimBatch::add($params);
-      // redirect to batch claim select
-      $batchClaimSelectURL = CRM_Utils_System::url('civicrm/pumexpenseclaims/page/batchclaimselect', 'reset=1&bid='.$created['id'], true);
-      CRM_Utils_System::redirect($batchClaimSelectURL);
+  private function setSearchCriteria($values) {
+    $redirectParams = array();
+    if (isset($values['claim_from_date']) && !empty($values['claim_from_date'])) {
+      $redirectParams[] = 'sdf='.$values['claim_from_date'];
+    }
+    if (isset($values['claim_to_date']) && !empty($values['claim_to_date'])) {
+      $redirectParams[] = 'sdt='.$values['claim_to_date'];
+    }
+    if (!empty($redirectParams)) {
+      CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/form/batchclaimselect',
+        '&action=update&bid=' . $this->_batchId.'&'.implode('&', $redirectParams), TRUE));
+    } else {
+      CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/form/batchclaimselect',
+        '&action=update&bid=' . $this->_batchId, TRUE));
     }
   }
 
@@ -158,9 +145,18 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
     $this->_subsetIndex = NULL;
     // retrieve batch id from the request
     $requestValues = CRM_Utils_Request::exportValues();
-    // todo catch search criteria and process correctly
+    //exit();
     if (isset($requestValues['bid'])) {
       $this->_batchId = $requestValues['bid'];
+    }
+    // check if search criteria in request and if so, set
+    if (isset($requestValues['sdf'])) {
+      $this->_searchDateFrom = date('Y-m-d', strtotime($requestValues['sdf']));
+    }
+    if (isset($requestValues['sdt'])) {
+      $this->_searchDateTo = date('Y-m-d', strtotime($requestValues['sdt']));
+    }
+    if (!empty($this->_batchId)) {
       $this->getBatchData();
       $this->getClaimSubset();
       $this->getCurrentClaimsForBatch();
@@ -258,8 +254,7 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
    *
    * @return array
    */
-  private function getSubsetWhereClauses()
-  {
+  private function getSubsetWhereClauses() {
     $config = CRM_Expenseclaims_Config::singleton();
     $whereClauses = array(
       'act.activity_type_id = %1',
@@ -268,24 +263,15 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
       'act.is_test = %3',
       'cvci.' . $config->getClaimStatusCustomField('column_name') . ' = %4'
     );
-    if (!empty($this->_dateFrom)) {
+    if (!empty($this->_searchDateFrom)) {
       $this->_subsetIndex++;
       $whereClauses[] = 'act.activity_date_time >= %' . $this->_subsetIndex;
-      $this->_subsetParams[$this->_subsetIndex] = array($this->_dateFrom, 'String');
+      $this->_subsetParams[$this->_subsetIndex] = array($this->_searchDateFrom, 'String');
     }
-    if (!empty($this->_dateTo)) {
+    if (!empty($this->_searchDateTo)) {
       $this->_subsetIndex++;
       $whereClauses[] = 'act.activity_date_time <= %' . $this->_subsetIndex;
-      $this->_subsetParams[$this->_subsetIndex] = array($this->_dateTo, 'String');
-    }
-    if (!empty($this->_claimTypes)) {
-      $elements = array();
-      foreach ($this->_claimTypes as $claimType) {
-        $this->_subsetIndex++;
-        $elements[] = '%' . $this->_subsetIndex;
-        $this->_subsetParams[$this->_subsetIndex] = array($claimType, 'String');
-      }
-      $whereClauses[] = 'cvci.' . $config->getClaimTypeCustomField('column_name') . ' IN(' . implode(', ', $elements) . ')';
+      $this->_subsetParams[$this->_subsetIndex] = array($this->_searchDateTo, 'String');
     }
     return $whereClauses;
   }
@@ -310,5 +296,32 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
       WHERE act.id NOT IN(SELECT entity_id FROM pum_claim_batch_entity WHERE batch_id = %7 AND entity_table = %8) AND "
       .implode(' AND ', $whereClauses);
     return $query;
+  }
+
+  /**
+   * Overridden parent method to set validation rules
+   */
+  public function addRules() {
+    $this->addFormRule(array('CRM_Expenseclaims_Form_BatchClaimSelect', 'validateDates'));
+  }
+
+  /**
+   * Method to validate from date is not bigger than to date
+   *
+   * @param $fields
+   * @return bool|array
+   */
+  public static function validateDates($fields) {
+    if (isset($fields['claim_from_date']) && !empty($fields['claim_from_date'])) {
+      if (isset($fields['claim_to_date']) && !empty($fields['claim_to_date'])) {
+        $fromDate = new DateTime($fields['claim_from_date']);
+        $toDate = new DateTime($fields['claim_to_date']);
+        if ($fromDate >= $toDate) {
+          $errors['claim_from_date'] = ts('From date is bigger than or equal to to date, there will be no results');
+          return $errors;
+        }
+      }
+    }
+    return TRUE;
   }
 }
