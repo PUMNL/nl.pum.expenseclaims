@@ -98,7 +98,9 @@ class CRM_Expenseclaims_BAO_ClaimLevel extends CRM_Expenseclaims_DAO_ClaimLevel 
     self::storeValues($claimLevel, $result);
     // now add or update the types and main activities for the level
     $claimLevel->addValidTypes($claimLevel->id, $params['valid_types']);
-    $claimLevel->addValidMainActivities($claimLevel->id, $params['valid_main_activities']);
+    if (isset($params['valid_main_activities'])) {
+      $claimLevel->addValidMainActivities($claimLevel->id, $params['valid_main_activities']);
+    }
     return $result;
   }
 
