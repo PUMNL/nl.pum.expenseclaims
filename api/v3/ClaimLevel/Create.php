@@ -34,7 +34,6 @@ function _civicrm_api3_claim_level_create_spec(&$spec) {
   $spec['valid_main_activities'] = array(
     'name' => 'valid_main_activities',
     'title' => 'valid_main_activities',
-    'api.required' => 1,
   );
   $spec['authorizing_level'] = array(
     'name' => 'authorizing_level',
