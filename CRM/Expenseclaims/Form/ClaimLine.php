@@ -22,12 +22,12 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
     // add form elements
     $this->add('hidden', 'claim_line_id');
     $this->addDate('expense_date', ts('Expense Date'), true);
-    $this->add('text', 'description', ts('Description'), true);
+    $this->add('text', 'description', ts('Description'), array(),true);
     $this->add('select', 'expense_type', ts('Expense Type'), $this->_expenseTypeList, true);
     $this->add('select', 'currency_id', ts('Currency'), $this->_currencyList, true);
-    $this->add('text', 'currency_amount', ts('Amount in Currency'), true);
+    $this->add('text', 'currency_amount', ts('Amount in Currency'), array(), true);
     $this->add('text', 'euro_amount', ts('Amount in Euro'));
-    $this->add('text', 'reason_for_change', ts('Reason for Change'), true);
+    $this->add('text', 'reason_for_change', ts('Reason for Change'), array() ,true);
     // add buttons
     $this->addButtons(array(
       array('type' => 'next', 'name' => ts('Save'), 'isDefault' => true,),
@@ -95,9 +95,13 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
         'currency_id' => $this->_submitValues['currency_id'],
         'currency_amount' => $this->_submitValues['currency_amount'],
         'euro_amount' => CRM_Expenseclaims_Utils::calculateEuroAmount($this->_submitValues['currency_amount'],
-          $this->_claimLine['exchange_rate']),
+          $this->_submitValues['currency_id']),
         'description' => $this->_submitValues['description']
       );
+      // add reason for change for log entry
+      if (isset($this->_submitValues['reason_for_change'])) {
+        $params['change_reason'] = $this->_submitValues['reason_for_change'];
+      }
       CRM_Expenseclaims_BAO_ClaimLine::add($params);
     }
   }

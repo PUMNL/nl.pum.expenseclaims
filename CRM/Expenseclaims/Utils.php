@@ -139,16 +139,30 @@ class CRM_Expenseclaims_Utils {
    * Method to calculate euro amount based on currency amount and exchange rate
    *
    * @param $currencyAmount
-   * @param $exchangeRate
+   * @param $currencyId
    * @return double
    * @throws Exception when currency amount or exchange rate empty
    */
-  public static function calculateEuroAmount($currencyAmount, $exchangeRate) {
-    if (empty($currencyAmount) || empty($exchangeRate)) {
-      throw new Exception('Can not calculate a euro amount without currency amount or exchange rate, one of them empty in '
+  public static function calculateEuroAmount($currencyAmount, $currencyId) {
+    if (empty($currencyAmount) || empty($currencyId)) {
+      throw new Exception('Can not calculate a euro amount without currency amount or currency id, one of them empty in '
         .__METHOD__.', contact your system administrator');
     }
-    return round(($currencyAmount * $exchangeRate), 2);
+    // only if currency is not EURO
+    $config = CRM_Expenseclaims_Config::singleton();
+    if ($currencyId != $config->getEuroCurrencyId()) {
+
+      try {
+        $result = civicrm_api3('Currency', 'convert', array(
+          'currency_id' => $currencyId,
+          'amount' => $currencyAmount
+        ));
+        $euroAmount = $result['euro_amount'];
+      } catch (CiviCRM_API3_Exception $ex) {
+        $euroAmount = $currencyAmount;
+      }
+    }
+    return $euroAmount;
   }
 
   /**

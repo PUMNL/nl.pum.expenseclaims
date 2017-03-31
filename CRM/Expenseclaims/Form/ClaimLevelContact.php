@@ -134,4 +134,47 @@ class CRM_Expenseclaims_Form_ClaimLevelContact extends CRM_Core_Form {
     $defaults['claim_level_id'] = $this->_claimLevelId;
     return $defaults;
   }
+
+  /**
+   * Overridden parent method to set validation rules
+   */
+  public function addRules() {
+    $this->addFormRule(array('CRM_Expenseclaims_Form_ClaimLevelContact', 'validateCfoCpo'));
+  }
+
+  /**
+   * Method to validate if claim level contact can be added (only one for CFO CPO allowed)
+   *
+   * @param $fields
+   * @return array|bool
+   */
+  public static function validateCfoCpo($fields) {
+    try {
+      $level = civicrm_api3('ClaimLevel', 'getvalue', array(
+        'id' => $fields['claim_level_id'],
+        'return' => 'level'));
+      $config = CRM_Expenseclaims_Config::singleton();
+      $levelName = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $config->getClaimLevelOptionGroup('id'),
+        'value' => $level,
+        'return' => 'name'));
+      if ($levelName == 'cfo' || $levelName == 'cpo') {
+        // first check if count claim_level_contacts is > 1, if so error anyway
+        $contactCount = count($fields['claim_level_contacts']);
+        if ($contactCount > 1) {
+          $errors['claim_level_contacts'] = 'You can not enter more than 1 contact for level '.strtoupper($levelName);
+          return $errors;
+        }
+        // just to be sure also check there is not one in the database yet
+        $sql = 'SELECT COUNT(*) FROM pum_claim_level_contact WHERE claim_level_id = %1';
+        $count = CRM_Core_DAO::singleValueQuery($sql, array(1 => array($fields['claim_level_id'], 'Integer')));
+        if ($count > 0) {
+          $errors['claim_level_contacts'] = 'You can not enter more than 1 contact for level '.strtoupper($levelName).' and there is already one in the database';
+          return $errors;
+        }
+      }
+    } catch (CiviCRM_API3_Exception $ex) {}
+    return TRUE;
+  }
+
 }

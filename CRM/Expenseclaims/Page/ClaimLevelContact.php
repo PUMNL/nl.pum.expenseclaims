@@ -17,11 +17,42 @@ class CRM_Expenseclaims_Page_ClaimLevelContact extends CRM_Core_Page {
    * @access public
    */
   function run() {
+    // hide button new if role is CFO or CPO and there is already a contact
     $this->setPageConfiguration();
+    $this->hideNewButton();
     $this->initializePager();
     $claimLevelContacts = $this->getClaimLevelContacts();
     $this->assign('claimLevelContacts', $claimLevelContacts);
     parent::run();
+  }
+
+  /**
+   * Method to find out if new claim level contact button should be hidden (cfo and cpo if there already is one)
+   */
+  private function hideNewButton() {
+    try {
+      $level = civicrm_api3('ClaimLevel', 'getvalue', array(
+        'id' => $this->_claimLevelId,
+        'return' => 'level'
+      ));
+      $config = CRM_Expenseclaims_Config::singleton();
+      $levelName = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $config->getClaimLevelOptionGroup('id'),
+        'value' => $level,
+        'return' => 'name'
+      ));
+      if ($levelName == 'cfo' || $levelName == 'cpo') {
+        $sql = 'SELECT COUNT(*) FROM pum_claim_level_contact WHERE claim_level_id = %1';
+        $count = CRM_Core_DAO::singleValueQuery($sql, array(1 => array($this->_claimLevelId, 'Integer')));
+        if ($count > 0) {
+          $this->assign('hideNewButton', 1);
+        } else {
+          $this->assign('hideNewButton', 0);
+        }
+      }
+    } catch (CiviCRM_API3_Exception $ex) {
+      $this->assign('hideNewButton', 0);
+    }
   }
 
   /**

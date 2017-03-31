@@ -33,8 +33,7 @@ class CRM_Expenseclaims_Config {
   private $_countryCoordinatorRelationshipTypeId = NULL;
   private $_programmeManagerGroupId = NULL;
   private $_openBatchStatusId = NULL;
-
-
+  private $_euroCurrencyId = NULL;
 
   /**
    * CRM_Expenseclaims_Config constructor.
@@ -52,6 +51,7 @@ class CRM_Expenseclaims_Config {
     $this->setCpoContactId();
     $this->setOptionGroups();
     $this->setCustomGroup();
+    $this->setEuroCurrencyId();
     try {
       $this->_approvedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
         'option_group_id' => $this->_claimStatusOptionGroup['id'],
@@ -100,7 +100,17 @@ class CRM_Expenseclaims_Config {
   }
 
   /**
+   * Getter for euro currency id
+   *
+   * @return null
+   */
+  public function getEuroCurrencyId() {
+    return $this->_euroCurrencyId;
+  }
+
+  /**
    * Getter for open batch status id
+   *
    * @return array|null
    */
   public function getOpenBatchStatusId() {
@@ -585,6 +595,19 @@ class CRM_Expenseclaims_Config {
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception('Could not find a group Programme Managers in '.__METHOD__
         .', contact your system administrator. Error from API Group getvalue: '.$ex->getMessage());
+    }
+  }
+
+  /**
+   * Set the property for the EURO currency id
+   * @throws Exception
+   */
+  private function setEuroCurrencyId() {
+    $sql = "SELECT id FROM civicrm_currency WHERE name = %1";
+    try {
+      $this->_euroCurrencyId = CRM_Core_DAO::singleValueQuery($sql, array(1 => array('EUR', 'String')));
+    } catch (Exception $e) {
+      throw new Exception('Could not find a EURO currency name in the table civicrm_currency in '.__METHOD__.', contact your system administrator!');
     }
   }
 

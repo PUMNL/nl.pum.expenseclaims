@@ -4,11 +4,13 @@
       {ts}{$pageHeader}{/ts}
     </div>
   {/if}
-  <div class="action-link">
-    <a class="button new-option" href="{$addUrl}">
-      <span><div class="icon add-icon"></div>New Contact(s) for Claim Level</span>
-    </a>
-  </div>
+  {if $hideNewButton eq 0}
+    <div class="action-link">
+      <a class="button new-option" href="{$addUrl}">
+        <span><div class="icon add-icon"></div>New Contact(s) for Claim Level</span>
+      </a>
+    </div>
+  {/if}
   {include file="CRM/common/pager.tpl" location="top"}
   {include file='CRM/common/jsortable.tpl'}
   <div id="claim_level_contact-wrapper" class="dataTables_wrapper">
@@ -45,9 +47,11 @@
     </table>
   </div>
   {include file="CRM/common/pager.tpl" location="bottom"}
-  <div class="action-link">
-    <a class="button new-option" href="{$addUrl}">
-      <span><div class="icon add-icon"></div>New Contact(s) for Claim Level</span>
-    </a>
-  </div>
+  {if $hideNewButton eq 0}
+    <div class="action-link">
+      <a class="button new-option" href="{$addUrl}">
+        <span><div class="icon add-icon"></div>New Contact(s) for Claim Level</span>
+      </a>
+    </div>
+  {/if}
 </div>

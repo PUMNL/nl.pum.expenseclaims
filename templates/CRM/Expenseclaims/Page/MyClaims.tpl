@@ -33,7 +33,7 @@
             <td><a href="{$myClaim.link_url}">{$myClaim.link}</a></td>
           {else}
             <td>{$myClaim.link}</td>
-          {/if})
+          {/if}
           <td>{$myClaim.total_amount|crmMoney}</td>
           <td>{$myClaim.status}</td>
           <td>{$myClaim.description}</td>

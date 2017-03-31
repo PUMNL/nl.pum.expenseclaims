@@ -59,6 +59,10 @@ class CRM_Expenseclaims_BAO_ClaimLine extends CRM_Expenseclaims_DAO_ClaimLine {
     }
     // validate that activity is indeed a claim activity
     $claimLine = new CRM_Expenseclaims_BAO_ClaimLine();
+    // create claim line log enty for change to claim line when updating
+    if (isset($params['id'])) {
+      $claimLine->createLogEntry($params);
+    }
     if ($claimLine->validClaimActivity($params['activity_id']) == FALSE) {
       throw new Exception('You are trying to add a claim line to an activity that is not a Claim (activity_type_id) in '
         .__METHOD__.'. This is not allowed.');
@@ -75,6 +79,42 @@ class CRM_Expenseclaims_BAO_ClaimLine extends CRM_Expenseclaims_DAO_ClaimLine {
     $claim->updateTotalAmount($claimLine->activity_id);
     self::storeValues($claimLine, $result);
     return $result;
+  }
+
+  /**
+   * Method to add a claim line log with old and new data
+   *
+   * @param $newData
+   * @param $claimLine
+   */
+  private function createLogEntry($newData) {
+    // first get current data from the db
+    $claimLine = new CRM_Expenseclaims_DAO_ClaimLine();
+    $claimLine->id = $newData['id'];
+    $claimLine->find(TRUE);
+    $session = CRM_Core_Session::singleton();
+    $params = array(
+      'claim_line_id' => $claimLine->id,
+      'changed_by_id' => $session->get('userID'),
+      'changed_date' => date('Ymd H:i:s'),
+      'change_reason' => 'no reason given'
+    );
+    if (isset($newData['change_reason'])) {
+      $params['change_reason'] = $newData['change_reason'];
+    }
+    if (isset($newData['expense_date'])) {
+      $params['old_expense_date'] = $claimLine->expense_date;
+      $params['new_expense_date'] = $newData['expense_date'];
+    }
+    if (isset($newData['currency_id'])) {
+      $params['old_currency_id'] = $claimLine->currency_id;
+      $params['new_currency_id'] = $newData['currency_id'];
+    }
+    if (isset($newData['currency_amount'])) {
+      $params['old_currency_amount'] = $claimLine->currency_amount;
+      $params['new_currency_amount'] = $newData['currency_amount'];
+    }
+    civicrm_api3('ClaimLineLog', 'create', $params);
   }
 
   /**

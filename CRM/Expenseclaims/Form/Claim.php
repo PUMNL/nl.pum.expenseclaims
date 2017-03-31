@@ -142,9 +142,12 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       if (isset($this->_submitValues['_qf_Claim_submit']) || isset($this->_submitValues['_qf_Claim_next'])) {
         $claim = new CRM_Expenseclaims_BAO_Claim();
         $claim->update($claimParams);
+        // if save and approve, also change claim status to approval
+        if (isset($this->_submitValues['_qf_Claim_next'])) {
+          $session = CRM_Core_Session::singleton();
+          $claim->approve($this->_claimId, $session->get('userID'));
+        }
       }
-      // if save and approve, also change claim status to approval
-      // todo implement function to approve claim
     }
   }
 
