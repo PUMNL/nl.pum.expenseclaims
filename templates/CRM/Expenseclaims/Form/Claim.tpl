@@ -118,8 +118,6 @@
             var lineValues = [];
             var lineIndex = 0;
             var valueIndex = 0;
-            var oldCurrency = '';
-            var newCurrency = '';
             cj.each(resultValue, function(paramKey, paramValue){
               if (paramKey === 'changed_date') {
                 line[lineIndex] = 'Change on ' + paramValue;
@@ -142,17 +140,19 @@
                 valueIndex++;
               }
               if (paramKey === 'old_currency') {
-                oldCurrency = paramValue;
+                lineValues[valueIndex] = '<li>old currency was ' + paramValue + '</li>';
+                valueIndex++;
              }
               if (paramKey === 'new_currency') {
-                newCurrency = paramValue;
+                lineValues[valueIndex] = '<li>new currency is ' +  paramValue + '</li>';
+                valueIndex++;
               }
               if (paramKey === 'old_currency_amount') {
-                lineValues[valueIndex] = '<li>old amount was ' + oldCurrency + paramValue + '</li>';
+                lineValues[valueIndex] = '<li>old amount in currency was ' + paramValue + '</li>';
                 valueIndex++;
               }
               if (paramKey === 'new_currency_amount') {
-                lineValues[valueIndex] = '<li>new amount is ' + newCurrency + paramValue + '</li>';
+                lineValues[valueIndex] = '<li>new amount in currency is ' + paramValue + '</li>';
                 valueIndex++;
               }
             });
