@@ -169,9 +169,14 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     // action enable means approve claim!
     if ($this->_action == CRM_Core_Action::ENABLE) {
       $claim = new CRM_Expenseclaims_BAO_Claim();
-      $claim->approve($this->_claimId, $session->get('userID'));
-      CRM_Core_Session::setStatus('Claim '.$this->_claimId.' approved', 'Claim Approved', 'success');
-      CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE));
+      try {
+        $claim->approve($this->_claimId, $session->get('userID'));
+        CRM_Core_Session::setStatus('Claim '.$this->_claimId.' approved', 'Claim Approved', 'success');
+        CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE));
+      } catch (Exception $ex) {
+        CRM_Core_Session::setStatus($ex->getMessage(), 'Claim Approval Error', 'error');
+        CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE));
+      }
     }
     if ($this->_action == CRM_Core_Action::UPDATE) {
       $claim = new CRM_Expenseclaims_BAO_Claim();

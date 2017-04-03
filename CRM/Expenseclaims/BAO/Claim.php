@@ -116,11 +116,17 @@ class CRM_Expenseclaims_BAO_Claim {
    * @param $contactId
    */
   public function approve($claimId, $contactId) {
+    // first check if I can actually approve
     if (!empty($claimId) || !empty($contactId)) {
       // get my role and then my level
       $myRole = CRM_Expenseclaims_Utils::getMyRole($claimId, $contactId);
       if ($myRole) {
         $myLevel = civicrm_api3('ClaimLevel', 'getsingle', array('level' => $myRole));
+        try {
+          $this->preApprovalValidityChecks($claimId, $contactId, $myLevel);
+        } catch (Exception $ex) {
+          throw new Exception('Could not pass validation before approval of claim, problem : '.$ex->getMessage());
+        }
         // if my limit is 999999999.99 then final approval
         if ($myLevel['max_amount'] == 999999999.99) {
           $this->finalApprove($claimId, $contactId);
@@ -433,7 +439,8 @@ class CRM_Expenseclaims_BAO_Claim {
       foreach ($this->_newClaim as $key => $value) {
         $errorTxt[] = 'parameter '.$key.' and value '.$value;
       }
-      throw new Exception('Could not create a claim in '.__METHOD__.' with values '.implode('; ', $errorTxt));
+      throw new Exception('Could not create a claim because no approval contact for the claim could be identified in '.__METHOD__
+        .' with values '.implode('; ', $errorTxt));
     }
   }
 
@@ -490,6 +497,7 @@ class CRM_Expenseclaims_BAO_Claim {
     $contactId = $config->getPumCfo();
     $config = CRM_Expenseclaims_Config::singleton();
     // get project officer for case
+    // todo get project officer from country!
     $relation = civicrm_api3('Relationship', 'get', array(
       'relationship_type_id' => $config->getProjectOfficerRelationshipTypeId(),
       'case_id' => $this->_newClaim['claim_link'],
@@ -554,5 +562,74 @@ class CRM_Expenseclaims_BAO_Claim {
         CRM_Core_Region::instance('page-body')->add(array('template' => 'CRM/Expenseclaims/ClaimActivityDateTime.tpl'));
       }
     }
+  }
+
+  /**
+   * Method to check in advance if approval can take place
+   *
+   * @param $claimId
+   * @param $contactId
+   * @param $claimLevel
+   * @return bool
+   * @throws Exception when validity check not passed
+   */
+  private function preApprovalValidityChecks($claimId, $contactId, $claimLevel) {
+    $config = CRM_Expenseclaims_Config::singleton();
+    // first check if the contact actually is allowed for the claim level
+    $sql = "SELECT COUNT(*) FROM pum_claim_level_contact WHERE claim_level_id = %1 AND contact_id = %2";
+    $count = CRM_Core_DAO::singleValueQuery($sql, array(
+      1 => array($claimLevel['id'], 'Integer'),
+      2 => array($contactId, 'Integer')
+    ));
+    if ($count == 0) {
+      throw new Exception(ts('Contact does not have the required authorization level to approve claim '.$claimId));
+    }
+    // then if the claim is a main activity claim:
+    try {
+      $claim = civicrm_api3('Claim', 'getsingle', array('id' => $claimId));
+      if ($claim['claim_type_id'] == 'project') {
+        // check if there is a case for the claim
+        try {
+          $caseCount = civicrm_api3('Case', 'getcount', array('id' => $claim['claim_linked_to']));
+          if ($caseCount != 1) {
+            throw new Exception(ts('Could not find a single case with ID '.$claim['claim_linked_to'].' for claim id '.$claimId));
+          }
+        } catch (CiviCRM_API3_Exception $ex) {
+          throw new Exception(ts('Could not find case with ID '.$claim['claim_linked_to'].' for claim id'.$claimId));
+        }
+        // check there is a customer for the case
+        $caseCustomerId = CRM_Threepeas_Utils::getCaseClientId($claim['claim_linked_to']);
+        if (empty($caseCustomerId)) {
+          throw new Exception(ts('Could not find a customer for case ID '.$claim['claim_linked_to'].' and claim ID '.$claimId));
+        }
+        // check there is a country for the customer
+        $countryId = CRM_Expenseclaims_Utils::getCountryForClaimCustomer($claimId);
+        if (!$countryId) {
+          throw new Exception(ts('Could not find a country for customer ID '.$caseCustomerId.' of case ID '.$claim['claim_linked_to'].' linked to claim '.$claimId));
+        }
+        // check if the country has a project officer
+        $projectOfficerId = CRM_Expenseclaims_Utils::getProjectOfficerForCountry($countryId);
+        if (!$projectOfficerId) {
+          throw new Exception(ts('There is no project officer for the country for customer ID '.$caseCustomerId.' linked to claim ID '.$claimId));
+        }
+        // if the max amount of my level is not enough
+        if ($claim['total_amount'] > $claimLevel['max_amount']) {
+          // check if CFO exists if that is next level
+          if ($claimLevel[' authorizing_level'] == $config->getCfoLevelId()) {
+            if (!$config->getCfoContactId()) {
+              throw new Exception(ts('No contact found with authorization level CFO'));
+            }
+          }
+          // check Senior Project Officer exists, is on the country and has correct claim level
+          if (!$this->hasValidSeniorProjectOfficer($countryId, $claimLevel[' authorizing_level'])) {
+            throw new Exception(ts('Could not find a valid Senior Project Officer with the correct authorization level for country '
+              .$countryId.' with customer '.$caseCustomerId.' linked to claim ID '.$claimId));
+          }
+        }
+      }
+    } catch(CiviCRM_API3_Exception $ex) {
+      throw new Exception(ts('Could not find the claim with id '.$claimId.'in the database! Contact your system administrator'));
+    }
+    return TRUE;
   }
 }

@@ -100,14 +100,9 @@ class CRM_Expenseclaims_Utils {
    */
   public static function isCFO($contactId) {
     if (!empty($contactId)) {
-      if (method_exists('CRM_Threepeas_CaseRelationConfig', 'getPumCfo')) {
-        $config = CRM_Threepeas_CaseRelationConfig::singleton();
-        if ($contactId == $config->getPumCfo()) {
-          return TRUE;
-        }
-      } else {
-        throw new Exception('Could not find the method getPumCfo in CRM_Threepeas_CaseRelationConfig which is required in '
-          .__METHOD__.', contact your system administrator');
+      $config = CRM_Expenseclaims_Config::singleton();
+      if ($contactId == $config->getPumCfo()) {
+        return TRUE;
       }
     }
     return FALSE;
@@ -122,14 +117,9 @@ class CRM_Expenseclaims_Utils {
    */
   public static function isCPO($contactId) {
     if (!empty($contactId)) {
-      if (method_exists('CRM_Expenseclaims_Config', 'getPumCpo')) {
-        $config = CRM_Expenseclaims_Config::singleton();
-        if ($contactId == $config->getPumCpo()) {
-          return TRUE;
-        }
-      } else {
-        throw new Exception('Could not find the method getPumCpo in CRM_Expenseclaims_Config which is required in '
-          .__METHOD__.', contact your system administrator');
+      $config = CRM_Expenseclaims_Config::singleton();
+      if ($contactId == $config->getPumCpo()) {
+        return TRUE;
       }
     }
     return FALSE;
@@ -303,6 +293,24 @@ class CRM_Expenseclaims_Utils {
   public static function checkAuthorizationExists($authorizationData) {
     // need to check if there already is an authorization for the max amount with each selected valid type and each selected
     // main activity
+    return FALSE;
+  }
+
+  /**
+   * Method to check if a contact has a specified authorization level
+   *
+   * @param $claimLevelId
+   * @param $contactId
+   * @return bool
+   */
+  public static function checkHasAuthorization($authorizationLevellId, $contactId) {
+    $sql = 'SELECT * FROM pum_claim_level_contact WHERE claim_level_id = %1';
+    $contacts = CRM_Core_DAO::executeQuery($sql, array(1 => array($authorizationLevellId, 'Integer')));
+    while ($contacts->fetch()) {
+      if ($contacts->contact_id == $contactId) {
+        return TRUE;
+      }
+    }
     return FALSE;
   }
 }

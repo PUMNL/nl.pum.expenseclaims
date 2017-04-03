@@ -14,6 +14,8 @@ class CRM_Expenseclaims_Config {
   private $_validMainActivities = array();
   private $_claimActivityTypeId = NULL;
   private $_cpoContactId = NULL;
+  private $_cfoContactId = NULL;
+  private $_cfoLevelId = NULL;
   private $_claimTypeOptionGroup = array();
   private $_claimStatusOptionGroup = array();
   private $_claimLevelOptionGroup = array();
@@ -48,10 +50,10 @@ class CRM_Expenseclaims_Config {
     $this->setProgrammeManagerGroupId();
     $this->setValidMainActivities();
     $this->setClaimActivityTypeId();
-    $this->setCpoContactId();
     $this->setOptionGroups();
     $this->setCustomGroup();
     $this->setEuroCurrencyId();
+    $this->setCpoCfoContactId();
     try {
       $this->_approvedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
         'option_group_id' => $this->_claimStatusOptionGroup['id'],
@@ -97,6 +99,15 @@ class CRM_Expenseclaims_Config {
       throw new Exception('Could not find an activity status Scheduled record id type in '.__METHOD__
         .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
     }
+  }
+
+  /**
+   * Getter for CFO level id
+   *
+   * @return null
+   */
+  public function getCfoLevelId() {
+    return $this->_cfoLevelId;
   }
 
   /**
@@ -349,6 +360,16 @@ class CRM_Expenseclaims_Config {
   }
 
   /**
+   * Getter for CFO contact id
+   *
+   * @return string
+   * @access public
+   */
+  public function getPumCfo() {
+    return $this->_cfoContactId;
+  }
+
+  /**
    * Getter for CPO contact id
    *
    * @return string
@@ -414,19 +435,32 @@ class CRM_Expenseclaims_Config {
   }
 
   /**
-   * Method to set the CPO
+   * Method to set the CPO and CFO
    *
    * @throws Exception when API getvalue error (not found, more than one)
    */
-  private function setCpoContactId() {
+  private function setCpoCfoContactId() {
     try {
-      $this->_cpoContactId = civicrm_api3('Contact', 'getvalue', array(
-        'current_employer_id' => 1,
-        'job_title' => 'CPO',
-        'return' => 'id'
+      // first get levels for cfo and cpo
+      $cfoLevel = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->getClaimLevelOptionGroup('id'),
+        'name' => 'cfo',
+        'return' => 'value'
       ));
+      $cpoLevel = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->getClaimLevelOptionGroup('id'),
+        'name' => 'cpo',
+        'return' => 'value'
+      ));
+      // then get claim level id's
+      $this->_cfoLevelId = civicrm_api3('ClaimLevel', 'getvalue', array('level' => $cfoLevel, 'return' => 'id'));
+      $cpoLevelId = civicrm_api3('ClaimLevel', 'getvalue', array('level' => $cpoLevel, 'return' => 'id'));
+      // finally get the related contacts
+      $sql = "SELECT contact_id FROM pum_claim_level_contact WHERE claim_level_id = %1 LIMIT 1";
+      $this->_cfoContactId = CRM_Core_DAO::singleValueQuery($sql, array(1 => array($this->_cfoLevelId, 'Integer')));
+      $this->_cpoContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($cpoLevelId, 'Integer')));
     } catch (CiviCRM_API3_Exception $ex) {
-      throw new Exception('Could not find a contact with the job title CPO and contact_id 1 as employer in '.__METHOD__
+      throw new Exception('Could not find a contact with authorization level CPO and/or CFO in '.__METHOD__
         .', contact your system administrator');
     }
   }
