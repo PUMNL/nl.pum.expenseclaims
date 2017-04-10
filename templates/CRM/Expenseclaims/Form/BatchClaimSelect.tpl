@@ -69,7 +69,7 @@
             <tr id='rowid{$subsetClaim.claim_id}' class="{cycle values="odd-row,even-row"}">
               <td>
                 <input id="selectClaim_{$subsetClaim.claim_id}" name="selectClaim" value="1"
-                  class="form-checkbox-row" type="checkbox" title="select all claims">
+                  class="form-checkbox-row select-claims-check" type="checkbox" title="select all claims">
               </td>
               <td>{$subsetClaim.claim_id}</td>
               <td>{$subsetClaim.claim_description}</td>
@@ -112,7 +112,7 @@
     });
     // toggle all checkboxes with select all
     cj('#toggleSelectAll').change(function() {
-      var checkboxes = cj(this).closest('form').find(':checkbox');
+      var checkboxes = cj(this).closest('form').find('.select-claims-check');
       if(cj(this).is(':checked')) {
         checkboxes.prop('checked', true);
       } else {

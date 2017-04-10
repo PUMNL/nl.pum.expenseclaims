@@ -94,7 +94,8 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
         'claim_submitted_date' => $dao->claim_submitted_date,
         'claim_link' => $claimLink,
         'claim_total_amount' => $dao->claim_total_amount,
-        'claim_status' => $dao->claim_status
+        'claim_status' => $dao->claim_status,
+        'pcbe_id' => $dao->pcbe_id,
       );
     }
     $this->assign('currentClaims', $currentClaims);
@@ -170,7 +171,7 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
    */
   private function getCurrentClaimsQuery() {
     $config = CRM_Expenseclaims_Config::singleton();
-    $query = "SELECT pcbe.entity_id AS claim_id, cc.display_name AS claim_submitted_by, 
+    $query = "SELECT pcbe.id as pcbe_id, pcbe.entity_id AS claim_id, cc.display_name AS claim_submitted_by, 
       cvci.{$config->getClaimDescriptionCustomField('column_name')} AS claim_description, act.activity_date_time AS claim_submitted_date,
       cvci.{$config->getClaimLinkCustomField('column_name')} AS claim_link, cvci.{$config->getClaimTotalAmountCustomField('column_name')}
       AS claim_total_amount, csov.label AS claim_status, cvci.{$config->getClaimTypeCustomField('column_name')} AS claim_type
@@ -226,7 +227,7 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
         'claim_submitted_date' => $dao->claim_submitted_date,
         'claim_link' => $claimLink,
         'claim_total_amount' => $dao->claim_total_amount,
-        'claim_status' => $dao->claim_status
+        'claim_status' => $dao->claim_status,
       );
     }
     $this->assign('subsetClaims', $subsetClaims);
