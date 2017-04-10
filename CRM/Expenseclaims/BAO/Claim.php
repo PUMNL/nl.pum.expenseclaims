@@ -405,6 +405,9 @@ class CRM_Expenseclaims_BAO_Claim {
       'target_contact_id' => $params['claim_contact_id'],
       'subject' => 'Claim entered on website'
     );
+    if(key_exists('source_contact_id',$params)){
+      $activityParams['source_contact_id'] = $params['source_contact_id'];
+    }
     try {
       $activity = civicrm_api3('Activity', 'create', $activityParams);
     } catch (CiviCRM_API3_Exception $ex) {
