@@ -296,7 +296,7 @@ class CRM_Expenseclaims_BAO_Claim {
    * @throws Exception when no claim_id in params
    */
   public function update($params) {
-    if (!isset($params['claim_id']) || empty($params['claim_line'])) {
+    if (!isset($params['claim_id'])) {
       throw new Exception('Mandatory parameter claim_id missing in array $params in '.__METHOD__.', contact your system administrator');
     }
     $config = CRM_Expenseclaims_Config::singleton();
@@ -307,16 +307,16 @@ class CRM_Expenseclaims_BAO_Claim {
     if (isset($params['claim_description'])) {
       $index++;
       $clauses[] = $config->getClaimDescriptionCustomField('column_name').' = %'.$index;
-      $clauseParams[$index] = array($params['claim_description'], 'String');
+      $clausesParams[$index] = array($params['claim_description'], 'String');
     }
     // if claim_link has to be updated
     if (isset($params['claim_link'])) {
       $index++;
       $clauses[] = $config->getClaimLinkCustomField('column_name').' = %'.$index;
-      $clauseParams[$index] = array($params['claim_link'], 'String');
+      $clausesParams[$index] = array($params['claim_link'], 'String');
     }
     $index++;
-    $sql = "UPDATE ".$config->getClaimInformationCustomGroup('id')." SET ".implode(',', $clauses)." WHERE entity_id = %".$index;
+    $sql = "UPDATE ".$config->getClaimInformationCustomGroup('table_name')." SET ".implode(',', $clauses)." WHERE entity_id = %".$index;
     $clausesParams[$index] = array($params['claim_id'], 'Integer');
     CRM_Core_DAO::executeQuery($sql, $clausesParams);
   }
