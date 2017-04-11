@@ -78,6 +78,27 @@
           </div>
         {/if}
 
+        {if $form.batch_status}
+              <div class="crm-section claim_status-section">
+                  <div class="label">
+                      <label for="batch_status-select">{ts}Batch Status(es){/ts}</label>
+                  </div>
+                  <div class="content" id="batch_status-select">
+                      {$form.batch_status.html}
+                      {literal}
+                          <script type="text/javascript">
+                              cj(function() {
+                                  cj("select#batch_status").crmasmSelect({
+                                      respectParents: true
+                                  });
+                              });
+                          </script>
+                      {/literal}
+                  </div>
+                  <div class="clear"></div>
+              </div>
+        {/if}
+
         {if $form.claim_type}
           <div class="crm-section claim_type-section">
             <div class="label">

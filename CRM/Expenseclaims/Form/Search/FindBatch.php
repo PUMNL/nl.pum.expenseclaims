@@ -15,18 +15,14 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
   private $_whereIndex = NULL;
 
   // properties for select lists
-  private $_claimStatusList = array();
-  private $_claimTypeList = array();
-
+  private $_batchStatusList = array();
   /**
    * CRM_Expenseclaims_Form_Search_FindBatch constructor.
    *
    * @param $formValues
    */
   function __construct(&$formValues) {
-    $this->setClaimStatusList();
-    $this->setClaimTypeList();
-
+    $this->setBatchStatusList();
     parent::__construct($formValues);
   }
 
@@ -43,14 +39,8 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
     $form->addDate('batch_date_from', ts('Date From'), FALSE);
     $form->addDate('batch_date_to', ts('...to'), FALSE);
 
-    // search on claim status
-    $form->add('select', 'claim_status', ts('Claim Status(es)'), $this->_claimStatusList, FALSE,
-      array('id' => 'claim_status', 'multiple' => 'multiple', 'title' => ts('- select -'))
-    );
-
-    // search on claim type
-    $form->add('select', 'claim_type', ts('Claim Type(s)'), $this->_claimTypeList, FALSE,
-      array('id' => 'claim_type', 'multiple' => 'multiple', 'title' => ts('- select -'))
+    $form->add('select', 'batch_status', ts('Batch status(us)'), $this->_batchStatusList, FALSE,
+      array('id' => 'batch_status', 'multiple' => 'multiple', 'title' => ts('- select -'))
     );
 
     $form->assign('elements', array('batch_date_from', 'batch_date_to', 'claim_status', 'claim_type'));
@@ -60,40 +50,21 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
   }
 
   /**
-   * Method to get the list of claim statuses
+   * Method to get the list of batch status types
    *
    * @return array
    * @access private
    */
-  private function setClaimStatusList() {
+  private function setBatchStatusList() {
     $config = CRM_Expenseclaims_Config::singleton();
-    $claimStatuses = civicrm_api3('OptionValue', 'get', array(
-      'option_group_id' => $config->getClaimStatusOptionGroup('id'),
+    $batchStatuses = civicrm_api3('OptionValue', 'get', array(
+      'option_group_id' => $config->getBatchStatusOptionGroup('id'),
       'is_active' => 1
     ));
-    foreach ($claimStatuses['values'] as $claimStatus) {
-      $this->_claimStatusList[$claimStatus['value']] = $claimStatus['label'];
+    foreach ($batchStatuses['values'] as $batchStatus) {
+      $this->_batchStatusList[$batchStatus['value']] = $batchStatus['label'];
     }
-    asort($this->_claimStatusList);
-    return;
-  }
-
-  /**
-   * Method to get the list of claim types
-   *
-   * @return array
-   * @access private
-   */
-  private function setClaimTypeList() {
-    $config = CRM_Expenseclaims_Config::singleton();
-    $claimTypes = civicrm_api3('OptionValue', 'get', array(
-      'option_group_id' => $config->getClaimTypeOptionGroup('id'),
-      'is_active' => 1
-    ));
-    foreach ($claimTypes['values'] as $claimType) {
-      $this->_claimTypeList[$claimType['value']] = $claimType['label'];
-    }
-    asort($this->_claimTypeList);
+    asort($this->_batchStatusList);
     return;
   }
 
@@ -125,6 +96,10 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
    */
   function all($offset = 0, $rowcount = 0, $sort = NULL, $includeContactIDs = FALSE, $justIDs = FALSE) {
     // delegate to $this->sql(), $this->select(), $this->from(), $this->where(), etc.
+
+    $sqlall = $this->sql($this->select(), $offset, $rowcount, $sort, $includeContactIDs, NULL);
+    CRM_Core_Error::debug_var("Find Batch All",$sqlall);
+
     return $this->sql($this->select(), $offset, $rowcount, $sort, $includeContactIDs, NULL);
   }
 
@@ -158,8 +133,7 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
   function where($includeContactIDs = FALSE) {
     $this->_whereClauses = array();
     $this->_whereParams = array();
-    $this->addStatusWhereClauses();
-    $this->addTypeWhereClauses();
+    $this->addBatchStatusWhereClauses();
     $this->addPeriodWhereClauses();
     if (!empty($this->_whereClauses)) {
       $where = implode(' AND ', $this->_whereClauses);
@@ -201,35 +175,18 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
   }
 
   /**
-   * Method to add the status where clauses
+   * Method to add the batch status where clauses
    */
-  private function addStatusWhereClauses() {
-    if (isset($this->_formValues['claim_status'])) {
-      $claimStatuses = array();
-      foreach ($this->_formValues['claim_status'] as $claimStatus) {
+  private function addBatchStatusWhereClauses() {
+    if (isset($this->_formValues['batch_status'])) {
+      $batchStatuses = array();
+      foreach ($this->_formValues['batch_status'] as $batchStatus) {
         $this->_whereIndex++;
-        $claimStatuses[$this->_whereIndex] = $claimStatus;
-        $this->_whereParams[$this->_whereIndex] = array($claimStatus, 'String');
+        $batchStatuses[$this->_whereIndex] = $batchStatus;
+        $this->_whereParams[$this->_whereIndex] = array($batchStatus, 'String');
       }
-      if (!empty($claimStatuses)) {
-        $this->_whereClauses[] = '(batch.claim_status IN('.implode(', ', $claimStatuses).'))';
-      }
-    }
-  }
-
-  /**
-   * Method to add the type where clauses
-   */
-  private function addTypeWhereClauses() {
-    if (isset($this->_formValues['claim_type'])) {
-      $claimTypes = array();
-      foreach ($this->_formValues['claim_type'] as $claimType) {
-        $this->_whereIndex++;
-        $claimTypes[$this->_whereIndex] = $claimType;
-        $this->_whereParams[$this->_whereIndex] = array($claimTypes, 'String');
-      }
-      if (!empty($claimTypes)) {
-        $this->_whereClauses[] = '(batch.claim_type IN('.implode(', ', $claimTypes).'))';
+      if (!empty($batchStatuses)) {
+        $this->_whereClauses[] = '(ov.value IN('.implode(', ', $batchStatuses).'))';
       }
     }
   }
