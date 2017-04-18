@@ -90,6 +90,8 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       $this->_claimId = $this->_submitValues['claim_id'];
     }
     $this->saveClaim();
+    $MyClaimsURL = CRM_Utils_System::url('/civicrm/pumexpenseclaims/page/myclaims', 'reset=1', true);
+    CRM_Utils_System::redirect($MyClaimsURL);
     parent::postProcess();
   }
 
