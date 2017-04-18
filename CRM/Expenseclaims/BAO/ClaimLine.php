@@ -67,6 +67,10 @@ class CRM_Expenseclaims_BAO_ClaimLine extends CRM_Expenseclaims_DAO_ClaimLine {
       throw new Exception('You are trying to add a claim line to an activity that is not a Claim (activity_type_id) in '
         .__METHOD__.'. This is not allowed.');
     }
+    if (CRM_Expenseclaims_BAO_Claim::isInNonOpenBatch($params['activity_id'])){
+      throw new Exception('You are trying to add a claim line to an activity that is added to a non open batch '
+        .__METHOD__.'. This is not allowed.');
+    }
     $fields = self::fields();
     foreach ($params as $key => $value) {
       if (isset($fields[$key])) {

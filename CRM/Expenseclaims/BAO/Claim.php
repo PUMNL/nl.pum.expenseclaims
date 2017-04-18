@@ -84,6 +84,22 @@ class CRM_Expenseclaims_BAO_Claim {
     } catch (CiviCRM_API3_Exception $ex) {}
   }
 
+  public static function isInNonOpenBatch($claimId){
+     $config = CRM_Expenseclaims_Config::singleton();
+     $sql = "SELECT 1 FROM pum_claim_batch_entity pbe
+     JOIN pum_claim_batch pcb ON pcb.id = pbe.batch_id AND pbe.entity_table='civicrm_activity'
+     WHERE pbe.entity_id = %1 AND pcb.batch_status_id != %2
+     ";
+    $dao = CRM_Core_DAO::executeQuery($sql, array(
+      1 => array($claimId, 'Integer'),
+      2 => array($config->getOpenBatchStatusId(), 'Integer')));
+    if ($dao->fetch()) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
+
   /**
    * Method to get claim with id
    * @param $claimId
@@ -298,6 +314,9 @@ class CRM_Expenseclaims_BAO_Claim {
   public function update($params) {
     if (!isset($params['claim_id'])) {
       throw new Exception('Mandatory parameter claim_id missing in array $params in '.__METHOD__.', contact your system administrator');
+    }
+    if (CRM_Expenseclaims_BAO_Claim::isInNonOpenBatch($params['claim_id'])){
+       throw new Exception('Cannot update a claim that is part of a Non Open Batch');
     }
     $config = CRM_Expenseclaims_Config::singleton();
     $clauses = array();
