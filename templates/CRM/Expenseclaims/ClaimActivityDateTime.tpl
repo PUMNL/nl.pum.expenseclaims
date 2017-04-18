@@ -7,6 +7,9 @@
       cj('.crm-activity-form-block-activity_date_time span').each(function() {
         cj(this).children().prop("disabled", true);
       })
+      cj('a.delete, a.edit').each(function(){
+          cj(this).hide();
+      });
     });
   </script>
 {/literal}

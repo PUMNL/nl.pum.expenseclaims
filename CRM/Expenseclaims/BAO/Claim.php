@@ -560,7 +560,19 @@ class CRM_Expenseclaims_BAO_Claim {
    * @param $form
    */
   public static function buildForm($formName, &$form) {
-    if ($formName = 'CRM_Activity_Form_Activity') {
+    if($formName == 'CRM_Activity_Form_ActivityLinks') {
+      /* remove the Create Claim Option form the activity menu
+         by removing it from the smarty template
+         https://civicoop.plan.io/issues/1091
+      */
+      $activityTypes = $form->get_template_vars('activityTypes');
+      $claimKey = array_search('Claim', $activityTypes);
+      if(isset($claimKey)){
+        unset($activityTypes[$claimKey]);
+      }
+      $form->assign('activityTypes',$activityTypes);
+    }
+    if ($formName == 'CRM_Activity_Form_Activity') {
       if (isset($form->_activityTypeName) && $form->_activityTypeName == 'Claim') {
         CRM_Core_Region::instance('page-body')->add(array('template' => 'CRM/Expenseclaims/ClaimActivityDateTime.tpl'));
       }
