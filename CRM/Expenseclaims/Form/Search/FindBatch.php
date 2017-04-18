@@ -98,8 +98,7 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
     // delegate to $this->sql(), $this->select(), $this->from(), $this->where(), etc.
 
     $sqlall = $this->sql($this->select(), $offset, $rowcount, $sort, $includeContactIDs, NULL);
-    CRM_Core_Error::debug_var("Find Batch All",$sqlall);
-
+    
     return $this->sql($this->select(), $offset, $rowcount, $sort, $includeContactIDs, NULL);
   }
 
