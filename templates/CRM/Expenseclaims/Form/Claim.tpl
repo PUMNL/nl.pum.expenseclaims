@@ -91,6 +91,17 @@
   </div>
 
   {/if}
+  {if !empty($attachments)}
+    <h3>{ts}Attachments{/ts}</h3>
+    <div class="crm-block crm-form-block">
+      <ul>
+      {foreach from=$attachments key=attachmentId item=attachment}
+
+        <li> {$attachment} </li>
+      {/foreach}
+      </ul>
+    </div>
+  {/if}
   {* FOOTER *}
   <div class="crm-submit-buttons">
     {include file="CRM/common/formButtons.tpl" location="bottom"}

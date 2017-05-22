@@ -32,6 +32,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       array('type' => 'cancel', 'name' => ts('Cancel'))));
 
     $this->addClaimLines();
+    $this->addAttachements();
     parent::buildQuickForm();
   }
 
@@ -80,6 +81,15 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       }
     }
     $this->assign('claimLines', $result);
+  }
+
+  private function addAttachements(){
+    $result = array();
+    $attachments = CRM_Core_BAO_File::getEntityFile('civicrm_activity', $this->_claimId);
+    foreach ($attachments as $attachmentId => $attachment) {
+      $result[$attachmentId] = $attachment['href'];
+    }
+    $this->assign('attachments', $result);
   }
 
   /**
