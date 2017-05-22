@@ -21,17 +21,17 @@ class CRM_Expenseclaims_Utils {
   public static function isProjectOfficer($contactId, $claimId) {
     if (!empty($contactId) && !empty($claimId)) {
       $config = CRM_Expenseclaims_Config::singleton();
-      $countryId = self::getCountryForClaimCustomer($claimId);
-      if ($countryId) {
-        $count = civicrm_api3('Relationship', 'getcount', array(
-          'is_active' => 1,
-          'relationship_type_id' => $config->getProjectOfficerRelationshipTypeId(),
-          'contact_id_a' => $countryId,
-          'contact_id_b' => $contactId
-        ));
-        if ($count > 0) {
+
+      $result = civicrm_api3('Claim','get',array('id'=> '437620'));
+      $claim_link_to = $result['values'][$result['id']]['claim_linked_to'];
+      $count = civicrm_api3('Relationship', 'getcount', array(
+        'relationship_type_id' => $config->getProjectOfficerRelationshipTypeId(),
+        'contact_id_b' => 2304,
+        'case_id' =>  $claim_link_to,
+        'options' => array('limit' => 1)
+      ));
+      if ($count > 0) {
           return TRUE;
-        }
       }
     }
     return FALSE;
@@ -74,21 +74,14 @@ class CRM_Expenseclaims_Utils {
    */
   public static function isSeniorProjectOfficer($contactId, $claimId) {
     if (!empty($contactId) && !empty($claimId)) {
-      $config = CRM_Expenseclaims_Config::singleton();
       $countryId = self::getCountryForClaimCustomer($claimId);
-      if ($countryId) {
-        $count = civicrm_api3('Relationship', 'getcount', array(
-          'is_active' => 1,
-          'relationship_type_id' => $config->getSeniorProjectOfficerRelationshipTypeId(),
-          'contact_id_a' => $countryId,
-          'contact_id_b' => $contactId
-        ));
-        if ($count > 0) {
-          return TRUE;
-        }
+      if ($contactId == self::getSeniorProjectOfficerForCountry($countryId)) {
+        return TRUE;
       }
     }
-    return FALSE;
+    else {
+       return FALSE;
+    }
   }
 
   /**
@@ -101,6 +94,7 @@ class CRM_Expenseclaims_Utils {
   public static function isCFO($contactId) {
     if (!empty($contactId)) {
       $config = CRM_Expenseclaims_Config::singleton();
+      $pumContactCfo = $config->getPumCfo();
       if ($contactId == $config->getPumCfo()) {
         return TRUE;
       }
@@ -215,14 +209,16 @@ class CRM_Expenseclaims_Utils {
     }
     $config = CRM_Expenseclaims_Config::singleton();
     try {
-      return civicrm_api3('Relationship', 'getvalue', array(
+      $result =  civicrm_api3('Relationship', 'getvalue', array(
         'relationship_type_id' => $config->getSeniorProjectOfficerRelationshipTypeId(),
         'contact_id_a' => $countryId,
         'is_active' => 1,
         'return' => 'contact_id_b'
       ));
+      print_r($result);
+      return $result;
     } catch (CiviCRM_API3_Exception $ex) {
-      return FALSE;
+      throw new Exception("Could not find Senior Project Officer for Country $countryId");
     }
   }
 

@@ -132,6 +132,7 @@ class CRM_Expenseclaims_BAO_Claim {
    * @param $contactId
    */
   public function approve($claimId, $contactId) {
+
     // first check if I can actually approve
     if (!empty($claimId) || !empty($contactId)) {
       // get my role and then my level
@@ -147,14 +148,18 @@ class CRM_Expenseclaims_BAO_Claim {
         if ($myLevel['max_amount'] == 999999999.99) {
           $this->finalApprove($claimId, $contactId);
         } else {
+
           // if the claim total amount is less than my max amount, final approve else next step
           $totalAmount = $this->getTotalAmount($claimId);
+
           if ($totalAmount <= $myLevel['max_amount']) {
             $this->finalApprove($claimId, $contactId);
           } else {
             $this->nextStep($claimId, $contactId, $myLevel['authorizing_level']);
           }
         }
+      } else {
+         throw new Exception('Undefined role - cannot Approve');
       }
     }
   }
@@ -180,7 +185,7 @@ class CRM_Expenseclaims_BAO_Claim {
         'approval_contact_id' => $contactId));
       civicrm_api3('ClaimLog', 'create', array(
         'id' => $claimLog['id'],
-        'new_status_id' => $config>getInitiallyApprovedClaimStatusValue(),
+        'new_status_id' => $config->getInitiallyApprovedClaimStatusValue(),
         'is_payable' => 0,
         'is_approved' => 1,
         'processed_date' => date('Y-m-d')));
@@ -198,7 +203,7 @@ class CRM_Expenseclaims_BAO_Claim {
       }
     } catch (CiviCRM_API3_Exception $ex) {}
     // finally update claim status
-    $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_value')
+    $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
       .' = %1 WHERE entity_id = %2';
     CRM_Core_DAO::executeQuery($sql, array(
       1 => array($config->getInitiallyApprovedClaimStatusValue(), 'String'),
@@ -476,23 +481,23 @@ class CRM_Expenseclaims_BAO_Claim {
       // if claim type is 7162 or 7165 approval by CFO
       // 7162 is Hans Blankerd Fonds
       case "7162":
-        $config = CRM_Threepeas_CaseRelationConfig::singleton();
-        return $config->getPumCfo()['contact_id'];
+        $config =  CRM_Expenseclaims_Config::singleton();
+        return $config->getPumCfo();
         break;
       //  Programma manager
       case "7165":
-        $config = CRM_Threepeas_CaseRelationConfig::singleton();
-        return $config->getPumCfo()['contact_id'];
+        $config =  CRM_Expenseclaims_Config::singleton();
+        return $config->getPumCfo();
         break;
       // Sector Coordinator
       case "7161":
-        $config = CRM_Threepeas_CaseRelationConfig::singleton();
-        return $config->getPumCfo()['contact_id'];
+        $config =  CRM_Expenseclaims_Config::singleton();
+        return $config->getPumCfo();
         break;
       // Country Coordinator
       case "7160":
-        $config = CRM_Threepeas_CaseRelationConfig::singleton();
-        return $config->getPumCfo()['contact_id'];
+        $config =  CRM_Expenseclaims_Config::singleton();
+        return $config->getPumCfo();
         break;
       // if claim type is 7163 or 7164 approval bij CPO
       case "7163":
@@ -531,7 +536,6 @@ class CRM_Expenseclaims_BAO_Claim {
     $contactId = $config->getPumCfo();
     $config = CRM_Expenseclaims_Config::singleton();
     // get project officer for case
-    // todo get project officer from country!
     $relation = civicrm_api3('Relationship', 'get', array(
       'relationship_type_id' => $config->getProjectOfficerRelationshipTypeId(),
       'case_id' => $this->_newClaim['claim_link'],
@@ -621,15 +625,15 @@ class CRM_Expenseclaims_BAO_Claim {
    */
   private function preApprovalValidityChecks($claimId, $contactId, $claimLevel) {
     $config = CRM_Expenseclaims_Config::singleton();
-    // first check if the contact actually is allowed for the claim level
-    $sql = "SELECT COUNT(*) FROM pum_claim_level_contact WHERE claim_level_id = %1 AND contact_id = %2";
+    // first check if the contact actually is allowed for the claim level TO change claime level screen
+    /*$sql = "SELECT COUNT(*) FROM pum_claim_level_contact WHERE claim_level_id = %1 AND contact_id = %2";
     $count = CRM_Core_DAO::singleValueQuery($sql, array(
       1 => array($claimLevel['id'], 'Integer'),
       2 => array($contactId, 'Integer')
     ));
     if ($count == 0) {
       throw new Exception(ts('Contact does not have the required authorization level to approve claim '.$claimId));
-    }
+    } */
     // then if the claim is a main activity claim:
     try {
       $claim = civicrm_api3('Claim', 'getsingle', array('id' => $claimId));
@@ -659,15 +663,15 @@ class CRM_Expenseclaims_BAO_Claim {
           throw new Exception(ts('There is no project officer for the country for customer ID '.$caseCustomerId.' linked to claim ID '.$claimId));
         }
         // if the max amount of my level is not enough
-        if ($claim['total_amount'] > $claimLevel['max_amount']) {
+        if ($claim['claim_total_amount'] > $claimLevel['max_amount']) {
           // check if CFO exists if that is next level
-          if ($claimLevel[' authorizing_level'] == $config->getCfoLevelId()) {
-            if (!$config->getCfoContactId()) {
+          if ($claimLevel['authorizing_level'] == $config->getCfoLevelId()) {
+            if (!$config->getPumCfo()) {
               throw new Exception(ts('No contact found with authorization level CFO'));
             }
           }
           // check Senior Project Officer exists, is on the country and has correct claim level
-          if (!$this->hasValidSeniorProjectOfficer($countryId, $claimLevel[' authorizing_level'])) {
+          if (!CRM_Expenseclaims_Utils::getSeniorProjectOfficerForCountry($countryId)) {
             throw new Exception(ts('Could not find a valid Senior Project Officer with the correct authorization level for country '
               .$countryId.' with customer '.$caseCustomerId.' linked to claim ID '.$claimId));
           }

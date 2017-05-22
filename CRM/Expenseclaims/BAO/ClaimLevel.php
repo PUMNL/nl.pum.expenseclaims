@@ -196,11 +196,21 @@ class CRM_Expenseclaims_BAO_ClaimLevel extends CRM_Expenseclaims_DAO_ClaimLevel 
     if (empty($claimId) || empty($authorizingLevel)) {
       return FALSE;
     }
+    $config = CRM_Expenseclaims_Config::singleton();
+
+    $result = civicrm_api3('option_value','getsingle',array(
+      'option_group_id' => $config->getClaimLevelOptionGroup(),
+      'value' => $authorizingLevel,
+      'return' => 'name'
+    ));
+
+    $authorizingLevelName = $result['name'];
+
     // check authorizing level
-    switch ($authorizingLevel) {
+    switch ($authorizingLevelName) {
       // if cfo, return cfo contact
       case 'cfo':
-        $config = CRM_Threepeas_CaseRelationConfig::singleton();
+        $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCfo();
         break;
       // if cpo, return cpo contact

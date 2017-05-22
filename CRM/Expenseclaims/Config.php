@@ -14,8 +14,8 @@ class CRM_Expenseclaims_Config {
   private $_validMainActivities = array();
   private $_claimActivityTypeId = NULL;
   private $_cpoContactId = NULL;
-  private $_cfoContactId = NULL;
   private $_cfoLevelId = NULL;
+  private $_cfoContactId = NULL;
   private $_claimTypeOptionGroup = array();
   private $_claimStatusOptionGroup = array();
   private $_claimLevelOptionGroup = array();
@@ -99,15 +99,6 @@ class CRM_Expenseclaims_Config {
       throw new Exception('Could not find an activity status Scheduled record id type in '.__METHOD__
         .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
     }
-  }
-
-  /**
-   * Getter for CFO level id
-   *
-   * @return null
-   */
-  public function getCfoLevelId() {
-    return $this->_cfoLevelId;
   }
 
   /**
@@ -369,6 +360,10 @@ class CRM_Expenseclaims_Config {
     return $this->_cfoContactId;
   }
 
+  public function getCfoLevelId() {
+    return $this->_cfoLevelId;
+  }
+
   /**
    * Getter for CPO contact id
    *
@@ -442,7 +437,7 @@ class CRM_Expenseclaims_Config {
   private function setCpoCfoContactId() {
     try {
       // first get levels for cfo and cpo
-      $cfoLevel = civicrm_api3('OptionValue', 'getvalue', array(
+      $this->_cfoLevelId = civicrm_api3('OptionValue', 'getvalue', array(
         'option_group_id' => $this->getClaimLevelOptionGroup('id'),
         'name' => 'cfo',
         'return' => 'value'
@@ -452,13 +447,9 @@ class CRM_Expenseclaims_Config {
         'name' => 'cpo',
         'return' => 'value'
       ));
-      // then get claim level id's
-      $this->_cfoLevelId = civicrm_api3('ClaimLevel', 'getvalue', array('level' => $cfoLevel, 'return' => 'id'));
-      $cpoLevelId = civicrm_api3('ClaimLevel', 'getvalue', array('level' => $cpoLevel, 'return' => 'id'));
-      // finally get the related contacts
       $sql = "SELECT contact_id FROM pum_claim_level_contact WHERE claim_level_id = %1 LIMIT 1";
       $this->_cfoContactId = CRM_Core_DAO::singleValueQuery($sql, array(1 => array($this->_cfoLevelId, 'Integer')));
-      $this->_cpoContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($cpoLevelId, 'Integer')));
+      $this->_cpoContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($cpoLevel, 'Integer')));
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception('Could not find a contact with authorization level CPO and/or CFO in '.__METHOD__
         .', contact your system administrator');
