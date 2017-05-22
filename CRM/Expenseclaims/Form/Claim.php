@@ -20,7 +20,9 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
   public function buildQuickForm() {
     // add form elements
     $this->add('hidden', 'claim_id');
-    $this->add('select', 'claim_link', ts('Link'), $this->_claimLinkList, true);
+    if(isset($this->_claim->claim_link)) {
+      $this->add('select', 'claim_link', ts('Link'), $this->_claimLinkList, TRUE);
+    }
     $this->add('text', 'claim_submitted_by', ts('Claimed By'));
     $this->add('text', 'claim_submitted_date', ts('Date Submitted'));
     $this->add('text', 'claim_description', ts('Description'), true);
@@ -139,7 +141,6 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
 
   /**
    * Method to save the claim
-   *
    */
   private function saveClaim() {
     if (!empty($this->_submitValues)) {
