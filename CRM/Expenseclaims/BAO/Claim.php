@@ -474,13 +474,25 @@ class CRM_Expenseclaims_BAO_Claim {
   private function findFirstApprovalContact() {
     switch ($this->_newClaim['claim_type']) {
       // if claim type is 7162 or 7165 approval by CFO
+      // 7162 is Hans Blankerd Fonds
       case "7162":
         $config = CRM_Threepeas_CaseRelationConfig::singleton();
-        return $config->getPumCfo();
+        return $config->getPumCfo()['contact_id'];
         break;
+      //  Programma manager
       case "7165":
         $config = CRM_Threepeas_CaseRelationConfig::singleton();
-        return $config->getPumCfo();
+        return $config->getPumCfo()['contact_id'];
+        break;
+      // Sector Coordinator
+      case "7161":
+        $config = CRM_Threepeas_CaseRelationConfig::singleton();
+        return $config->getPumCfo()['contact_id'];
+        break;
+      // Country Coordinator
+      case "7160":
+        $config = CRM_Threepeas_CaseRelationConfig::singleton();
+        return $config->getPumCfo()['contact_id'];
         break;
       // if claim type is 7163 or 7164 approval bij CPO
       case "7163":
