@@ -31,7 +31,7 @@ function _civicrm_api3_claim_create_spec(&$spec) {
     'name' => 'claim_link',
     'title' => 'claim_link',
     'type' => CRM_Utils_Type::T_STRING,
-    'api.required' => 1,
+    'api.required' => 0,
   );
   $spec['claim_total_amount'] = array(
     'name' => 'claim_total_amount',
