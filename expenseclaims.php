@@ -22,6 +22,7 @@ function expenseclaims_civicrm_permission(&$permissions) {
   $permissions['pum expense claims'] = $prefix . ts('pum expense claims');
 }
 
+
 /**
  * Implementation of hook civicrm_navigationMenu
  * to create claims menu
@@ -162,6 +163,8 @@ function expenseclaims_civicrm_navigationMenu( &$params ) {
       ),
       ));
 }
+
+
 
 
 /**
@@ -311,3 +314,8 @@ function expenseclaims_civicrm_navigationMenu(&$menu) {
   ));
   _expenseclaims_civix_navigationMenu($menu);
 } // */
+
+function expenseclaims_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions)
+{
+  $permissions['claim_line_log']['get'] = array('access CiviCRM');
+}
