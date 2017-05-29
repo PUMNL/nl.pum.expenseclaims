@@ -145,6 +145,8 @@ class CRM_Expenseclaims_Utils {
       } catch (CiviCRM_API3_Exception $ex) {
         $euroAmount = $currencyAmount;
       }
+    } else {
+      $euroAmount = $currencyAmount;
     }
     return $euroAmount;
   }
@@ -215,7 +217,6 @@ class CRM_Expenseclaims_Utils {
         'is_active' => 1,
         'return' => 'contact_id_b'
       ));
-      print_r($result);
       return $result;
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception("Could not find Senior Project Officer for Country $countryId");
@@ -308,5 +309,35 @@ class CRM_Expenseclaims_Utils {
       }
     }
     return FALSE;
+  }
+
+  /**
+   * Method to check if a contact has a specified authorization level
+   *
+   * @param $contactId
+   * @return array
+   */
+  public static function  getClaimLinksForContact($contactId) {
+    $travelCaseType = civicrm_api3('OptionValue', 'getvalue', array(
+      'return' => 'value',
+      'name' => 'TravelCase',
+      'option_group_id' => 'case_type'
+    ));
+    $sql = "SELECT `case`.`id`, `case`.`subject` 
+          FROM `civicrm_relationship` `relationship`
+          INNER JOIN `civicrm_case` `case` ON `case`.`id` = `relationship`.`case_id`
+          WHERE (`relationship`.`contact_id_a` = %1 OR `relationship`.`contact_id_b` = %1) AND `case`.`case_type_id` NOT LIKE %2 
+          ";
+    $params[1] = array($contactId, 'Integer');
+    $params[2] = array(
+      '%' . CRM_Core_DAO::VALUE_SEPARATOR . $travelCaseType . CRM_Core_DAO::VALUE_SEPARATOR . '%',
+      'String'
+    );
+    $dao = CRM_Core_DAO::executeQuery($sql, $params);
+    $return = array();
+    while ($dao->fetch()) {
+      $return[$dao->id] = $dao->subject . ' (Case: ' . $dao->id . ')';
+    }
+    return $return;
   }
 }
