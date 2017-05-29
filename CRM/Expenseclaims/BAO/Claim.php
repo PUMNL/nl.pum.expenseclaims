@@ -125,6 +125,24 @@ class CRM_Expenseclaims_BAO_Claim {
     }
   }
 
+  public function failsDryRunApprove($claimId, $contactId){
+
+    if (!empty($claimId) || !empty($contactId)) {
+      // get my role and then my level
+        try {
+          $myRole = CRM_Expenseclaims_Utils::getMyRole($claimId, $contactId);
+          $myLevel = civicrm_api3('ClaimLevel', 'getsingle', array('level' => $myRole));
+          $this->preApprovalValidityChecks($claimId, $contactId, $myLevel);
+          return FALSE;
+        } catch (Exception $ex) {
+          return 'Could not pass validation before approval of claim, problem : ' . $ex->getMessage();
+        }
+
+    } else {
+      return FALSE;
+    }
+  }
+
   /**
    * Method to approve a claim, resulting in either next step or final approval
    *
