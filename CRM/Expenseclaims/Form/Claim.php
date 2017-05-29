@@ -94,6 +94,25 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     $this->assign('attachments', $result);
   }
 
+
+  public function addRules() {
+    $this->addFormRule(array('CRM_Expenseclaims_Form_Claim', 'formRule'));
+  }
+
+  public static function  formRule($fields){
+    $errors = array();
+    if(isset($fields['_qf_Claim_next'])) {
+      $claim = new CRM_Expenseclaims_BAO_Claim();
+      $session = CRM_Core_Session::singleton();
+      $dryRunError = $claim->failsDryRunApprove($fields['claim_id'], $session->get('userID'));
+      if ($dryRunError) {
+        $errors['_qf_default'] = $dryRunError;
+      }
+    }
+    return $errors;
+  }
+
+
   /**
    * Method to process results from the form
    */
@@ -129,13 +148,18 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       $defaults['claim_total_amount'] = $this->_claim->claim_total_amount;
     }
     if (isset($this->_claim->claim_link)) {
+      $defaults['claim_link'] = $this->_claim->claim_link;
+    }
+    /*
+    if (isset($this->_claim->claim_link)) {
       $index = $this->_elementIndex['claim_link'];
       foreach ($this->_elements[$index]->_options as $optionId => $option) {
         if ($option['text'] == $this->_claim->claim_link) {
           $defaults['claim_link'] = (string) $option['attr']['value'];
         }
       }
-    }
+    */
+
     return $defaults;
   }
 
@@ -148,7 +172,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
         $claimParams['claim_description'] = $this->_submitValues['claim_description'];
       }
       if (isset($this->_submitValues['claim_link'])) {
-        $claimParams['claim_link'] = $this->_claimLinkList[$this->_submitValues['claim_link']];
+        $claimParams['claim_link'] = $this->_submitValues['claim_link'];
       }
       $claimParams['claim_id'] = $this->_claimId;
       // if save or save and approve, save the claim
@@ -196,17 +220,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       $this->_claim = $claim->getWithId($this->_claimId);
     }
     CRM_Utils_System::setTitle(ts('PUM Senior Experts Expense Manage Claim'));
-    $this->_claimLinkList = $this->getClaimLinkList($session->get('userID'));
+    $this->_claimLinkList =  CRM_Expenseclaims_Utils::getClaimLinksForContact($this->_claim->claim_submitted_by);
   }
 
-  /**
-   * Method to get the link list for the user
-   *
-   * @param $userId
-   * @return array|bool
-   */
-  private function getClaimLinkLIst($userId) {
-    $claim = new CRM_Expenseclaims_BAO_Claim();
-    return $claim->getMyLinks($userId);
-  }
 }
