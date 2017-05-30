@@ -46,13 +46,20 @@ function civicrm_api3_currency_convert($params) {
     $currency_code = CRM_Core_DAO::singleValueQuery("SELECT name FROM civicrm_currency WHERE id = %1", array(1 => array($params['currency_id'], 'Integer')));
     $access_key = $apilayer_settings['access_key'];
     $httpClient = CRM_Utils_HttpClient::singleton();
+
+    // the api layer does not convert negative amounts (so store the sign)
+    if($params['amount']<0){
+       $sign=-1;
+    } else {
+       $sign=1; // positive do nothing
+    }
     $api_url = 'http://apilayer.net/api/convert';
     $query_string = 'access_key='.$access_key;
     $query_string .= '&from='.$currency_code;
-    $query_string .= '&amount='.$params['amount'];
+    $query_string .= '&amount='.($sign*$params['amount']);
     $query_string .= '&to=EUR';
     list($_status, $return) = $httpClient->get($api_url.'?'.$query_string);
     $object = json_decode($return);
-    $result['euro_amount'] = round((float) $object->result, 2);
+    $result['euro_amount'] = $sign*round((float) $object->result, 2);
     return $result;
 }
