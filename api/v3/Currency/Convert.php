@@ -20,8 +20,14 @@ function _civicrm_api3_currency_convert_spec(&$spec)
         'name' => 'amount',
         'title' => 'amount',
         'type' => CRM_Utils_Type::T_FLOAT,
-        'api.required' => 1
+        'api.required' => 0
     );
+    $spec['conversion_date'] = array(
+      'name' => 'conversion_date',
+      'title' => 'conversion_date',
+      'type' => CRM_Utils_Type::T_DATE,
+      'api.required' => 0
+  );
 }
 
 /**
@@ -58,8 +64,15 @@ function civicrm_api3_currency_convert($params) {
     $query_string .= '&from='.$currency_code;
     $query_string .= '&amount='.($sign*$params['amount']);
     $query_string .= '&to=EUR';
+
+    // add parameter for historical date
+    if(isset($params['conversion_date'])){
+      $query_string .= '&date='.(new DateTime($params['conversion_date']))->format('Y-m-d');
+    }
     list($_status, $return) = $httpClient->get($api_url.'?'.$query_string);
+
     $object = json_decode($return);
     $result['euro_amount'] = $sign*round((float) $object->result, 2);
+    $result['exchange_rate']= $object->info->quote;
     return $result;
 }
