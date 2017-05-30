@@ -87,6 +87,14 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
    */
   private function saveClaimLine() {
     if (!empty($this->_submitValues)) {
+
+      if($this->_submitValues['currency_amount']==0){
+        $euro_amount=0;
+      } else {
+        $euro_amount=CRM_Expenseclaims_Utils::calculateEuroAmount($this->_submitValues['currency_amount'],
+          $this->_submitValues['currency_id']);
+      }
+
       $params = array(
         'id' => $this->_claimLineId,
         'activity_id' => $this->_claimLine['activity_id'],
@@ -94,8 +102,7 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
         'expense_type' => $this->_submitValues['expense_type'],
         'currency_id' => $this->_submitValues['currency_id'],
         'currency_amount' => $this->_submitValues['currency_amount'],
-        'euro_amount' => CRM_Expenseclaims_Utils::calculateEuroAmount($this->_submitValues['currency_amount'],
-          $this->_submitValues['currency_id']),
+        'euro_amount' => $euro_amount,
         'description' => $this->_submitValues['description']
       );
       // add reason for change for log entry
