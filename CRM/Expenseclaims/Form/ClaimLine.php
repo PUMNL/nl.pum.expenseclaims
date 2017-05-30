@@ -91,8 +91,13 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
       if($this->_submitValues['currency_amount']==0){
         $euro_amount=0;
       } else {
-        $euro_amount=CRM_Expenseclaims_Utils::calculateEuroAmount($this->_submitValues['currency_amount'],
-          $this->_submitValues['currency_id']);
+        $result = civicrm_api3('currency','convert',array(
+          'amount' => $this->_submitValues['currency_amount'],
+          'currency_id' => $this->_submitValues['currency_id'],
+          'expense_date' => $this->_submitValues['expense_date']
+        ));
+        $euro_amount =$result['euro_amount'];
+        $exchange_rate=$result['exchange_rate'];
       }
 
       $params = array(
@@ -108,6 +113,9 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
       // add reason for change for log entry
       if (isset($this->_submitValues['reason_for_change'])) {
         $params['change_reason'] = $this->_submitValues['reason_for_change'];
+      }
+      if (isset($exchange_rate)) {
+        $params['exchange_rate'] = $exchange_rate;
       }
       CRM_Expenseclaims_BAO_ClaimLine::add($params);
     }
