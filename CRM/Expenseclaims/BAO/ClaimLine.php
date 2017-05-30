@@ -118,6 +118,10 @@ class CRM_Expenseclaims_BAO_ClaimLine extends CRM_Expenseclaims_DAO_ClaimLine {
       $params['old_currency_amount'] = $claimLine->currency_amount;
       $params['new_currency_amount'] = $newData['currency_amount'];
     }
+    if (isset($newData['euro_amount'])) {
+      $params['old_euro_amount'] = $claimLine->euro_amount;
+      $params['new_euro_amount'] = $newData['euro_amount'];
+    }
     civicrm_api3('ClaimLineLog', 'create', $params);
   }
 

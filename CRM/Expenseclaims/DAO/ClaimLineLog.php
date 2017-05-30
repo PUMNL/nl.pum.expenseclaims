@@ -77,6 +77,14 @@ class CRM_Expenseclaims_DAO_ClaimLineLog extends CRM_Core_DAO {
         'new_currency_amount' => array(
           'name' => 'new_currency_amount',
           'type' => CRM_Utils_Type::T_MONEY
+        ),
+        'old_euro_amount' => array(
+          'name' => 'old_euro_amount',
+          'type' => CRM_Utils_Type::T_MONEY
+        ),
+        'new_euro_amount' => array(
+          'name' => 'new_euro_amount',
+          'type' => CRM_Utils_Type::T_MONEY
         )
       );
     }
@@ -102,7 +110,9 @@ class CRM_Expenseclaims_DAO_ClaimLineLog extends CRM_Core_DAO {
         'old_currency_id' => 'old_currency_id',
         'new_currency_id' => 'new_currency_id',
         'old_currency_amount' => 'old_currency_amount',
-        'new_currency_amount' => 'new_currency_amount'
+        'new_currency_amount' => 'new_currency_amount',
+        'old_euro_amount' => 'old_euro_amount',
+        'new_euro_amount' => 'new_euro_amount'
       );
     }
     return self::$_fieldKeys;

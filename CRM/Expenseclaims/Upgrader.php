@@ -55,4 +55,17 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
     $this->executeSqlFile('sql/create_pum_claim_line_log.sql');
     return TRUE;
   }
+
+  /**
+   * Upgrade 1003 add columns for claim line log table
+   *
+   */
+  public function upgrade_1003() {
+    CRM_Core_DAO::executeQuery("ALTER TABLE `pum_claim_line_log`
+      ADD COLUMN `old_euro_amount` DECIMAL(11,2) DEFAULT NULL,
+      ADD COLUMN `new_euro_amount` DECIMAL(11,2) DEFAULT NULL;
+    ");
+
+    return TRUE;
+  }
 }

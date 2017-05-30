@@ -64,6 +64,16 @@ function _civicrm_api3_claim_line_log_get_spec(&$spec) {
     'title' => 'new_currency_amount',
     'type' => CRM_Utils_Type::T_MONEY
   );
+  $spec['old_euro_amount'] = array(
+    'name' => 'old_euro_amount',
+    'title' => 'old_euro_amount',
+    'type' => CRM_Utils_Type::T_MONEY
+  );
+  $spec['new_euro_amount'] = array(
+    'name' => 'new_euro_amount',
+    'title' => 'new_euro_amount',
+    'type' => CRM_Utils_Type::T_MONEY
+  );
 }
 
 /**

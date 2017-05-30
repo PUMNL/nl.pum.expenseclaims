@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS `pum_claim_line_log` (
   `new_currency_id` INT(11) UNSIGNED DEFAULT NULL,
   `old_currency_amount` DECIMAL(11,2) DEFAULT NULL,
   `new_currency_amount` DECIMAL(11,2) DEFAULT NULL,
+  `old_euro_amount` DECIMAL(11,2) DEFAULT NULL,
+  `new_euro_amount` DECIMAL(11,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   KEY `FK_pum_claim_line_1_idx` (`claim_line_id`),
