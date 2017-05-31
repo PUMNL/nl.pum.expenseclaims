@@ -73,6 +73,8 @@ function civicrm_api3_currency_convert($params) {
 
     $object = json_decode($return);
     $result['euro_amount'] = $sign*round((float) $object->result, 2);
-    $result['exchange_rate']= $object->info->quote;
+    if(isset($object->info->quote)) {
+      $result['exchange_rate'] = $object->info->quote;
+    }
     return $result;
 }
