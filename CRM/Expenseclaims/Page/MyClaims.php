@@ -126,7 +126,6 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL OR pclog.i
     $manageUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=update&id='.$claimId, true);
     $approveUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=enable&id='.$claimId, true);
     $actions[] = '<a class="action-item" title="Manage" href="'.$manageUrl.'">Manage</a>';
-    $actions[] = '<a class="action-item" title="Approve" href="'.$approveUrl.'">Approve</a>';
     return $actions;
   }
 
