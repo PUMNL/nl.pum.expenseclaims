@@ -59,7 +59,13 @@ function _civicrm_api3_claim_create_spec(&$spec) {
  */
 function civicrm_api3_claim_create($params) {
   $claim = new CRM_Expenseclaims_BAO_Claim();
-  $result = $claim->createNew($params);
+  if(isset($params['id'])){
+    $params['claim_id'] = $params['id'];
+    $claim->update($params);
+    $result=TRUE;
+  } else {
+    $result = $claim->createNew($params);
+  }
   if ($result == FALSE) {
     return civicrm_api3_create_error('Could not create claim activity in '.__METHOD__, array('params' => $params));
   } else {
