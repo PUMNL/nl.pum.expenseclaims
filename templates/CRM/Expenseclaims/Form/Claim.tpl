@@ -96,15 +96,22 @@
     <div class="crm-block crm-form-block">
       <ul>
       {foreach from=$attachments key=attachmentId item=attachment}
-
         <li> {$attachment} </li>
       {/foreach}
       </ul>
     </div>
   {/if}
   {* FOOTER *}
+
+
   <div class="crm-submit-buttons">
+
     {include file="CRM/common/formButtons.tpl" location="bottom"}
+
+    <span class="crm-button crm-button-type-reject crm-button_qf_Claim_reject">
+    <input class="button new-option" name="_qf_Reject_next" id="add_claims_to_batch" type="submit" value="Save and Reject">
+    </span>
+
   </div>
 </div>
 {literal}
