@@ -27,6 +27,7 @@ class CRM_Expenseclaims_Config {
   private $_approvedClaimStatusValue = NULL;
   private $_initiallyApprovedClaimStatusValue = NULL;
   private $_waitingForApprovalClaimStatusValue = NULL;
+  private $_rejectedClaimStatusValue = NULL;
   private $_targetRecordTypeId = NULL;
   private $_scheduledActivityStatusId = NULL;
   private $_sectorCoordinatorRelationshipTypeId = NULL;
@@ -68,6 +69,11 @@ class CRM_Expenseclaims_Config {
       $this->_waitingForApprovalClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
         'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
         'name' => 'waiting_for_approval',
+        'return' => 'value'
+      ));
+      $this->_rejectedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'name' => 'rejected',
         'return' => 'value'
       ));
       $this->_openBatchStatusId = civicrm_api3('OptionValue', 'getvalue', array(
@@ -197,6 +203,14 @@ class CRM_Expenseclaims_Config {
    */
   public function getApprovedClaimStatusValue() {
     return $this->_approvedClaimStatusValue;
+  }
+
+  /**
+   * Getter for rejected claims status value
+   * @return null
+   */
+  public function getRejectedClaimStatusValue() {
+    return $this->_rejectedClaimStatusValue;
   }
 
   /**
@@ -435,6 +449,7 @@ class CRM_Expenseclaims_Config {
    * @throws Exception when API getvalue error (not found, more than one)
    */
   private function setCpoCfoContactId() {
+
     try {
       // first get levels for cfo and cpo
       $this->_cfoLevelId = civicrm_api3('OptionValue', 'getvalue', array(
@@ -447,6 +462,8 @@ class CRM_Expenseclaims_Config {
         'name' => 'cpo',
         'return' => 'value'
       ));
+
+
       $sql = "SELECT contact_id FROM pum_claim_level_contact WHERE claim_level_id = %1 LIMIT 1";
       $this->_cfoContactId = CRM_Core_DAO::singleValueQuery($sql, array(1 => array($this->_cfoLevelId, 'Integer')));
       $this->_cpoContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($cpoLevel, 'Integer')));
