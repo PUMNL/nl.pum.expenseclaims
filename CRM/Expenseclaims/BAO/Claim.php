@@ -182,6 +182,39 @@ class CRM_Expenseclaims_BAO_Claim {
     }
   }
 
+  public function reject($claimId, $contactId){
+
+    /**
+     * Method to reject a claim
+     *
+     * @param $claimId
+     * @param $contactId
+     */
+
+    if (empty($claimId) || empty($contactId)) {
+      throw new Exception('ClaimId or ContactId empty when trying to final reject claim in '.__METHOD__.', contact your system administrator');
+    }
+    $config = CRM_Expenseclaims_Config::singleton();
+    $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
+      .' = %1 WHERE entity_id = %2';
+    CRM_Core_DAO::executeQuery($sql, array(
+      1 => array($config->getRejectedClaimStatusValue(), 'String'),
+      2 => array($claimId, 'Integer')));
+    // now update claim log line for this rejection
+    try {
+      $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
+        'claim_activity_id' => $claimId,
+        'approval_contact_id' => $contactId));
+      civicrm_api3('ClaimLog', 'create', array(
+        'id' => $claimLog['id'],
+        'new_status_id' => $config->getRejectedClaimStatusValue(),
+        'is_payable' => 0,
+        'is_rejected' => 1,
+        'processed_date' => date('Y-m-d')));
+    } catch (CiviCRM_API3_Exception $ex) {}
+
+  }
+
   /**
    * Method to determine what the next step should be and processing that in the database
    *
@@ -341,6 +374,7 @@ class CRM_Expenseclaims_BAO_Claim {
     if (CRM_Expenseclaims_BAO_Claim::isInNonOpenBatch($params['claim_id'])){
        throw new Exception('Cannot update a claim that is part of a Non Open Batch');
     }
+
     $config = CRM_Expenseclaims_Config::singleton();
     $clauses = array();
     $clausesParams = array();
@@ -356,6 +390,12 @@ class CRM_Expenseclaims_BAO_Claim {
       $index++;
       $clauses[] = $config->getClaimLinkCustomField('column_name').' = %'.$index;
       $clausesParams[$index] = array($params['claim_link'], 'String');
+    }
+    // if claim type has to be updated
+    if (isset($params['claim_type'])) {
+      $index++;
+      $clauses[] = $config->getClaimTypeCustomField('column_name').' = %'.$index;
+      $clausesParams[$index] = array($params['claim_type'], 'String');
     }
     $index++;
     $sql = "UPDATE ".$config->getClaimInformationCustomGroup('table_name')." SET ".implode(',', $clauses)." WHERE entity_id = %".$index;
@@ -459,20 +499,19 @@ class CRM_Expenseclaims_BAO_Claim {
     $this->_newClaim = $activity['values'][$activity['id']];
     $this->createCustomData($params);
     // finally determine who needs to approve claim and create claim log entry
-    $this->createFirstStep();
     return $this->_newClaim;
   }
 
   /**
    * Method to find approval contact and set claim log for new claim
    */
-  private function createFirstStep() {
+  public function createFirstStep($params) {
     $config = CRM_Expenseclaims_Config::singleton();
     // find approval contact based on claim link
-    $approvalContactId = $this->findFirstApprovalContact();
+    $approvalContactId = $this->findFirstApprovalContact($params);
     if ($approvalContactId) {
       civicrm_api3('ClaimLog', 'create', array(
-        'claim_activity_id' => $this->_newClaim['id'],
+        'claim_activity_id' => $params['id'],
         'approval_contact_id' => $approvalContactId,
         'old_status_id' => $config->getWaitingForApprovalClaimStatusValue(),
         'is_approved' => 0,
@@ -494,8 +533,8 @@ class CRM_Expenseclaims_BAO_Claim {
    *
    * @return bool|int
    */
-  private function findFirstApprovalContact() {
-    switch ($this->_newClaim['claim_type']) {
+  public function findFirstApprovalContact($params) {
+    switch ($params['claim_type']) {
       // if claim type is 7162 or 7165 approval by CFO
       // 7162 is Hans Blankerd Fonds
       case "7162":
@@ -528,11 +567,11 @@ class CRM_Expenseclaims_BAO_Claim {
         break;
       // if project, check my role (if SC then approval by CPO) else approval based on levels
       case "project":
-        if (CRM_Expenseclaims_Utils::isClaimEnteredBySC($this->_newClaim['id'], $this->_newClaim['claim_link']) == TRUE) {
+        if (CRM_Expenseclaims_Utils::isClaimEnteredBySC($params['id'], $params['claim_link']) == TRUE) {
           $config = CRM_Expenseclaims_Config::singleton();
           return $config->getPumCpo();
         } else {
-          return $this->findFirstApprovalProjectContact();
+          return $this->findFirstApprovalProjectContact($params['claim_link']);
         }
         break;
       default:
@@ -548,7 +587,7 @@ class CRM_Expenseclaims_BAO_Claim {
    *
    * @return mixed
    */
-  private function findFirstApprovalProjectContact() {
+  private function findFirstApprovalProjectContact($claim_link) {
     // in case of doubt go to CFO
     $config = CRM_Threepeas_CaseRelationConfig::singleton();
     $contactId = $config->getPumCfo();
@@ -556,7 +595,7 @@ class CRM_Expenseclaims_BAO_Claim {
     // get project officer for case
     $relation = civicrm_api3('Relationship', 'get', array(
       'relationship_type_id' => $config->getProjectOfficerRelationshipTypeId(),
-      'case_id' => $this->_newClaim['claim_link'],
+      'case_id' => $claim_link,
       'options' => array('limit' => 1)
     ));
     if (!empty($relation['values'][$relation['id']]['contact_id_b'])) {
@@ -644,14 +683,14 @@ class CRM_Expenseclaims_BAO_Claim {
   private function preApprovalValidityChecks($claimId, $contactId, $claimLevel) {
     $config = CRM_Expenseclaims_Config::singleton();
     // first check if the contact actually is allowed for the claim level TO change claime level screen
-    /*$sql = "SELECT COUNT(*) FROM pum_claim_level_contact WHERE claim_level_id = %1 AND contact_id = %2";
+    $sql = "SELECT COUNT(*) FROM pum_claim_level_contact WHERE claim_level_id = %1 AND contact_id = %2";
     $count = CRM_Core_DAO::singleValueQuery($sql, array(
       1 => array($claimLevel['id'], 'Integer'),
       2 => array($contactId, 'Integer')
     ));
     if ($count == 0) {
       throw new Exception(ts('Contact does not have the required authorization level to approve claim '.$claimId));
-    } */
+    }
     // then if the claim is a main activity claim:
     try {
       $claim = civicrm_api3('Claim', 'getsingle', array('id' => $claimId));
