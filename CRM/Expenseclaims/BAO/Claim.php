@@ -688,9 +688,10 @@ class CRM_Expenseclaims_BAO_Claim {
       1 => array($claimLevel['id'], 'Integer'),
       2 => array($contactId, 'Integer')
     ));
+    /*
     if ($count == 0) {
       throw new Exception(ts('Contact does not have the required authorization level to approve claim '.$claimId));
-    }
+    }*/
     // then if the claim is a main activity claim:
     try {
       $claim = civicrm_api3('Claim', 'getsingle', array('id' => $claimId));
