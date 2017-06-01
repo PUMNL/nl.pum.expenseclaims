@@ -324,8 +324,9 @@ class CRM_Expenseclaims_Utils {
       'option_group_id' => 'case_type'
     ));
     $sql = "SELECT `case`.`id`, `case`.`subject` 
-          FROM `civicrm_relationship` `relationship`
+          FROM `civicrm_relationship` `relationship` 
           INNER JOIN `civicrm_case` `case` ON `case`.`id` = `relationship`.`case_id`
+          JOIN  `civicrm_case_pum`  `pum_case`      ON `case`.`id` = `pum_case`.`entity_id` AND `pum_case`.`case_type` in ('A','B','C','P','R','S')
           WHERE (`relationship`.`contact_id_a` = %1 OR `relationship`.`contact_id_b` = %1) AND `case`.`case_type_id` NOT LIKE %2 
           ";
     $params[1] = array($contactId, 'Integer');
