@@ -31,6 +31,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     $this->addButtons(array(
       array('type' => 'submit', 'name' => ts('Save'), 'isDefault' => true,),
       array('type' => 'next', 'name' => ts('Save and Approve')),
+      array('type' => 'next', 'subName' => 'reject', 'name' => ts('Save and Reject')),
       array('type' => 'cancel', 'name' => ts('Cancel'))));
 
     $this->addClaimLines();
@@ -112,7 +113,6 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     return $errors;
   }
 
-
   /**
    * Method to process results from the form
    */
@@ -176,13 +176,18 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       }
       $claimParams['claim_id'] = $this->_claimId;
       // if save or save and approve, save the claim
-      if (isset($this->_submitValues['_qf_Claim_submit']) || isset($this->_submitValues['_qf_Claim_next'])) {
+      if (isset($this->_submitValues['_qf_Claim_submit']) || isset($this->_submitValues['_qf_Claim_next']) || isset($this->_submitValues['_qf_Claim_next_reject'])) {
         $claim = new CRM_Expenseclaims_BAO_Claim();
         $claim->update($claimParams);
         // if save and approve, also change claim status to approval
         if (isset($this->_submitValues['_qf_Claim_next'])) {
           $session = CRM_Core_Session::singleton();
           $claim->approve($this->_claimId, $session->get('userID'));
+        }
+
+        if (isset($this->_submitValues['_qf_Claim_next_reject'])) {
+          $session = CRM_Core_Session::singleton();
+          $claim->reject($this->_claimId, $session->get('userID'));
         }
       }
     }
