@@ -318,4 +318,17 @@ class CRM_Expenseclaims_ConfigItems_ConfigItems {
       }
     }
   }
+
+  /**
+   * Use in the upgrade to set the new MainActivyLabel
+   */
+  public static function changeMainActivityLabel() {
+    $config = CRM_Expenseclaims_Config::singleton();
+    $optionValueId = civicrm_api3('OptionValue','getvalue',array
+      ('option_group_id'=>$config->getClaimTypeOptionGroup()
+      ,'value'=>'project'
+      ,'return'=> 'id'));
+    CRM_Core_DAO::executeQuery("UPDATE civicrm_option_value set label='Expert' where id=%1",
+      array('1'=>array($optionValueId,'Integer')));
+  }
 }
