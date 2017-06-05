@@ -33,24 +33,30 @@ class CRM_Expenseclaims_Page_MyClaims extends CRM_Core_Page {
     $myClaims = array();
     $config = CRM_Expenseclaims_Config::singleton();
     list($offset, $limit) = $this->_pager->getOffsetAndRowCount();
-    $query = "SELECT pclog.claim_activity_id, cac.contact_id AS claim_submitted_by, cact.activity_date_time AS claim_submitted_date, 
-pcc.{$config->getClaimLinkCustomField('column_name')} AS claim_link, pcc.{$config->getClaimTotalAmountCustomField('column_name')} AS claim_total_amount,
-pcc.{$config->getClaimDescriptionCustomField('column_name')} AS claim_description, pcc.{$config->getClaimStatusCustomField('column_name')} AS claim_status_id, 
-pcc.{$config->getClaimTypeCustomField('column_name')} AS claim_type_id, csov.label AS claim_status, ctov.label AS claim_type
+    $query = "
+SELECT pclog.claim_activity_id 
+,      cac.contact_id AS claim_submitted_by 
+,      cact.activity_date_time AS claim_submitted_date 
+,      pcc.{$config->getClaimLinkCustomField('column_name')} AS claim_link 
+,      pcc.{$config->getClaimTotalAmountCustomField('column_name')} AS claim_total_amount
+,      pcc.{$config->getClaimDescriptionCustomField('column_name')} AS claim_description
+,      pcc.{$config->getClaimStatusCustomField('column_name')}     AS claim_status_id
+,      pcc.{$config->getClaimTypeCustomField('column_name')} AS claim_type_id
+,      csov.label AS claim_status
+,      ctov.label AS claim_type
 FROM pum_claim_log pclog
 LEFT JOIN civicrm_activity cact ON pclog.claim_activity_id = cact.id
 LEFT JOIN {$config->getClaimInformationCustomGroup('table_name')} pcc ON cact.id = pcc.entity_id
 LEFT JOIN civicrm_activity_contact cac ON cact.id = cac.activity_id AND cac.record_type_id = %1 
 LEFT JOIN civicrm_option_value csov ON pcc.{$config->getClaimStatusCustomField('column_name')} = csov.value AND csov.option_group_id = %2
 LEFT JOIN civicrm_option_value ctov ON pcc.{$config->getClaimTypeCustomField('column_name')} = ctov.value AND ctov.option_group_id = %3
-
-WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL OR pclog.is_rejected = %5 LIMIT %6, %7";
+WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL  LIMIT %6, %7";
     $queryParams = array(
       1 => array($config->getTargetRecordTypeId(), 'Integer'),
       2 => array($config->getClaimStatusOptionGroup('id'), 'Integer'),
       3 => array($config->getClaimTypeOptionGroup('id'), 'Integer'),
       4 => array($this->_userContactId, 'Integer'),
-      5 => array(1, 'Integer'),
+      //5 => array(1, 'Integer'),
       6 => array($offset, 'Integer'),
       7 => array($limit, 'Integer')
     );
@@ -124,7 +130,6 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL OR pclog.i
   protected function setRowActions($claimId) {
     $actions = array();
     $manageUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=update&id='.$claimId, true);
-    $approveUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=enable&id='.$claimId, true);
     $actions[] = '<a class="action-item" title="Manage" href="'.$manageUrl.'">Manage</a>';
     return $actions;
   }
