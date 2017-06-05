@@ -151,12 +151,18 @@ class CRM_Expenseclaims_BAO_ClaimLine extends CRM_Expenseclaims_DAO_ClaimLine {
    * @throws Exception when claimLineId is empty
    */
   public static function deleteWithId($claimLineId) {
+
+    $result = civicrm_api3('ClaimLine','getSingle',array('id'=>$claimLineId));
+
     if (empty($claimLineId)) {
       throw new Exception('claim line id can not be empty when attempting to delete a claim line in '.__METHOD__);
     }
     $claimLine = new CRM_Expenseclaims_BAO_ClaimLine();
     $claimLine->id = $claimLineId;
     $claimLine->delete();
+
+    $claim = new CRM_Expenseclaims_BAO_Claim();
+    $claim->updateTotalAmount($result['activity_id']);
   }
 
   /**
