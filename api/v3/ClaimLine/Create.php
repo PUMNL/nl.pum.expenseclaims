@@ -42,7 +42,7 @@ function _civicrm_api3_claim_line_create_spec(&$spec) {
     'name' => 'euro_amount',
     'title' => 'euro_amount',
     'type' => CRM_Utils_Type::T_MONEY,
-    'api.required' => 1,
+    'api.required' => 0,
   );
   $spec['description'] = array(
     'name' => 'description',
