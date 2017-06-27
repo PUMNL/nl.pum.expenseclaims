@@ -20,12 +20,23 @@
     </div>
     <div class="crm-section pum_claim_description">
       <div class="label">{$form.claim_description.label}</div>
-      <div class="content">{$form.claim_description.html}</div>
+      {if $action eq 2}
+         <div class="content">{$form.claim_description.html}</div>
+      {/if}
+      {if $action eq 4}
+            <div class="content">{$form.claim_description.value}</div>
+      {/if}
       <div class="clear"></div>
     </div>
     <div class="crm-section pum_claim_link">
-      <div class="label">{$form.claim_link.label}</div>
-      <div class="content">{$form.claim_link.html}</div>
+      {if $action eq 2}
+          <div class="label">{$form.claim_link.label}</div>
+          <div class="content">{$form.claim_link.html}</div>
+      {/if}
+      {if $action eq 4}
+          <div class="label">Link</div>
+          <div class="content">{$claimLinkDescription}</div>
+      {/if}
       <div class="clear"></div>
     </div>
   {* include claim lines part if there are any *}
@@ -89,8 +100,38 @@
       </strong>
     </div>
   </div>
-
   {/if}
+  <h3>{ts}Audit Trail{/ts}</h3>
+    <div class="crm-block crm-form-block">
+        <div id="audittrail-wrapper" class="dataTables_wrapper">
+            <table id="audittrail-table" class="display">
+                <tr>
+                    <th>{ts}Approver{/ts}</th>
+                    <th>{ts}Processing Date{/ts}</th>
+                    <th>Is approved?</th>
+                    <th>Is rejected?</th>
+                    <th>Is payable</th>
+                </tr>
+                {assign var="rowClass" value="odd-row"}
+                {foreach from=$claimLogs key=claimLogId item=claimLog}
+                <tr class="{$rowClass}">
+                    <td>{$claimLog.display_name}</td>
+                    <td>{$claimLog.processed_date|crmDate}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                    {if $rowClass eq "odd-row"}
+                        {assign var="rowClass" value="even-row"}
+                    {else}
+                        {assign var="rowClass" value="odd-row"}
+                    {/if}
+                {/foreach}
+            </table>
+        </div>
+    </div>
+
+
   {if !empty($attachments)}
     <h3>{ts}Attachments{/ts}</h3>
     <div class="crm-block crm-form-block">
@@ -176,5 +217,19 @@
           cj("#pum_claims_line_history_dialog-block").html(dialogText.join('\n'));
         });
     };
+  </script>
+  <script>
+      function showClaimHistory(claimId){
+          cj("#pum_claims_line_history_dialog-block").dialog({
+              width: 700,
+              height: 450,
+              title: "Claim Line History line " + claimId,
+              buttons: {
+                  "Done": function() {
+                      cj(this).dialog("close");
+                  }
+              }
+          });
+      };
   </script>
 {/literal}

@@ -11,8 +11,10 @@
 class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
 
   protected $_claimId = NULL;
-  protected $_claimLinkList = array();
-  protected $_claim = array();
+
+  protected $_claimLinkList = [];
+
+  protected $_claim = [];
 
   /**
    * Method to build the QuickForm
@@ -20,22 +22,37 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
   public function buildQuickForm() {
     // add form elements
     $this->add('hidden', 'claim_id');
-    if(isset($this->_claim->claim_link)) {
-      $this->add('select', 'claim_link', ts('Link'), $this->_claimLinkList, TRUE);
+    if (isset($this->_claim->claim_link)) {
+      if($this->_action==CRM_CORE_Action::UPDATE) {
+        $this->add('select', 'claim_link', ts('Link HI'), $this->_claimLinkList, TRUE);
+      } else if ($this->_action==CRM_CORE_Action::VIEW){
+        $this->assign('claimLinkDescription', $this->_claimLinkList[$this->_claim->claim_link]);
+      }
     }
     $this->add('text', 'claim_submitted_by', ts('Claimed By'));
     $this->add('text', 'claim_submitted_date', ts('Date Submitted'));
-    $this->add('text', 'claim_description', ts('Description'), true);
-    $this->add('text', 'claim_total_amount', ts('Total Amount'), true);
-    // add buttons
-    $this->addButtons(array(
-      array('type' => 'submit', 'name' => ts('Save'), 'isDefault' => true,),
-      array('type' => 'next', 'name' => ts('Save and Approve')),
-      array('type' => 'next', 'subName' => 'reject', 'name' => ts('Save and Reject')),
-      array('type' => 'cancel', 'name' => ts('Cancel'))));
+    $this->add('textarea', 'claim_description', ts('Description'), TRUE);
+    $this->add('text', 'claim_total_amount', ts('Total Amount'), TRUE);
+    if($this->_action==CRM_CORE_Action::UPDATE) {
+      $this->addButtons([
+        ['type' => 'submit', 'name' => ts('Save'), 'isDefault' => TRUE,],
+        ['type' => 'next', 'name' => ts('Save and Approve')],
+        [
+          'type' => 'next',
+          'subName' => 'reject',
+          'name' => ts('Save and Reject'),
+        ],
+        ['type' => 'cancel', 'name' => ts('Cancel')],
+      ]);
+    } else if ($this->_action==CRM_CORE_Action::VIEW) {
+      $this->addButtons([
+        ['type' => 'cancel', 'name' => ts('Cancel')],
+      ]);
+    }
 
     $this->addClaimLines();
     $this->addAttachements();
+    $this->addAuditTrail();
     parent::buildQuickForm();
   }
 
@@ -43,27 +60,32 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
    * Method to get the claim lines of the claim and put them on the form
    */
   private function addClaimLines() {
-    $result = array();
+    $result = [];
     $config = CRM_Expenseclaims_Config::singleton();
-    $claimLines = CRM_Expenseclaims_BAO_ClaimLine::getValues(array('activity_id' => $this->_claimId));
+    $claimLines = CRM_Expenseclaims_BAO_ClaimLine::getValues(['activity_id' => $this->_claimId]);
     foreach ($claimLines as $claimLineId => $claimLine) {
-      $result[$claimLineId] = array();
+      $result[$claimLineId] = [];
       if (isset($claimLine['expense_date'])) {
         $result[$claimLineId]['date'] = $claimLine['expense_date'];
       }
       if (isset($claimLine['expense_type'])) {
         try {
-          $result[$claimLineId]['type'] = civicrm_api3('OptionValue', 'getvalue', array(
+          $result[$claimLineId]['type'] = civicrm_api3('OptionValue', 'getvalue', [
             'option_group_id' => $config->getClaimLineTypeOptionGroup('id'),
             'value' => $claimLine['expense_type'],
-            'return' => 'label'
-          ));
-        } catch (CiviCRM_API3_Exception $ex) {}
+            'return' => 'label',
+          ]);
+        } catch (CiviCRM_API3_Exception $ex) {
+        }
       }
       if (isset($claimLine['currency_id'])) {
         $sql = 'SELECT name FROM civicrm_currency WHERE id = %1';
-        $result[$claimLineId]['currency'] = CRM_Core_DAO::singleValueQuery($sql,
-          array(1 => array($claimLine['currency_id'], 'Integer')));
+        $result[$claimLineId]['currency'] = CRM_Core_DAO::singleValueQuery($sql, [
+          1 => [
+            $claimLine['currency_id'],
+            'Integer',
+          ],
+        ]);
       }
       if (isset($claimLine['currency_amount'])) {
         $result[$claimLineId]['currency_amount'] = $claimLine['currency_amount'];
@@ -78,16 +100,16 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
         $result[$claimLineId]['description'] = $claimLine['description'];
       }
       // add action item
-      if (!empty($result[$claimLineId])) {
-        $editUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimline', 'action=update&id='.$claimLineId, true);
-        $result[$claimLineId]['actions'][] = '<a class="action-item" title="Edit" href="'.$editUrl.'">Edit</a>';
+      if (!empty($result[$claimLineId])&& $this->_action==CRM_CORE_Action::UPDATE) {
+        $editUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimline', 'action=update&id=' . $claimLineId, TRUE);
+        $result[$claimLineId]['actions'][] = '<a class="action-item" title="Edit" href="' . $editUrl . '">Edit</a>';
       }
     }
     $this->assign('claimLines', $result);
   }
 
-  private function addAttachements(){
-    $result = array();
+  private function addAttachements() {
+    $result = [];
     $attachments = CRM_Core_BAO_File::getEntityFile('civicrm_activity', $this->_claimId);
     foreach ($attachments as $attachmentId => $attachment) {
       $result[$attachmentId] = $attachment['href'];
@@ -95,14 +117,41 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     $this->assign('attachments', $result);
   }
 
+  private function addAuditTrail() {
 
-  public function addRules() {
-    $this->addFormRule(array('CRM_Expenseclaims_Form_Claim', 'formRule'));
+    dd($this);
+
+    $sql = "SELECT l.id         
+,               c.display_name
+,               l.processed_date
+,               l.is_approved hoi 
+,               l.old_status_id old_status
+,               l.new_status_id new_status
+FROM            pum_claim_log l
+JOIN civicrm_contact c ON (c.id = l.approval_contact_id)
+AND             l.claim_activity_id= %1";
+    $dao = CRM_Core_DAO::executeQuery($sql, [
+      '1' => [$this->_claimId, 'Integer'],
+    ]);
+    $result[] = [];
+    while ($dao->fetch()) {
+      $id = $dao->id;
+      $result[$id] = [];
+      $result[$id]['display_name'] = $dao->display_name;
+      $result[$id]['processed_date'] = $dao->display_name;
+    }
+    $this->assign('claimLogs', $result);
+
   }
 
-  public static function  formRule($fields){
-    $errors = array();
-    if(isset($fields['_qf_Claim_next'])) {
+
+  public function addRules() {
+    $this->addFormRule(['CRM_Expenseclaims_Form_Claim', 'formRule']);
+  }
+
+  public static function formRule($fields) {
+    $errors = [];
+    if (isset($fields['_qf_Claim_next'])) {
       $claim = new CRM_Expenseclaims_BAO_Claim();
       $session = CRM_Core_Session::singleton();
       $dryRunError = $claim->failsDryRunApprove($fields['claim_id'], $session->get('userID'));
@@ -121,7 +170,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       $this->_claimId = $this->_submitValues['claim_id'];
     }
     $this->saveClaim();
-    $MyClaimsURL = CRM_Utils_System::url('/civicrm/pumexpenseclaims/page/myclaims', 'reset=1', true);
+    $MyClaimsURL = CRM_Utils_System::url('/civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE);
     CRM_Utils_System::redirect($MyClaimsURL);
     parent::postProcess();
   }
@@ -133,7 +182,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
    * @access public
    */
   function setDefaultValues() {
-    $defaults = array();
+    $defaults = [];
     $defaults['claim_id'] = $this->_claimId;
     if (isset($this->_claim->claim_submitted_by)) {
       $defaults['claim_submitted_by'] = CRM_Threepeas_Utils::getContactName($this->_claim->claim_submitted_by);
@@ -203,7 +252,8 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     $values = CRM_Utils_Request::exportValues();
     if (isset($values['claim_id'])) {
       $this->_claimId = $values['claim_id'];
-    } else {
+    }
+    else {
       if (isset($values['id'])) {
         $this->_claimId = $values['id'];
       }
@@ -213,19 +263,19 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       $claim = new CRM_Expenseclaims_BAO_Claim();
       try {
         $claim->approve($this->_claimId, $session->get('userID'));
-        CRM_Core_Session::setStatus('Claim '.$this->_claimId.' approved', 'Claim Approved', 'success');
+        CRM_Core_Session::setStatus('Claim ' . $this->_claimId . ' approved', 'Claim Approved', 'success');
         CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE));
       } catch (Exception $ex) {
         CRM_Core_Session::setStatus($ex->getMessage(), 'Claim Approval Error', 'error');
         CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE));
       }
     }
-    if ($this->_action == CRM_Core_Action::UPDATE) {
+    if ($this->_action == CRM_Core_Action::UPDATE || $this->_action == CRM_Core_Action::VIEW) {
       $claim = new CRM_Expenseclaims_BAO_Claim();
       $this->_claim = $claim->getWithId($this->_claimId);
     }
     CRM_Utils_System::setTitle(ts('PUM Senior Experts Expense Manage Claim'));
-    $this->_claimLinkList =  CRM_Expenseclaims_Utils::getClaimLinksForContact($this->_claim->claim_submitted_by);
+    $this->_claimLinkList = CRM_Expenseclaims_Utils::getClaimLinksForContact($this->_claim->claim_submitted_by);
   }
 
 }
