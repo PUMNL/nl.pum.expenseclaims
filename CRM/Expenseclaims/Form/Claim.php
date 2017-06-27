@@ -31,7 +31,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     }
     $this->add('text', 'claim_submitted_by', ts('Claimed By'));
     $this->add('text', 'claim_submitted_date', ts('Date Submitted'));
-    $this->add('textarea', 'claim_description', ts('Description'), TRUE);
+    $this->add('textarea', 'claim_description', ts('Remark'), TRUE);
     $this->add('text', 'claim_total_amount', ts('Total Amount'), TRUE);
     if($this->_action==CRM_CORE_Action::UPDATE) {
       $this->addButtons([

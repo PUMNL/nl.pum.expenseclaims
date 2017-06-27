@@ -21,12 +21,18 @@
     <div class="crm-section pum_claim_description">
       <div class="label">{$form.claim_description.label}</div>
       {if $action eq 2}
-         <div class="content">{$form.claim_description.html}</div>
+        <div class="content">
+            <em>In case of rejection or modification please specify</em><br/>
+            {$form.claim_description.html}
+         </div>
       {/if}
       {if $action eq 4}
             <div class="content">{$form.claim_description.value}</div>
       {/if}
+
+
       <div class="clear"></div>
+
     </div>
     <div class="crm-section pum_claim_link">
       {if $action eq 2}
