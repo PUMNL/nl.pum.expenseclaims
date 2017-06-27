@@ -498,6 +498,7 @@ class CRM_Expenseclaims_BAO_Claim {
     // then add custom data
     $this->_newClaim = $activity['values'][$activity['id']];
     $this->createCustomData($params);
+    $this->linkActivityToClaim();
     // finally determine who needs to approve claim and create claim log entry
     return $this->_newClaim;
   }
@@ -642,6 +643,15 @@ class CRM_Expenseclaims_BAO_Claim {
     }
     $sql = 'INSERT INTO '.$config->getClaimInformationCustomGroup('table_name').' SET '.implode(', ', $sqlClauses);
     CRM_Core_DAO::executeQuery($sql, $sqlParams);
+  }
+
+  private function linkActivityToClaim(){
+
+    $id=$this->_newClaim['id'];
+    civicrm_api3('activity','create',array(
+      'id' => $id,
+      'details' => "<a href='/civicrm/pumexpenseclaims/form/claim?action=view&id=$id'>View Claim</a>"
+    ));
   }
 
   /**
