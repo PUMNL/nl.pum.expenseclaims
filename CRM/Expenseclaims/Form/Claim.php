@@ -15,6 +15,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
   protected $_claimLinkList = [];
 
   protected $_claim = [];
+  private $_approverId = NULL;
 
   /**
    * Method to build the QuickForm
@@ -22,9 +23,10 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
   public function buildQuickForm() {
     // add form elements
     $this->add('hidden', 'claim_id');
+    $this->add('hidden', 'approverid',$this->_approverId);
     if (isset($this->_claim->claim_link)) {
       if($this->_action==CRM_CORE_Action::UPDATE) {
-        $this->add('select', 'claim_link', ts('Link HI'), $this->_claimLinkList, TRUE);
+        $this->add('select', 'claim_link', ts('Link'), $this->_claimLinkList, TRUE);
       } else if ($this->_action==CRM_CORE_Action::VIEW){
         $this->assign('claimLinkDescription', $this->_claimLinkList[$this->_claim->claim_link]);
       }
@@ -53,6 +55,25 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     $this->addClaimLines();
     $this->addAttachements();
     $this->addAuditTrail();
+
+    $session = CRM_Core_Session::singleton();
+    if($session->get('userID')==$this->_approverId){
+      $this->assign('werkbakje','Eigen Werkbakje');
+    } else {
+      $this->assign('werkbakje','Andermans Werkbakje');
+    };
+
+    if( $this->_approverId== $session->get('userID')){
+      $whoseClaims = 'myself';
+    } else {
+      $whoseClaims = civicrm_api3('contact','getvalue',array(
+        'id' => $this->_approverId,
+        'return' => 'display_name'
+      ));
+    }
+    $this->assign('whoseClaims',$whoseClaims);
+
+
     parent::buildQuickForm();
   }
 
@@ -117,28 +138,43 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     $this->assign('attachments', $result);
   }
 
+  /**
+   * create the auditTrail information
+   */
   private function addAuditTrail() {
 
-    dd($this);
+    $config = CRM_Expenseclaims_Config::singleton();
 
     $sql = "SELECT l.id         
-,               c.display_name
+,               c.display_name approver
+,               ac.display_name acting_approver
 ,               l.processed_date
-,               l.is_approved hoi 
-,               l.old_status_id old_status
-,               l.new_status_id new_status
+,               l.is_approved 
+,               l.is_rejected
+,               l.is_payable
+,               csov.label AS old_status
+,               nsov.label AS new_status
 FROM            pum_claim_log l
-JOIN civicrm_contact c ON (c.id = l.approval_contact_id)
-AND             l.claim_activity_id= %1";
+LEFT JOIN civicrm_contact c ON (c.id = l.approval_contact_id)
+LEFT JOIN civicrm_contact ac ON (ac.id = l.acting_approval_contact_id)
+LEFT JOIN civicrm_option_value csov ON  (l.old_status_id = csov.value collate utf8_general_ci AND csov.option_group_id = %2)
+LEFT JOIN civicrm_option_value nsov ON  (l.new_status_id = nsov.value collate utf8_general_ci AND nsov.option_group_id = %2)
+where             l.claim_activity_id = %1";
     $dao = CRM_Core_DAO::executeQuery($sql, [
       '1' => [$this->_claimId, 'Integer'],
+      '2' => array($config->getClaimStatusOptionGroup('id'), 'Integer')
     ]);
-    $result[] = [];
     while ($dao->fetch()) {
       $id = $dao->id;
       $result[$id] = [];
-      $result[$id]['display_name'] = $dao->display_name;
-      $result[$id]['processed_date'] = $dao->display_name;
+      $result[$id]['approver'] = $dao->approver;
+      $result[$id]['acting_approver'] = $dao->acting_approver;
+      $result[$id]['processed_date'] = $dao->processed_date;
+      $result[$id]['old_status'] = $dao->old_status;
+      $result[$id]['new_status'] = $dao->new_status;
+      $result[$id]['is_approved'] = $dao->is_approved;
+      $result[$id]['is_rejected'] = $dao->is_rejected;
+      $result[$id]['is_payable'] = $dao->is_payable;
     }
     $this->assign('claimLogs', $result);
 
@@ -169,8 +205,11 @@ AND             l.claim_activity_id= %1";
     if (isset($this->_submitValues['claim_id'])) {
       $this->_claimId = $this->_submitValues['claim_id'];
     }
+    if (isset($this->_submitValues['approverid'])) {
+      $this->_approverId = $this->_submitValues['approverid'];
+    }
     $this->saveClaim();
-    $MyClaimsURL = CRM_Utils_System::url('/civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE);
+    $MyClaimsURL = CRM_Utils_System::url('/civicrm/pumexpenseclaims/page/myclaims', 'reset=1&approverid='.$this->_approverId, TRUE);
     CRM_Utils_System::redirect($MyClaimsURL);
     parent::postProcess();
   }
@@ -231,12 +270,12 @@ AND             l.claim_activity_id= %1";
         // if save and approve, also change claim status to approval
         if (isset($this->_submitValues['_qf_Claim_next'])) {
           $session = CRM_Core_Session::singleton();
-          $claim->approve($this->_claimId, $session->get('userID'));
+          $claim->approve($this->_claimId, $this->_approverId, $session->get('userID'));
         }
 
         if (isset($this->_submitValues['_qf_Claim_next_reject'])) {
           $session = CRM_Core_Session::singleton();
-          $claim->reject($this->_claimId, $session->get('userID'));
+          $claim->reject($this->_claimId, $this->_approverId, $session->get('userID'));
         }
       }
     }
@@ -257,6 +296,9 @@ AND             l.claim_activity_id= %1";
       if (isset($values['id'])) {
         $this->_claimId = $values['id'];
       }
+    }
+    if(isset($values['approverid'])){
+      $this->_approverId = $values['approverid'];
     }
     // action enable means approve claim!
     if ($this->_action == CRM_Core_Action::ENABLE) {

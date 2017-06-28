@@ -161,6 +161,19 @@ function expenseclaims_civicrm_navigationMenu( &$params ) {
         ),
         'child' => null
       ),
+      '9' => array (
+        'attributes' => array (
+          'label'      => 'Others Claims',
+          'name'       => 'pum_expense_claims_other_peoples_claims',
+          'url'        => CRM_Utils_System::url('civicrm/pumexpenseclaims/otherpeoplesclaims', 'reset=1', true),
+          'operator'   => null,
+          'separator'  => 0,
+          'parentID'   => $maxKey+1,
+          'navID'      => 8,
+          'active'     => 1
+        ),
+        'child' => null
+      ),
       ));
 }
 

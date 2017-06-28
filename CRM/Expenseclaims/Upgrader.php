@@ -66,4 +66,9 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
     CRM_Expenseclaims_ConfigItems_ConfigItems::changeMainActivityLabel();
     return TRUE;
   }
+
+  public function upgrade_1004() {
+    $this->executeSqlFile('sql/upgrade_1004.sql');
+    return TRUE;
+  }
 }

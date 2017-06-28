@@ -1,11 +1,10 @@
 {* HEADER *}
-<h3>{ts}Claim Info{/ts}</h3>
+<h3>{ts}Managing claims for  {/ts}{$whoseClaims}</h3>
 
 {* dialog for claim line history *}
 <div id="pum_claims_line_history_dialog-block">
   <p><label id="claim_line_history"></label></p>
 </div>
-
 
 <div class="crm-block crm-form-block">
     <div class="crm-section pum_claim_submitted_by">
@@ -113,19 +112,25 @@
             <table id="audittrail-table" class="display">
                 <tr>
                     <th>{ts}Approver{/ts}</th>
+                    <th>{ts}Acting Approver{/ts}</th>
                     <th>{ts}Processing Date{/ts}</th>
                     <th>Is approved?</th>
                     <th>Is rejected?</th>
                     <th>Is payable</th>
+                    <th>Old Status</th>
+                    <th>New Status</th>
                 </tr>
                 {assign var="rowClass" value="odd-row"}
                 {foreach from=$claimLogs key=claimLogId item=claimLog}
                 <tr class="{$rowClass}">
-                    <td>{$claimLog.display_name}</td>
+                    <td>{$claimLog.approver}</td>
+                    <td>{$claimLog.acting_approver}</td>
                     <td>{$claimLog.processed_date|crmDate}</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <td>{$claimLog.is_approved}</td>
+                    <td>{$claimLog.is_rejected}</td>
+                    <td>{$claimLog.is_payable}</td>
+                    <td>{$claimLog.old_status}</td>
+                    <td>{$claimLog.new_status}</td>
                 </tr>
                     {if $rowClass eq "odd-row"}
                         {assign var="rowClass" value="even-row"}

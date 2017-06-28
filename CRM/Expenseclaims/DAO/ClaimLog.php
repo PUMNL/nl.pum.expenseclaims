@@ -46,6 +46,11 @@ class CRM_Expenseclaims_DAO_ClaimLog extends CRM_Core_DAO {
           'type' => CRM_Utils_Type::T_INT,
           'required' => true
         ),
+        'acting_approval_contact_id' => array(
+          'name' => 'acting_approval_contact_id',
+          'type' => CRM_Utils_Type::T_INT,
+          'required' => true
+        ),
         'processed_date' => array(
           'name' => 'processed_date',
           'type' => CRM_Utils_Type::T_DATE
@@ -87,6 +92,7 @@ class CRM_Expenseclaims_DAO_ClaimLog extends CRM_Core_DAO {
         'id' => 'id',
         'claim_activity_id' => 'claim_activity_id',
         'approval_contact_id' => 'approval_contact_id',
+        'acting_approval_contact_id' => 'acting_approval_contact_id',
         'processed_date' => 'processed_date',
         'is_approved' => 'is_approved',
         'is_rejected' => 'is_rejected',

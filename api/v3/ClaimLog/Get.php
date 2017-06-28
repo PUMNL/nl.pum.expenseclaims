@@ -24,6 +24,11 @@ function _civicrm_api3_claim_log_get_spec(&$spec) {
     'title' => 'approval_contact_id',
     'type' => CRM_Utils_Type::T_INT,
   );
+  $spec['acting_approval_contact_id'] = array(
+    'name' => 'acting_approval_contact_id',
+    'title' => 'acting_approval_contact_id',
+    'type' => CRM_Utils_Type::T_INT,
+  );
   $spec['old_status_id'] = array(
     'name' => 'old_status_id',
     'title' => 'old_status_id',

@@ -193,6 +193,9 @@ function _expenseclaims_civix_civicrm_managed(&$entities) {
         $e['module'] = 'nl.pum.expenseclaims';
       }
       $entities[] = $e;
+      if (empty($e['params']['version'])) {
+        $e['params']['version'] = '3';
+      }
     }
   }
 }
@@ -293,7 +296,7 @@ function _expenseclaims_civix_insert_navigation_menu(&$menu, $path, $item) {
     $first = array_shift($path);
     foreach ($menu as $key => &$entry) {
       if ($entry['attributes']['name'] == $first) {
-        if (!$entry['child']) {
+        if (!isset($entry['child'])) {
           $entry['child'] = array();
         }
         $found = _expenseclaims_civix_insert_navigation_menu($entry['child'], implode('/', $path), $item, $key);

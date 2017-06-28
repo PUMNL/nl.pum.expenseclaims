@@ -60,4 +60,16 @@
     <title>BatchClaimSelect</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/pumexpenseclaims/claimexport</path>
+    <page_callback>CRM_Expenseclaims_Page_BatchExport</page_callback>
+    <title>ClaimBatch</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/pumexpenseclaims/otherpeoplesclaims</path>
+    <page_callback>CRM_Expenseclaims_Page_OtherPeoplesClaims</page_callback>
+    <title>OtherPeoplesClaims</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
 </menu>

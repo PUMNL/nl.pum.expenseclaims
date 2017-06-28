@@ -1,6 +1,6 @@
 <div class="crm-content-block crm-block">
   <div id="help">
-    {ts}My Claims (needing approval or were rejected).{/ts}
+    {ts}Claims for {$whoseClaims} (needing approval or were rejected).{/ts}
   </div>
   {include file="CRM/common/pager.tpl" location="top"}
   {include file='CRM/common/jsortable.tpl'}

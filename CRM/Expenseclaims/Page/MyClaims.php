@@ -9,6 +9,7 @@
 
 class CRM_Expenseclaims_Page_MyClaims extends CRM_Core_Page {
   private $_userContactId = NULL;
+  private $_approverId = NULL;
 
   /**
    * Standard run function created when generating page with Civix
@@ -18,7 +19,19 @@ class CRM_Expenseclaims_Page_MyClaims extends CRM_Core_Page {
   function run() {
     $this->setPageConfiguration();
     $this->initializePager();
-    $myClaims = $this->getMyClaims();
+    $this->_approverId = CRM_Utils_Request::retrieve('approverid', 'Positive', $this, FALSE, $this->_userContactId);
+
+    if( $this->_approverId== $this->_userContactId){
+       $whoseClaims = 'myself';
+    } else {
+       $whoseClaims = civicrm_api3('contact','getvalue',array(
+         'id' => $this->_approverId,
+         'return' => 'display_name'
+       ));
+    }
+    $this->assign('whoseClaims',$whoseClaims);
+    $myClaims = $this->getMyClaims($this->_approverId);
+    CRM_Utils_System::setTitle(ts("Approve or reject claims for $whoseClaims"));
     $this->assign('myClaims', $myClaims);
     parent::run();
   }
@@ -29,7 +42,7 @@ class CRM_Expenseclaims_Page_MyClaims extends CRM_Core_Page {
    * @return array $myClaims
    * @access protected
    */
-  protected function getMyClaims() {
+  protected function getMyClaims($contactId) {
     $myClaims = array();
     $config = CRM_Expenseclaims_Config::singleton();
     list($offset, $limit) = $this->_pager->getOffsetAndRowCount();
@@ -55,7 +68,7 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL  LIMIT %6,
       1 => array($config->getTargetRecordTypeId(), 'Integer'),
       2 => array($config->getClaimStatusOptionGroup('id'), 'Integer'),
       3 => array($config->getClaimTypeOptionGroup('id'), 'Integer'),
-      4 => array($this->_userContactId, 'Integer'),
+      4 => array($contactId, 'Integer'),
       //5 => array(1, 'Integer'),
       6 => array($offset, 'Integer'),
       7 => array($limit, 'Integer')
@@ -129,7 +142,7 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL  LIMIT %6,
    */
   protected function setRowActions($claimId) {
     $actions = array();
-    $manageUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=update&id='.$claimId, true);
+    $manageUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=update&id='.$claimId.'&approverid='.$this->_approverId, true);
     $actions[] = '<a class="action-item" title="Manage" href="'.$manageUrl.'">Manage</a>';
     return $actions;
   }

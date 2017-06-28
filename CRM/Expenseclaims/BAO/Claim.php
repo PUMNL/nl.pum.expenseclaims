@@ -149,7 +149,7 @@ class CRM_Expenseclaims_BAO_Claim {
    * @param $claimId
    * @param $contactId
    */
-  public function approve($claimId, $contactId) {
+  public function approve($claimId, $contactId,$actingContactId) {
 
     // first check if I can actually approve
     if (!empty($claimId) || !empty($contactId)) {
@@ -164,16 +164,16 @@ class CRM_Expenseclaims_BAO_Claim {
         }
         // if my limit is 999999999.99 then final approval
         if ($myLevel['max_amount'] == 999999999.99) {
-          $this->finalApprove($claimId, $contactId);
+          $this->finalApprove($claimId, $contactId,$actingContactId);
         } else {
 
           // if the claim total amount is less than my max amount, final approve else next step
           $totalAmount = $this->getTotalAmount($claimId);
 
           if ($totalAmount <= $myLevel['max_amount']) {
-            $this->finalApprove($claimId, $contactId);
+            $this->finalApprove($claimId, $contactId,$actingContactId);
           } else {
-            $this->nextStep($claimId, $contactId, $myLevel['authorizing_level']);
+            $this->nextStep($claimId, $contactId, $actingContactId, $myLevel['authorizing_level']);
           }
         }
       } else {
@@ -182,7 +182,7 @@ class CRM_Expenseclaims_BAO_Claim {
     }
   }
 
-  public function reject($claimId, $contactId){
+  public function reject($claimId, $contactId,$actingContactId){
 
     /**
      * Method to reject a claim
@@ -210,6 +210,7 @@ class CRM_Expenseclaims_BAO_Claim {
         'new_status_id' => $config->getRejectedClaimStatusValue(),
         'is_payable' => 0,
         'is_rejected' => 1,
+        'acting_approval_contact_id' => $actingContactId,
         'processed_date' => date('Y-m-d')));
     } catch (CiviCRM_API3_Exception $ex) {}
 
@@ -223,7 +224,7 @@ class CRM_Expenseclaims_BAO_Claim {
    * @param $authorizingLevel
    * @throws Exception when one of the params is empty
    */
-  private function nextStep($claimId, $contactId, $authorizingLevel) {
+  private function nextStep($claimId, $contactId, $actingContactId, $authorizingLevel) {
     if (empty($claimId) || empty($contactId) || empty($authorizingLevel)) {
       throw new Exception('ClaimId, ContactId or AuthorizingLevel empty when trying to determine next claim approval step in '.__METHOD__
         .', contact your system administrator');
@@ -236,6 +237,7 @@ class CRM_Expenseclaims_BAO_Claim {
         'approval_contact_id' => $contactId));
       civicrm_api3('ClaimLog', 'create', array(
         'id' => $claimLog['id'],
+        'acting_approval_contact_id' => $actingContactId,
         'new_status_id' => $config->getInitiallyApprovedClaimStatusValue(),
         'is_payable' => 0,
         'is_approved' => 1,
@@ -243,10 +245,10 @@ class CRM_Expenseclaims_BAO_Claim {
       // now set next log record for the authorizing level contact
       $nextContactId = CRM_Expenseclaims_BAO_ClaimLevel::getNextLevelContactId($claimId, $authorizingLevel);
       if ($nextContactId) {
-        civicrm_api3('ClaimLog', 'create', array(
+         civicrm_api3('ClaimLog', 'create', array(
           'claim_activity_id' => $claimId,
           'approval_contact_id' => $nextContactId,
-          'old_status_id' => $config->getApprovedClaimStatusValue(),
+          'old_status_id' => $config->getInitiallyApprovedClaimStatusValue(),
           'is_approved' => 0,
           'is_payable' => 0,
           'is_rejected' => 0
@@ -268,7 +270,7 @@ class CRM_Expenseclaims_BAO_Claim {
    * @param $contactId
    * @throws Exception when claim id or contact id empty
    */
-  private function finalApprove($claimId, $contactId) {
+  private function finalApprove($claimId, $contactId,$actingContactId) {
     if (empty($claimId) || empty($contactId)) {
       throw new Exception('ClaimId or ContactId empty when trying to final approve claim in '.__METHOD__.', contact your system administrator');
     }
@@ -285,10 +287,11 @@ class CRM_Expenseclaims_BAO_Claim {
         'approval_contact_id' => $contactId));
       civicrm_api3('ClaimLog', 'create', array(
         'id' => $claimLog['id'],
+        'acting_approval_contact_id' => $actingContactId,
         'new_status_id' => $config->getApprovedClaimStatusValue(),
         'is_payable' => 1,
         'processed_date' => date('Y-m-d')));
-    } catch (CiviCRM_API3_Exception $ex) {}
+    } catch (CiviCRM_API3_Exception $ex) { }
   }
 
   /**
