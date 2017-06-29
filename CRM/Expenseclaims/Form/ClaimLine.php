@@ -152,6 +152,6 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
       $this->_expenseTypeList[$expenseType['value']] = $expenseType['label'];
     }
     $session = CRM_Core_Session::singleton();
-    $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=update&id='.$this->_claimLine['activity_id'], true));
+    $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=update&id='.$this->_claimLine['activity_id'].'&approverid='.$values['approverid'], true));
   }
 }

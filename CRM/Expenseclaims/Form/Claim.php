@@ -63,15 +63,18 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       $this->assign('werkbakje','Andermans Werkbakje');
     };
 
-    if( $this->_approverId== $session->get('userID')){
-      $whoseClaims = 'myself';
-    } else {
-      $whoseClaims = civicrm_api3('contact','getvalue',array(
-        'id' => $this->_approverId,
-        'return' => 'display_name'
-      ));
+    if($this->_action==CRM_Core_Action::UPDATE) {
+      if ($this->_approverId == $session->get('userID')) {
+        $whoseClaims = 'myself';
+      }
+      else {
+        $whoseClaims = civicrm_api3('contact', 'getvalue', [
+          'id' => $this->_approverId,
+          'return' => 'display_name'
+        ]);
+      }
+      $this->assign('whoseClaims', $whoseClaims);
     }
-    $this->assign('whoseClaims',$whoseClaims);
 
 
     parent::buildQuickForm();
@@ -122,7 +125,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       }
       // add action item
       if (!empty($result[$claimLineId])&& $this->_action==CRM_CORE_Action::UPDATE) {
-        $editUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimline', 'action=update&id=' . $claimLineId, TRUE);
+        $editUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimline', 'action=update&id=' . $claimLineId.'&approverid='.$this->_approverId, TRUE);
         $result[$claimLineId]['actions'][] = '<a class="action-item" title="Edit" href="' . $editUrl . '">Edit</a>';
       }
     }
@@ -318,6 +321,9 @@ where             l.claim_activity_id = %1";
     }
     CRM_Utils_System::setTitle(ts('PUM Senior Experts Expense Manage Claim'));
     $this->_claimLinkList = CRM_Expenseclaims_Utils::getClaimLinksForContact($this->_claim->claim_submitted_by);
+
+    $session = CRM_Core_Session::singleton();
+    $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'approverid='.$this->_approverId, true));
   }
 
 }
