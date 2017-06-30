@@ -574,8 +574,15 @@ class CRM_Expenseclaims_BAO_Claim {
         if (CRM_Expenseclaims_Utils::isClaimEnteredBySC($params['id'], $params['claim_link']) == TRUE) {
           $config = CRM_Expenseclaims_Config::singleton();
           return $config->getPumCpo();
-        } else {
-          return $this->findFirstApprovalProjectContact($params['claim_link']);
+        }
+        else {
+          if (CRM_Expenseclaims_Utils::isCTMorPDVCase($params['claim_link'])) {
+            $config = CRM_Expenseclaims_Config::singleton();
+            return $config->getPumCfo();
+          }
+          else {
+            return $this->findFirstApprovalProjectContact($params['claim_link']);
+          }
         }
         break;
       default:

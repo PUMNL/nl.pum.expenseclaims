@@ -282,6 +282,25 @@ class CRM_Expenseclaims_Utils {
   }
 
   /**
+   * Described in Smit Issue #80
+   * A CTM Case or a PDV case must be dispatched directory to the CFO
+   * @param $claimId
+   */
+  public static function isCTMorPDVCase($claimId){
+    $sql = "SELECT case_type FROM civicrm_case_pum WHERE entity_id = %1";
+    $claimType = CRM_Core_DAO::singleValueQuery($sql, array(
+      1 => array($claimId, 'Integer'),
+    ));
+    if($claimType=='C'||$claimType=='P'){
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+
+
+  }
+
+  /**
    * Method to check if a certain authorization record already exists
    *
    * @param $authorizationData
