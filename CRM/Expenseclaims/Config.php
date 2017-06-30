@@ -462,10 +462,11 @@ class CRM_Expenseclaims_Config {
         'name' => 'cpo',
         'return' => 'value'
       ));
-
-
-      $sql = "SELECT contact_id FROM pum_claim_level_contact WHERE claim_level_id = %1 LIMIT 1";
-      $this->_cfoContactId = CRM_Core_DAO::singleValueQuery($sql, array(1 => array($this->_cfoLevelId, 'Integer')));
+      
+      $sql = "SELECT contact_id FROM pum_claim_level_contact lc
+              JOIN   pum_claim_level level ON level.id = lc.claim_level_id
+              WHERE level.level = %1 LIMIT 1";
+      $this->_cfoContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($this->_cfoLevelId, 'Integer')));
       $this->_cpoContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($cpoLevel, 'Integer')));
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception('Could not find a contact with authorization level CPO and/or CFO in '.__METHOD__
