@@ -11,6 +11,7 @@
 class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
 
   protected $_claimLineId = NULL;
+  protected $_approverId  = NULL;
   protected $_expenseTypeList = array();
   protected $_currencyList = array();
   protected $_claimLine = array();
@@ -21,6 +22,7 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
   public function buildQuickForm() {
     // add form elements
     $this->add('hidden', 'claim_line_id');
+    $this->add('hidden', 'approverid');
     $this->addDate('expense_date', ts('Expense Date'), true);
     $this->add('text', 'description', ts('Description'), array(),true);
     $this->add('select', 'expense_type', ts('Expense Type'), $this->_expenseTypeList, true);
@@ -55,6 +57,7 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
   function setDefaultValues() {
     $defaults = array();
     $defaults['claim_line_id'] = $this->_claimLineId;
+    $defaults['approverid'] = $this->_approverId;
     if (isset($this->_claimLine['expense_date']) && !empty($this->_claimLine['expense_date'])) {
       list($defaults['expense_date']) = CRM_Utils_Date::setDateDefaults($this->_claimLine['expense_date']);
     } else {
@@ -127,14 +130,20 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
    * @access public
    */
   function preProcess() {
+
     $config = CRM_Expenseclaims_Config::singleton();
     $values = CRM_Utils_Request::exportValues();
+
     if (isset($values['claim_line_id'])) {
       $this->_claimLineId = $values['claim_line_id'];
     } else {
       if (isset($values['id'])) {
         $this->_claimLineId = $values['id'];
       }
+    }
+
+    if(isset($values['approverid'])){
+      $this->_approverId=$values['approverid'];
     }
     if ($this->_action == CRM_Core_Action::UPDATE) {
       $this->_claimLine = CRM_Expenseclaims_BAO_ClaimLine::getWithId($this->_claimLineId);
@@ -152,6 +161,6 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
       $this->_expenseTypeList[$expenseType['value']] = $expenseType['label'];
     }
     $session = CRM_Core_Session::singleton();
-    $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=update&id='.$this->_claimLine['activity_id'].'&approverid='.$values['approverid'], true));
+    $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=update&id='.$this->_claimLine['activity_id'].'&approverid='.$this->_approverId, true));
   }
 }
