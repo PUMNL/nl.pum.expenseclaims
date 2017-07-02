@@ -8,18 +8,22 @@
         <div id="help">
           {ts}This section shows the claims that are included in the batch.{/ts}
         </div>
+        {if $openBatchStatus}
         <div class="crm-submit-buttons">
           <a class="button new-option" href="#" id="remove_claims_form_batch">
             <span><div class="icon delete-icon"></div>Remove Selected from Batch</span>
           </a>
         </div>
+        {/if}
         <table class="selector-current" summary="{ts}Search results listings.{/ts}">
           <thead class="sticky">
             <tr>
+              {if $openBatchStatus}
               <th scope="col" title="Select All Rows">
                 <input id="toggleSelectAllSelected" name="toggleSelectAllSelected" value="1" class="form-checkbox" type="checkbox"
                        title="select all claims" />
               </th>
+              {/if}
               <th scope="col">{ts}Claim ID{/ts}</th>
               <th scope="col">{ts}Description{/ts}</th>
               <th scope="col">{ts}Submitted By{/ts}</th>
@@ -33,10 +37,13 @@
           {counter start=0 skip=1 print=false}
           {foreach from=$currentClaims item=currentClaim}
             <tr id='rowid{$currentClaim.claim_id}' class="{cycle values="odd-row,even-row"}">
-              <td>
+              {if $openBatchStatus}
+                <td>
                 <input id="selectClaim_{$currentClaim.pcbe_id}" name="selectClaim" value="1"
                        class="form-checkbox-row unselect-claims-check" type="checkbox" title="select all claims">
-              </td>
+                </td>
+              {/if}
+
               <td>{$currentClaim.claim_id}</td>
               <td>{$currentClaim.claim_description}</td>
               <td>{$currentClaim.claim_submitted_by}</td>

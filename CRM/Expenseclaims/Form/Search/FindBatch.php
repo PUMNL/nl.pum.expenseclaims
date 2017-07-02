@@ -46,6 +46,9 @@ class CRM_Expenseclaims_Form_Search_FindBatch extends CRM_Contact_Form_Search_Cu
     $form->assign('elements', array('batch_date_from', 'batch_date_to', 'claim_status', 'claim_type'));
     $form->assign('addUrl', CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimbatch', 'action=add&reset=1', true));
 
+    $config = CRM_Expenseclaims_Config::singleton();
+    $form->assign('exportedBatchStatusId',$config->getExportedBatchStatusId());
+
     $form->addButtons(array(array('type' => 'refresh', 'name' => ts('Search'), 'isDefault' => TRUE,),));
   }
 

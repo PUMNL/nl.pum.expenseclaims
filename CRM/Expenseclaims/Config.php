@@ -20,6 +20,7 @@ class CRM_Expenseclaims_Config {
   private $_claimStatusOptionGroup = array();
   private $_claimLevelOptionGroup = array();
   private $_claimInformationCustomGroup = array();
+  private $_bankInformationCustomFields = array();
   private $_claimLineTypeOptionGroup = array();
   private $_batchStatusOptionGroup = array();
   private $_seniorProjectOfficerRelationshipTypeId = NULL;
@@ -36,6 +37,7 @@ class CRM_Expenseclaims_Config {
   private $_countryCoordinatorRelationshipTypeId = NULL;
   private $_programmeManagerGroupId = NULL;
   private $_openBatchStatusId = NULL;
+  private $_exportedBatchStatus = NULL;
   private $_euroCurrencyId = NULL;
 
   /**
@@ -52,7 +54,8 @@ class CRM_Expenseclaims_Config {
     $this->setValidMainActivities();
     $this->setClaimActivityTypeId();
     $this->setOptionGroups();
-    $this->setCustomGroup();
+    $this->setClaimInformationCustomGroup();
+    $this->setBankInformationCustomFields();
     $this->setEuroCurrencyId();
     $this->setCpoCfoContactId();
     try {
@@ -79,6 +82,11 @@ class CRM_Expenseclaims_Config {
       $this->_openBatchStatusId = civicrm_api3('OptionValue', 'getvalue', array(
         'option_group_id' => $this->_batchStatusOptionGroup[ 'id'],
         'name' => 'open',
+        'return' => 'value'
+      ));
+      $this->_exportedBatchStatusId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_batchStatusOptionGroup[ 'id'],
+        'name' => 'exported',
         'return' => 'value'
       ));
     } catch (CiviCRM_API3_Exception $ex) {
@@ -123,6 +131,15 @@ class CRM_Expenseclaims_Config {
    */
   public function getOpenBatchStatusId() {
     return $this->_openBatchStatusId;
+  }
+
+  /**
+   * Getter for exported batch status id
+   *
+   * @return array|null
+   */
+  public function getExportedBatchStatusId() {
+    return $this->_exportedBatchStatusId;
   }
 
   /**
@@ -314,6 +331,10 @@ class CRM_Expenseclaims_Config {
     return $this->_claimInformationCustomGroup[$key];
   }
 
+  public function getBankInformationCustomFields(){
+    return $this -> _bankInformationCustomFields;
+  }
+
   /**
    * Getter for claim batch status option group
    *
@@ -462,7 +483,7 @@ class CRM_Expenseclaims_Config {
         'name' => 'cpo',
         'return' => 'value'
       ));
-      
+
       $sql = "SELECT contact_id FROM pum_claim_level_contact lc
               JOIN   pum_claim_level level ON level.id = lc.claim_level_id
               WHERE level.level = %1 LIMIT 1";
@@ -498,7 +519,7 @@ class CRM_Expenseclaims_Config {
    *
    * @throws Exception when error from api
    */
-  private function setCustomGroup() {
+  private function setClaimInformationCustomGroup() {
     try {
       $this->_claimInformationCustomGroup = civicrm_api3('CustomGroup', 'getsingle', array(
         'name' => 'Claiminformation',
@@ -513,6 +534,32 @@ class CRM_Expenseclaims_Config {
       $customFields = civicrm_api3('CustomField', 'get', array(
         'custom_group_id' => $this->_claimInformationCustomGroup['id']));
       $this->_claimInformationCustomGroup['custom_fields'] = $customFields['values'];
+    } catch (CiviCRM_API3_Exception $ex) {}
+  }
+
+  /**
+   * Method to set the required custom group for bank information
+   *
+   * @throws Exception when error from api
+   */
+  private function setBankInformationCustomFields() {
+    try {
+      $bankInformationCustomGroup = civicrm_api3('CustomGroup', 'getsingle', array(
+        'name' => 'Bank_Information',
+        'extends' => 'Individual'));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a custom group with name Bank_Information in '.__METHOD__
+        .', is required for PUM Senior Experts Claim Processing. Contact your system administrator, 
+        error from API CustomGroup getsingle: '.$ex->getMessage());
+    }
+    // now get possible custom fields in the group
+    try {
+      $customFields = civicrm_api3('CustomField', 'get', array(
+        'custom_group_id' => $bankInformationCustomGroup['id']));
+      foreach($customFields['values'] as $field){
+        $this->_bankInformationCustomFields[$field['name']] = $field['column_name'];
+      }
+
     } catch (CiviCRM_API3_Exception $ex) {}
   }
 

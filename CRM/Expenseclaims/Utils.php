@@ -360,4 +360,12 @@ class CRM_Expenseclaims_Utils {
     }
     return $return;
   }
+
+  public static function csvField($value){
+    if(!empty($value)) {
+      return '"' . str_replace('"','""',$value) . '"';
+    } else {
+      return '""';
+    }
+  }
 }

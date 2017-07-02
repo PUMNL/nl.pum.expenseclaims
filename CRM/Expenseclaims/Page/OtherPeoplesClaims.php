@@ -9,13 +9,18 @@ class CRM_Expenseclaims_Page_OtherPeoplesClaims extends CRM_Core_Page {
     parent::run();
   }
   private function otherPeople() {
+
+    $config = CRM_Expenseclaims_Config::singleton();
     $sql = "SELECT c.id, c.display_name FROM civicrm_contact c
 JOIN civicrm_group_contact gc ON (gc.contact_id = c.id)
-JOIN civicrm_group gr ON (gc.group_id = gr.id AND gr.title='Project Officers')
-ORDER BY c.sort_name";
+JOIN civicrm_group gr ON (gc.group_id = gr.id AND gr.title='Project Officers')";
+
 
     $otherPeople = [];
-    $dao = CRM_Core_DAO::executeQuery($sql);
+    $dao = CRM_Core_DAO::executeQuery($sql,array(
+      '1' => array($config->getPumCfo(),'Integer'),
+      '2' => array($config->getPumCpo(),'Integer'),
+    ));
     while($dao->fetch()){
       $otherPerson = [];
       $otherPerson['id'] = $dao->id;

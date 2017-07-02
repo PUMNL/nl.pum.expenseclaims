@@ -4,6 +4,7 @@
 {* include claims currently in batch *}
 {include file="CRM/Expenseclaims/Page/BatchCurrentClaims.tpl"}
 
+{if $batchOpen}
 <div class="crm-block crm-form-block">
   <div class="crm-accordion-wrapper crm-criteria_search-accordion">
     <div class="crm-accordion-header crm-master-accordion-header">
@@ -80,7 +81,7 @@
               <td>{$subsetClaim.claim_status}</td>
               <td>
                 <span>
-                  <a href="{crmURL p='civicrm/pumexpenseclaims/form/claim' q="action=update&id=`$subsetClaim.claim_id`"}"
+                  <a href="{crmURL p='civicrm/pumexpenseclaims/form/claim' q="action=view&id=`$subsetClaim.claim_id`"}"
                   class="action-item action-item-first" title="lines">{ts}Lines{/ts}</a>
                 </span>
               </td>
@@ -125,4 +126,5 @@
     });
   </script>
 {/literal}
+{/if}
 

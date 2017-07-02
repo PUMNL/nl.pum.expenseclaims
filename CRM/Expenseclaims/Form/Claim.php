@@ -250,7 +250,7 @@ where             l.claim_activity_id = %1";
         }
       }
     */
-
+    
     return $defaults;
   }
 

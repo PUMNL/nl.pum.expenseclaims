@@ -13,6 +13,7 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
   private $_subsetParams = array();
   private $_searchDateFrom = NULL;
   private $_searchDateTo = NULL;
+  private $_batchOpen    = NULL;
 
   /**
    * Method to build the QuickForm
@@ -27,8 +28,9 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
     $this->addDate('claim_from_date', ts('Claim Date from'), false);
     $this->addDate('claim_to_date', ts('Claim Date to'), false);
     // add buttons
-    $this->addButtons(array(
-      array('type' => 'next', 'name' => ts('Search'), 'isDefault' => true,)));
+    $this->addButtons([
+        ['type' => 'next', 'name' => ts('Search'), 'isDefault' => TRUE,]
+      ]);
     parent::buildQuickForm();
   }
 
@@ -42,7 +44,7 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
       $this->_batchData = civicrm_api3('ClaimBatch', 'getsingle', array('id' => $this->_batchId));
       $config = CRM_Expenseclaims_Config::singleton();
       $this->_batchData['batch_status'] = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $config->getClaimStatusOptionGroup('id'),
+        'option_group_id' => $config->getBatchStatusOptionGroup('id'),
         'value' => $this->_batchData['batch_status_id'],
         'return' => 'label'
       ));
@@ -162,6 +164,11 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
       $this->getClaimSubset();
       $this->getCurrentClaimsForBatch();
     }
+    $config = CRM_Expenseclaims_Config::singleton();
+    if ($this->_batchData['batch_status_id']==$config->getOpenBatchStatusId()){
+      $this->_batchOpen = TRUE;
+      $this->assign("batchOpen",$this->_batchOpen = TRUE);
+    }
   }
 
   /**
@@ -245,7 +252,7 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
       4 => array($config->getApprovedClaimStatusValue(), 'String'),
       5 => array($config->getTargetRecordTypeId(), 'Integer'),
       6 => array($config->getClaimStatusOptionGroup('id'), 'Integer'),
-      7 => array($this->_batchId, 'Integer'),
+     // 7 => array($this->_batchId, 'Integer'),
       8 => array('civicrm_activity', 'String')
     );
     $this->_subsetIndex = 8;
@@ -294,7 +301,7 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
       JOIN civicrm_contact cc ON cac.contact_id = cc.id
       LEFT JOIN {$config->getClaimInformationCustomGroup('table_name')} cvci ON act.id = cvci.entity_id
       LEFT JOIN civicrm_option_value csov ON cvci.pum_claim_status = csov.value AND csov.option_group_id = %6
-      WHERE act.id NOT IN(SELECT entity_id FROM pum_claim_batch_entity WHERE batch_id = %7 AND entity_table = %8) AND "
+      WHERE act.id NOT IN(SELECT entity_id FROM pum_claim_batch_entity WHERE entity_table = %8) AND "
       .implode(' AND ', $whereClauses);
     return $query;
   }

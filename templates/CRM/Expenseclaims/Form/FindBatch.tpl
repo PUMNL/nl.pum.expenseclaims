@@ -59,14 +59,22 @@
             <td>{$row.$fName}</td>
           {/foreach}
           <td>
-          <span>
-            <a href="{crmURL p='civicrm/pumexpenseclaims/form/batchclaimselect' q="action=update&bid=`$row.batch_id`"}"
+            <span>
+              <a href="{crmURL p='civicrm/pumexpenseclaims/form/batchclaimselect' q="action=update&bid=`$row.batch_id`"}"
                class="action-item action-item-first" title="claims">{ts}Claims{/ts}</a>
-          </span>
+            </span>
+            {if $row.batch_status eq Open}
+            <span>
+              <a href="#"  onclick="closeBatch({$row.batch_id},'{$row.description}',{$exportedBatchStatusId})"
+                 class="action-item action-item-first" title="claims">{ts}Close for export{/ts}
+              </a>
+            </span>
+            {else}
             <span>
               <a href="{crmURL p='civicrm/pumexpenseclaims/claimexport' q="reset=1&bid=`$row.batch_id`"}"
-                 class="action-item action-item-first" title="export">{ts}Export{/ts}</a>
+                 class="action-item action-item-first" title="export">{ts}Export CSV{/ts}</a>
             </span>
+            {/if}
           </td>
         </tr>
       {/foreach}
@@ -79,5 +87,34 @@
   </fieldset>
   {* END Actions/Results section *}
 {/if}
+
+<div id="enableDisableStatusMsg" class="crm-container" style="display:none"></div>
+{literal}
+<script type="text/javascript">
+    function closeBatch(id,description,batch_status_id) {
+        cj("#enableDisableStatusMsg").dialog({
+            title: 'Confirm Changes',
+            modal: true,
+            open: function () {
+                cj('#enableDisableStatusMsg').show().html('Do you want to close batch '+description+' for export?');
+            },
+            buttons: {
+                "Cancel": function () {
+                    cj(this).dialog("close");
+                },
+                "OK": function () {
+                    CRM.api3('ClaimBatch', 'create', {'id':id, 'batch_status_id':batch_status_id})
+                        .done(function () {
+
+                        });
+                    cj(this).dialog("close");
+                    cj('#Custom').submit();
+
+                }
+            }
+        });
+    }
+</script>
+{/literal}
 
 
