@@ -538,6 +538,12 @@ class CRM_Expenseclaims_BAO_Claim {
    * @return bool|int
    */
   public function findFirstApprovalContact($params) {
+
+    /* fyi interest the 7 series is of the old organisation setup
+       the 3 series is the new organisation setup
+       in the export the grouping field is used in case the organisation
+       setup changes again */
+
     switch ($params['claim_type']) {
       // if claim type is 7162 or 7165 approval by CFO
       // 7162 is Hans Blankerd Fonds
@@ -561,11 +567,23 @@ class CRM_Expenseclaims_BAO_Claim {
         return $config->getPumCfo();
         break;
       // if claim type is 7163 or 7164 approval bij CPO
+      // Recruitment (RCT) 7163
+      // Aspect-Advisors (AA) 7164
       case "7163":
         $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCpo();
         break;
       case "7164":
+        $config = CRM_Expenseclaims_Config::singleton();
+        return $config->getPumCpo();
+        break;
+      // 3101  Regio Coordinatoren
+      case "3101":
+        $config = CRM_Expenseclaims_Config::singleton();
+        return $config->getPumCfo();
+        break;
+      // 3102  Thema Coordinatoren
+      case "3201":
         $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCpo();
         break;
