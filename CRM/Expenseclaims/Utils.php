@@ -22,11 +22,11 @@ class CRM_Expenseclaims_Utils {
     if (!empty($contactId) && !empty($claimId)) {
       $config = CRM_Expenseclaims_Config::singleton();
 
-      $result = civicrm_api3('Claim','get',array('id'=> '437620'));
+      $result = civicrm_api3('Claim','get',array('id'=> $claimId));
       $claim_link_to = $result['values'][$result['id']]['claim_linked_to'];
       $count = civicrm_api3('Relationship', 'getcount', array(
         'relationship_type_id' => $config->getProjectOfficerRelationshipTypeId(),
-        'contact_id_b' => 2304,
+        'contact_id_b' => $contactId,
         'case_id' =>  $claim_link_to,
         'options' => array('limit' => 1)
       ));
