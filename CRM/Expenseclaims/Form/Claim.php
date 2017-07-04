@@ -192,15 +192,13 @@ where             l.claim_activity_id = %1";
     $errors = [];
     if (isset($fields['_qf_Claim_next'])) {
       $claim = new CRM_Expenseclaims_BAO_Claim();
-      $session = CRM_Core_Session::singleton();
-      $dryRunError = $claim->failsDryRunApprove($fields['claim_id'], $session->get('userID'));
+      $dryRunError = $claim->failsDryRunApprove($fields['claim_id'], $fields['approverid']);
       if ($dryRunError) {
         $errors['_qf_default'] = $dryRunError;
       }
     }
     return $errors;
   }
-
   /**
    * Method to process results from the form
    */
@@ -250,7 +248,6 @@ where             l.claim_activity_id = %1";
         }
       }
     */
-    
     return $defaults;
   }
 
