@@ -95,6 +95,7 @@
 {literal}
   <script type="text/javascript">
     cj('#add_claims_to_batch').click(function() {
+      var requests = new Array();
       cj('.form-checkbox-row').each(function () {
         if (cj(this).attr('name') === 'selectClaim') {
           // if checked is true, add claim to batch
@@ -102,12 +103,12 @@
           if (checked) {
             var claimId = cj(this).attr('id').substr(12);
             var batchId = cj('#batch_id').val();
-            CRM.api3('ClaimBatchEntity', 'create', {'batch_id':batchId, 'entity_id':claimId, 'entity_table':'civicrm_activity'})
-              .done(function () {
-              });
+            requests.push(['ClaimBatchEntity', 'create', {'batch_id':batchId, 'entity_id':claimId, 'entity_table':'civicrm_activity'}]);
           };
+
         };
-      });
+        });
+        CRM.api3(requests).done(function (result) {});
       // rebuild form to show newly added claims
       window.location.reload();
     });

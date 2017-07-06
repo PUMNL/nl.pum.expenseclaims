@@ -8,7 +8,7 @@
         <div id="help">
           {ts}This section shows the claims that are included in the batch.{/ts}
         </div>
-        {if $openBatchStatus}
+        {if $batchOpen}
         <div class="crm-submit-buttons">
           <a class="button new-option" href="#" id="remove_claims_form_batch">
             <span><div class="icon delete-icon"></div>Remove Selected from Batch</span>
@@ -18,7 +18,7 @@
         <table class="selector-current" summary="{ts}Search results listings.{/ts}">
           <thead class="sticky">
             <tr>
-              {if $openBatchStatus}
+              {if $batchOpen}
               <th scope="col" title="Select All Rows">
                 <input id="toggleSelectAllSelected" name="toggleSelectAllSelected" value="1" class="form-checkbox" type="checkbox"
                        title="select all claims" />
@@ -37,7 +37,7 @@
           {counter start=0 skip=1 print=false}
           {foreach from=$currentClaims item=currentClaim}
             <tr id='rowid{$currentClaim.claim_id}' class="{cycle values="odd-row,even-row"}">
-              {if $openBatchStatus}
+              {if $batchOpen}
                 <td>
                 <input id="selectClaim_{$currentClaim.pcbe_id}" name="selectClaim" value="1"
                        class="form-checkbox-row unselect-claims-check" type="checkbox" title="select all claims">
@@ -62,18 +62,20 @@
 <script type="text/javascript">
 
     cj('#remove_claims_form_batch').click(function() {
+        var requests = new Array();
         cj('.form-checkbox-row').each(function () {
             if (cj(this).attr('name') === 'selectClaim') {
                 // if checked is true, add claim to batch
                 var checked = cj(this).is(":checked");
                 if (checked) {
                     var pcbeId = cj(this).attr('id').substr(12);
-                    CRM.api3('ClaimBatchEntity', 'delete', {'id':pcbeId})
-                        .done(function () {
-                        });
+                    requests.push(['ClaimBatchEntity', 'delete', {'id':pcbeId}])
+
                 };
             };
         });
+        CRM.api3(requests).done(function () {
+            });
         // rebuild form to show newly added claims
         window.location.reload();
     });
