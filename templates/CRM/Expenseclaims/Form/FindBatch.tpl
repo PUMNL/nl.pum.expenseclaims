@@ -99,9 +99,6 @@
                 cj('#enableDisableStatusMsg').show().html('Do you want to close batch '+description+' for export?');
             },
             buttons: {
-                "Cancel": function () {
-                    cj(this).dialog("close");
-                },
                 "OK": function () {
                     CRM.api3('ClaimBatch', 'create', {'id':id, 'batch_status_id':batch_status_id})
                         .done(function () {
@@ -110,6 +107,9 @@
                     cj(this).dialog("close");
                     cj('#Custom').submit();
 
+                },
+                "Cancel": function () {
+                    cj(this).dialog("close");
                 }
             }
         });
