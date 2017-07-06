@@ -23,6 +23,7 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
     // change custom fields in existing custom group claiminformation
     $configItems->install();
     CRM_Expenseclaims_ConfigItems_ConfigItems::changeCustomClaimInformation();
+    CRM_Expenseclaims_ConfigItems_ConfigItems::changeMainActivityLabel();
   }
 
   /**
