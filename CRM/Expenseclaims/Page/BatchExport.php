@@ -38,6 +38,7 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
         
  ,        ctov.label AS claim_type
  ,        ctov.grouping AS cost_center
+ ,        ctov.name     AS fa_default_donor
  ,        line.expense_date AS expense_date
  ,        line.expense_type AS expense_type
  ,        ltov.grouping AS pum_account_number
@@ -134,11 +135,13 @@ function run() {
       '1' => array($bid,'Integer')
     ));
     while($dao->fetch()){
+     $donorCode = $this->donorCode($dao->claim_link);
+     $pumCaseNumber = $dao->case_country.$dao->case_sequence.$dao->case_type;
      $line = array (
        $dao->claim_id,
        $dao->claim_link,
-       $dao->case_country.$dao->case_sequence.$dao->case_type,
-       $this->donorCode($dao->claim_link),
+       $pumCaseNumber?$pumCaseNumber:$dao->cost_center,
+       $donorCode?$donorCode:$dao->fa_default_donor,
        $dao->claim_total_amount,
        $dao->claim_description,
        $dao->claim_status,
