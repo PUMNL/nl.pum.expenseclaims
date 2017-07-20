@@ -559,7 +559,7 @@ class CRM_Expenseclaims_BAO_Claim {
       // Sector Coordinator
       case "7161":
         $config =  CRM_Expenseclaims_Config::singleton();
-        return $config->getPumCfo();
+        return $config->getPumCpo();
         break;
       // Country Coordinator
       case "7160":
