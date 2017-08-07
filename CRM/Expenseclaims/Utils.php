@@ -342,17 +342,48 @@ class CRM_Expenseclaims_Utils {
       'name' => 'TravelCase',
       'option_group_id' => 'case_type'
     ));
+    $caseStatusRejected = civicrm_api3('OptionValue', 'getvalue', array(
+      'return' => 'value',
+      'name' => 'Rejected',
+      'option_group_id' => 'case_status'
+    ));
+    $caseStatusDeclined = civicrm_api3('OptionValue', 'getvalue', array(
+      'return' => 'value',
+      'name' => 'Declined',
+      'option_group_id' => 'case_status'
+    ));
+    $caseStatusError = civicrm_api3('OptionValue', 'getvalue', array(
+      'return' => 'value',
+      'name' => 'Error',
+      'option_group_id' => 'case_status'
+    ));
+    $caseStatusCancelled = civicrm_api3('OptionValue', 'getvalue', array(
+      'return' => 'value',
+      'name' => 'Cancelled',
+      'option_group_id' => 'case_status'
+    ));
+    $caseStatusCompleted = civicrm_api3('OptionValue', 'getvalue', array(
+      'return' => 'value',
+      'name' => 'Completed',
+      'option_group_id' => 'case_status'
+    ));
+
     $sql = "SELECT `case`.`id`, `case`.`subject` 
-          FROM `civicrm_relationship` `relationship` 
-          INNER JOIN `civicrm_case` `case` ON `case`.`id` = `relationship`.`case_id`
-          JOIN  `civicrm_case_pum`  `pum_case`      ON `case`.`id` = `pum_case`.`entity_id` AND `pum_case`.`case_type` in ('A','B','C','P','R','S')
-          WHERE (`relationship`.`contact_id_a` = %1 OR `relationship`.`contact_id_b` = %1) AND `case`.`case_type_id` NOT LIKE %2 
-          ";
+            FROM `civicrm_relationship` `relationship`
+            INNER JOIN `civicrm_case` `case` ON `case`.`id` = `relationship`.`case_id`
+            JOIN  `civicrm_case_pum`  `pum_case`      ON `case`.`id` = `pum_case`.`entity_id` AND `pum_case`.`case_type` in ('A','B','C','P','R','S')
+            WHERE (`relationship`.`contact_id_a` = %1 OR `relationship`.`contact_id_b` = %1) AND (`case`.`case_type_id` NOT LIKE %2) AND
+            (`case`.`status_id` != %3) AND (`case`.`status_id` != %4) AND (`case`.`status_id` != %5) AND (`case`.`status_id` != %6) AND (`case`.`status_id` != %7)
+            AND `case`.`is_deleted` = '0'";
+
     $params[1] = array($contactId, 'Integer');
-    $params[2] = array(
-      '%' . CRM_Core_DAO::VALUE_SEPARATOR . $travelCaseType . CRM_Core_DAO::VALUE_SEPARATOR . '%',
-      'String'
-    );
+    $params[2] = array('%' . CRM_Core_DAO::VALUE_SEPARATOR . $travelCaseType . CRM_Core_DAO::VALUE_SEPARATOR . '%','String');
+    $params[3] = array($caseStatusRejected,'String');
+    $params[4] = array($caseStatusDeclined,'String');
+    $params[5] = array($caseStatusError,'String');
+    $params[6] = array($caseStatusCancelled,'String');
+    $params[7] = array($caseStatusCompleted,'String');
+
     $dao = CRM_Core_DAO::executeQuery($sql, $params);
     $return = array();
     while ($dao->fetch()) {
