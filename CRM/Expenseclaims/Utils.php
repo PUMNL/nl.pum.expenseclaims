@@ -394,7 +394,10 @@ class CRM_Expenseclaims_Utils {
 
   public static function csvField($value){
     if(!empty($value)) {
-      return '"' . str_replace('"','""',$value) . '"';
+      $value = str_replace(';','',$value);
+      $value = str_replace(',','',$value);
+      $value = str_replace('"','""',$value);
+      return '"' . $value . '"';
     } else {
       return '""';
     }

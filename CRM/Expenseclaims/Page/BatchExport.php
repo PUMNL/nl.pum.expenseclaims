@@ -129,7 +129,7 @@ function run() {
 
     );
 
-    $buffer = implode(',',array_map("CRM_Expenseclaims_Utils::csvField",$heading))."\n";
+    $buffer = implode(';',array_map("CRM_Expenseclaims_Utils::csvField",$heading))."\n";
 
     $dao = CRM_Core_DAO::executeQuery($claimsql,array(
       '1' => array($bid,'Integer')
@@ -180,10 +180,7 @@ function run() {
        $dao->description
      );
 
-
-     $buffer .= implode(',',array_map("CRM_Expenseclaims_Utils::csvField",$line))."\n";
-
-
+     $buffer .= implode(';',array_map("CRM_Expenseclaims_Utils::csvField",$line))."\n";
 
     }
 
