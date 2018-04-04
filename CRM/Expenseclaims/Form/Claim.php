@@ -317,7 +317,7 @@ where             l.claim_activity_id = %1";
       $this->_claim = $claim->getWithId($this->_claimId);
     }
     CRM_Utils_System::setTitle(ts('PUM Senior Experts Expense Manage Claim'));
-    $this->_claimLinkList = CRM_Expenseclaims_Utils::getClaimLinksForContact($this->_claim->claim_submitted_by);
+    $this->_claimLinkList = CRM_Expenseclaims_Utils::getClaimLinksForContact($this->_claim->claim_submitted_by, TRUE);
 
     $session = CRM_Core_Session::singleton();
     $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'approverid='.$this->_approverId, true));
