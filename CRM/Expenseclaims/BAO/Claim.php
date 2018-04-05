@@ -575,7 +575,7 @@ class CRM_Expenseclaims_BAO_Claim {
         break;
       case "7164":
         $config = CRM_Expenseclaims_Config::singleton();
-        return $config->getPumCpo();
+        return $config->getPumCfo();
         break;
       // 3101  Regio Coordinatoren
       case "3101":
