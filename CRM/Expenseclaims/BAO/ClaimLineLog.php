@@ -70,4 +70,22 @@ class CRM_Expenseclaims_BAO_ClaimLineLog extends CRM_Expenseclaims_DAO_ClaimLine
     self::storeValues($claimLineLog, $result);
     return $result;
   }
+
+  /**
+   * Method to delete all claim logs for the activity (parent activity of the type Claim)
+   *
+   * @param $id
+   * @throws Exception when activityId is empty
+   */
+  public static function deleteWithActivityId($id) {
+    if (empty($id)) {
+      throw new Exception('activity id can not be empty when attempting to delete claim log records for an activity in '.__METHOD__);
+    }
+    $claimLineLog = new CRM_Expenseclaims_BAO_ClaimLineLog();
+    $claimLineLog->claim_activity_id = $id;
+    $claimLineLog->find();
+    while ($claimLineLog->fetch()) {
+      $claimLineLog->delete();
+    }
+  }
 }

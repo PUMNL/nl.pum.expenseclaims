@@ -774,8 +774,57 @@ class CRM_Expenseclaims_BAO_Claim {
         }
       }
     } catch(CiviCRM_API3_Exception $ex) {
-      throw new Exception(ts('Could not find the claim with id '.$claimId.'in the database! Contact your system administrator'));
+      throw new Exception(ts('Could not find the claim with id '.$claimId.' in the database! Contact your system administrator'));
     }
     return TRUE;
+  }
+
+  /**
+   * Function to delete a claim by id
+   *
+   * @param int $claimId
+   * @throws Exception when claimId is empty
+   */
+  public static function deleteWithId($claimId) {
+    if (empty($claimId)) {
+      throw new Exception(ts('claim id can not be empty when attempting to delete a claim in '.__METHOD__));
+    } else {
+      try {
+        //Remove all claim line logs
+        $claimLineLog = new CRM_Expenseclaims_BAO_ClaimLineLog();
+        $claimLineLog->deleteWithActivityId($claimId);
+      } catch (Exception $e) {
+        return 10;
+      }
+
+      try {
+        //Remove all claim lines
+        $claimLines = new CRM_Expenseclaims_BAO_ClaimLine();
+        $claimLines->deleteWithActivityId($claimId);
+      } catch (Exception $e) {
+        return 20;
+      }
+
+      try {
+        //Remove all from claim log
+        $claimLog = new CRM_Expenseclaims_BAO_ClaimLog();
+        $claimLog->deleteWithActivityId($claimId);
+      } catch (Exception $e) {
+        return 30;
+      }
+
+      $remove_claim_params = array(
+        'version' => 3,
+        'sequential' => 1,
+        'id' => (int)$claimId,
+      );
+      $remove_claim = civicrm_api('Activity', 'delete', $remove_claim_params);
+
+      if($remove_claim['is_error']==0 && $remove_claim['count'] == 1) {
+        return TRUE;
+      } else {
+        return FALSE;
+      }
+    }
   }
 }

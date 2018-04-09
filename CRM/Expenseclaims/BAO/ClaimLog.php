@@ -72,7 +72,7 @@ class CRM_Expenseclaims_BAO_ClaimLog extends CRM_Expenseclaims_DAO_ClaimLog {
   }
 
   /**
-   * Method to delete all claim logss for the activity (parent activity of the type Claim)
+   * Method to delete all claim logs for the activity (parent activity of the type Claim)
    *
    * @param $activityId
    * @throws Exception when activityId is empty
