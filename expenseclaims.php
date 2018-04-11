@@ -18,8 +18,9 @@ function expenseclaims_civicrm_buildForm($formName, &$form) {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_permission
  */
 function expenseclaims_civicrm_permission(&$permissions) {
-  $prefix = ts('CiviCRM PUM Senior Experts Expense Claims') . ': ';
-  $permissions['pum expense claims'] = $prefix . ts('pum expense claims');
+  $prefix = ts('CiviCRM Claims') . ': ';
+  $permissions['create claim batches'] = $prefix . ts('create claim batches');
+  $permissions['delete claim from batches'] = $prefix . ts('delete claim from batches');
 }
 
 
@@ -328,8 +329,12 @@ function expenseclaims_civicrm_navigationMenu(&$menu) {
   _expenseclaims_civix_navigationMenu($menu);
 } // */
 
-function expenseclaims_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions)
-{
+function expenseclaims_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions) {
   $permissions['claim_line_log']['get'] = array('access CiviCRM');
-  $permissions['claim_batch']['create'] = array('access CiviCRM');
+
+  $permissions['claim_batch']['get'] = array('access CiviCRM');
+  $permissions['claim_batch']['create'] = array('create claim batches');
+  $permissions['claim_batch_entity']['get'] = array('access CiviCRM');
+  $permissions['claim_batch_entity']['create'] = array('create claim batches');
+  $permissions['claim_batch_entity']['delete'] = array('delete claim from batches');
 }

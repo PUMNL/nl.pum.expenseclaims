@@ -60,24 +60,29 @@
 {/strip}
 {literal}
 <script type="text/javascript">
-
     cj('#remove_claims_form_batch').click(function() {
         var requests = new Array();
         cj('.form-checkbox-row').each(function () {
-            if (cj(this).attr('name') === 'selectClaim') {
+            if (cj(this).attr('name') == 'selectClaim') {
                 // if checked is true, add claim to batch
                 var checked = cj(this).is(":checked");
-                if (checked) {
-                    var pcbeId = cj(this).attr('id').substr(12);
-                    requests.push(['ClaimBatchEntity', 'delete', {'id':pcbeId}])
 
-                };
-            };
+                if (checked == true) {
+                    var pcbeId = cj(this).attr('id').substr(12);
+                    requests.push(['ClaimBatchEntity', 'delete', {'id':pcbeId}]);
+                }
+            }
         });
-        CRM.api3(requests).done(function () {
-            });
-        // rebuild form to show newly added claims
-        window.location.reload();
+
+        CRM.api3(requests)
+          .done(function (result) {
+            CRM.alert('Successfully removed claims from batch','Remove claims from batch','success');
+            window.location.reload();
+          })
+          .fail(function (result) {
+            CRM.alert('Failed to remove claims from batch','Remove claims from batch','error');
+            window.location.reload();
+          });
     });
 
     cj('#toggleSelectAllSelected').change(function() {

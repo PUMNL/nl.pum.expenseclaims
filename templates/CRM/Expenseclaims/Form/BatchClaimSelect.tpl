@@ -104,13 +104,18 @@
             var claimId = cj(this).attr('id').substr(12);
             var batchId = cj('#batch_id').val();
             requests.push(['ClaimBatchEntity', 'create', {'batch_id':batchId, 'entity_id':claimId, 'entity_table':'civicrm_activity'}]);
-          };
-
-        };
+          }
+        }
+      });
+      CRM.api3(requests)
+        .done(function (result) {
+          //CRM.alert('','Successfully added claims to batch', 'success');
+          window.location.reload();
+        })
+        .fail(function (result) {
+          CRM.alert('','Failed to add claims to batch', 'error');
+          window.location.reload();
         });
-        CRM.api3(requests).done(function (result) {});
-      // rebuild form to show newly added claims
-      window.location.reload();
     });
     // toggle all checkboxes with select all
     cj('#toggleSelectAll').change(function() {
