@@ -1,23 +1,22 @@
 <?php
 
-class CRM_Expenseclaims_Page_OtherPeoplesClaims extends CRM_Core_Page {
+class CRM_Expenseclaims_Page_AdministerClaims extends CRM_Core_Page {
 
   public function run() {
-    CRM_Utils_System::setTitle(ts('Other Peoples Claims'));
-    $this->assign('currentTime', date('Y-m-d H:i:s'));
-    $this->assign('otherPeople',$this->otherPeople());
+    // Example: Set the page-title dynamically; alternatively, declare a static title in xml/Menu/*.xml
+    CRM_Utils_System::setTitle(ts('Administer Claims'));
+
+    $this->assign('administerClaims',$this->administerClaims());
+
     parent::run();
   }
-  private function otherPeople() {
 
+  private function administerClaims() {
     $config = CRM_Expenseclaims_Config::singleton();
     $sql = "SELECT lc.contact_id AS 'id', c.display_name FROM pum_claim_level_contact lc JOIN civicrm_contact c ON c.id = lc.contact_id";
 
     $otherPeople = array();
-    $dao = CRM_Core_DAO::executeQuery($sql,array(
-      '1' => array($config->getPumCfo(),'Integer'),
-      '2' => array($config->getPumCpo(),'Integer'),
-    ));
+    $dao = CRM_Core_DAO::executeQuery($sql);
     while($dao->fetch()){
       $otherPerson = array();
       $otherPerson['id'] = $dao->id;

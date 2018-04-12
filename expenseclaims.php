@@ -21,6 +21,9 @@ function expenseclaims_civicrm_permission(&$permissions) {
   $prefix = ts('CiviCRM Claims') . ': ';
   $permissions['create claim batches'] = $prefix . ts('create claim batches');
   $permissions['delete claim from batches'] = $prefix . ts('delete claim from batches');
+  $permissions['view others claims'] = $prefix . ts('view others claims');
+  $permissions['manage others claims'] = $prefix . ts('manage others claims');
+  $permissions['administer claims'] = $prefix . ts('administer claims');
 }
 
 
@@ -167,6 +170,20 @@ function expenseclaims_civicrm_navigationMenu( &$params ) {
           'label'      => 'Others Claims',
           'name'       => 'pum_expense_claims_other_peoples_claims',
           'url'        => CRM_Utils_System::url('civicrm/pumexpenseclaims/otherpeoplesclaims', 'reset=1', true),
+          'operator'   => null,
+          'separator'  => 0,
+          'parentID'   => $maxKey+1,
+          'navID'      => 8,
+          'active'     => 1
+        ),
+        'child' => null
+      ),
+      '10' => array (
+        'attributes' => array (
+          'label'      => 'Administer Claims',
+          'name'       => 'pum_expense_claims_administer_claims',
+          'url'        => CRM_Utils_System::url('civicrm/pumexpenseclaims/administerclaims', 'reset=1', true),
+          'permission' => 'administer claims',
           'operator'   => null,
           'separator'  => 0,
           'parentID'   => $maxKey+1,

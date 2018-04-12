@@ -21,7 +21,7 @@ class CRM_Expenseclaims_Page_MyClaims extends CRM_Core_Page {
     $this->initializePager();
     $this->_approverId = CRM_Utils_Request::retrieve('approverid', 'Positive', $this, FALSE, $this->_userContactId);
 
-    if( $this->_approverId== $this->_userContactId){
+    if( $this->_approverId == $this->_userContactId){
        $whoseClaims = 'myself';
     } else {
        $whoseClaims = civicrm_api3('contact','getvalue',array(
@@ -29,10 +29,16 @@ class CRM_Expenseclaims_Page_MyClaims extends CRM_Core_Page {
          'return' => 'display_name'
        ));
     }
-    $this->assign('whoseClaims',$whoseClaims);
-    $myClaims = $this->getMyClaims($this->_approverId);
-    CRM_Utils_System::setTitle(ts("Approve or reject claims for $whoseClaims"));
-    $this->assign('myClaims', $myClaims);
+
+    if (($this->_approverId != $this->_userContactId) && (CRM_Core_Permission::check('manage others claims') == FALSE)) {
+      CRM_Core_Session::setStatus('Sorry, you are not allowed to view claims for this user', 'Claims', 'error');
+    } else {
+      $this->assign('whoseClaims',$whoseClaims);
+      $myClaims = $this->getMyClaims($this->_approverId);
+      CRM_Utils_System::setTitle(ts("Approve or reject claims for $whoseClaims"));
+      $this->assign('myClaims', $myClaims);
+    }
+
     parent::run();
   }
 
@@ -47,10 +53,10 @@ class CRM_Expenseclaims_Page_MyClaims extends CRM_Core_Page {
     $config = CRM_Expenseclaims_Config::singleton();
     list($offset, $limit) = $this->_pager->getOffsetAndRowCount();
     $query = "
-SELECT pclog.claim_activity_id 
-,      cac.contact_id AS claim_submitted_by 
-,      cact.activity_date_time AS claim_submitted_date 
-,      pcc.{$config->getClaimLinkCustomField('column_name')} AS claim_link 
+SELECT pclog.claim_activity_id
+,      cac.contact_id AS claim_submitted_by
+,      cact.activity_date_time AS claim_submitted_date
+,      pcc.{$config->getClaimLinkCustomField('column_name')} AS claim_link
 ,      pcc.{$config->getClaimTotalAmountCustomField('column_name')} AS claim_total_amount
 ,      pcc.{$config->getClaimDescriptionCustomField('column_name')} AS claim_description
 ,      pcc.{$config->getClaimStatusCustomField('column_name')}     AS claim_status_id
@@ -60,7 +66,7 @@ SELECT pclog.claim_activity_id
 FROM pum_claim_log pclog
 LEFT JOIN civicrm_activity cact ON pclog.claim_activity_id = cact.id
 LEFT JOIN {$config->getClaimInformationCustomGroup('table_name')} pcc ON cact.id = pcc.entity_id
-LEFT JOIN civicrm_activity_contact cac ON cact.id = cac.activity_id AND cac.record_type_id = %1 
+LEFT JOIN civicrm_activity_contact cac ON cact.id = cac.activity_id AND cac.record_type_id = %1
 LEFT JOIN civicrm_option_value csov ON pcc.{$config->getClaimStatusCustomField('column_name')} = csov.value AND csov.option_group_id = %2
 LEFT JOIN civicrm_option_value ctov ON pcc.{$config->getClaimTypeCustomField('column_name')} = ctov.value AND ctov.option_group_id = %3
 WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL  LIMIT %6, %7";
@@ -143,7 +149,9 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL  LIMIT %6,
   protected function setRowActions($claimId) {
     $actions = array();
     $manageUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claim', 'action=update&id='.$claimId.'&approverid='.$this->_approverId, true);
+    $assignUrl = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimassigntouser', 'reset=1&claim_id='.$claimId.'&approverid='.$this->_approverId, true);
     $actions[] = '<a class="action-item" title="Manage" href="'.$manageUrl.'">Manage</a>';
+    $actions[] = '<a class="action-item" title="Assign to other user" href="'.$assignUrl.'">Assign to other user</a>';
     return $actions;
   }
 

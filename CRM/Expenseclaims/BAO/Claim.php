@@ -107,11 +107,11 @@ class CRM_Expenseclaims_BAO_Claim {
    */
   public function getWithId($claimId) {
     $config = CRM_Expenseclaims_Config::singleton();
-    $sql = "SELECT act.activity_date_time AS claim_submitted_date, cac.contact_id AS claim_submitted_by, 
-      cust.{$config->getClaimLinkCustomField('column_name')} AS claim_link, 
+    $sql = "SELECT act.activity_date_time AS claim_submitted_date, cac.contact_id AS claim_submitted_by,
+      cust.{$config->getClaimLinkCustomField('column_name')} AS claim_link,
       cust.{$config->getClaimTotalAmountCustomField('column_name')} AS claim_total_amount,
-      cust.{$config->getClaimDescriptionCustomField('column_name')} AS claim_description 
-      FROM civicrm_activity act 
+      cust.{$config->getClaimDescriptionCustomField('column_name')} AS claim_description
+      FROM civicrm_activity act
       LEFT JOIN civicrm_activity_contact cac ON act.id = cac.activity_id AND cac.record_type_id = %1
       LEFT JOIN {$config->getClaimInformationCustomGroup('table_name')} cust ON act.id = cust.entity_id
       WHERE act.id = %2";
@@ -182,15 +182,13 @@ class CRM_Expenseclaims_BAO_Claim {
     }
   }
 
+  /**
+   * Method to reject a claim
+   *
+   * @param $claimId
+   * @param $contactId
+   */
   public function reject($claimId, $contactId,$actingContactId){
-
-    /**
-     * Method to reject a claim
-     *
-     * @param $claimId
-     * @param $contactId
-     */
-
     if (empty($claimId) || empty($contactId)) {
       throw new Exception('ClaimId or ContactId empty when trying to final reject claim in '.__METHOD__.', contact your system administrator');
     }
@@ -214,6 +212,18 @@ class CRM_Expenseclaims_BAO_Claim {
         'processed_date' => date('Y-m-d')));
     } catch (CiviCRM_API3_Exception $ex) {}
 
+  }
+
+  /**
+   * Method to assign a claim to another user
+   *
+   * @param $claimId
+   * @param $currentContactId
+   * @param $assigneeContactId
+   */
+  public function assignToOtherUser($claimId, $currentContactId){
+    $claimsAssignToUserURL = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimassigntouser', 'reset=1&claim_id='.$claimId.'&approver_id='.$currentContactId, TRUE);
+    CRM_Utils_System::redirect($claimsAssignToUserURL);
   }
 
   /**
@@ -314,7 +324,7 @@ class CRM_Expenseclaims_BAO_Claim {
 
     $result = array();
     // get all case ids and relationship type that are not deleted where the contact has (had) a role
-    $caseSql = "SELECT cc.id AS case_id, cc.subject AS case_subject, rel.relationship_type_id 
+    $caseSql = "SELECT cc.id AS case_id, cc.subject AS case_subject, rel.relationship_type_id
       FROM civicrm_relationship rel LEFT JOIN civicrm_case cc ON rel.case_id = cc.id
       WHERE rel.contact_id_b = %1 AND cc.is_deleted != %2 AND cc.status_id != %3";
     $cases = CRM_Core_DAO::executeQuery($caseSql, array(
@@ -707,6 +717,14 @@ class CRM_Expenseclaims_BAO_Claim {
         CRM_Core_Region::instance('page-body')->add(array('template' => 'CRM/Expenseclaims/ClaimActivityDateTime.tpl'));
       }
     }
+    if($formName == 'CRM_Expenseclaims_Form_ClaimAssignToUser') {
+      $valuesToArray = self::retrieveValuesFromURL($form->controller->_entryURL);
+
+      if (!empty($valuesToArray['approverid'])) {
+        $defaults = array('claim_assign_contacts' => $valuesToArray['approverid']);
+        $form->setDefaults($defaults);
+      }
+    }
   }
 
   /**
@@ -826,5 +844,16 @@ class CRM_Expenseclaims_BAO_Claim {
         return FALSE;
       }
     }
+  }
+
+  /**
+   *
+   */
+  private function retrieveValuesFromURL($entryURL) {
+    $queryStr = parse_url($entryURL, PHP_URL_QUERY);
+    $queryStrStripped = str_replace('amp;','&',$queryStr);
+    parse_str($queryStrStripped, $urlParams);
+
+    return $urlParams;
   }
 }

@@ -21,6 +21,22 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
    * Method to build the QuickForm
    */
   public function buildQuickForm() {
+    //Check permission
+    if (($currentUser != $this->_approverId) && (CRM_Core_Permission::check(array(array('view others claims','manage others claims'))) == FALSE)) {
+      CRM_Core_Session::setStatus('Sorry, you are not allowed to view/manage this claim', 'Claims', 'error');
+      parent::buildQuickForm();
+    } else {
+      if ($currentUser == $this->_approverId) {
+        $this->addFormElements();
+      } else if(($currentUser != $this->_approverId) && (CRM_Core_Permission::check(array(array('view others claims','manage others claims'))) == TRUE)) {
+        $this->addFormElements();
+      }
+    }
+
+    parent::buildQuickForm();
+  }
+
+  private function addFormElements() {
     // add form elements
     $this->add('hidden', 'claim_id');
     $this->add('hidden', 'approverid',$this->_approverId);
@@ -43,6 +59,11 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
           'type' => 'next',
           'subName' => 'reject',
           'name' => ts('Save and Reject'),
+        ],
+        [
+          'type' => 'next',
+          'subName' => 'assigntouser',
+          'name' => ts('Assign to another user'),
         ],
         ['type' => 'cancel', 'name' => ts('Cancel')],
       ]);
@@ -75,11 +96,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
       }
       $this->assign('whoseClaims', $whoseClaims);
     }
-
-
-    parent::buildQuickForm();
   }
-
   /**
    * Method to get the claim lines of the claim and put them on the form
    */
@@ -148,11 +165,11 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
 
     $config = CRM_Expenseclaims_Config::singleton();
 
-    $sql = "SELECT l.id         
+    $sql = "SELECT l.id
 ,               c.display_name approver
 ,               ac.display_name acting_approver
 ,               l.processed_date
-,               l.is_approved 
+,               l.is_approved
 ,               l.is_rejected
 ,               l.is_payable
 ,               csov.label AS old_status
@@ -210,7 +227,7 @@ where             l.claim_activity_id = %1";
       $this->_approverId = $this->_submitValues['approverid'];
     }
     $this->saveClaim();
-    $MyClaimsURL = CRM_Utils_System::url('/civicrm/pumexpenseclaims/page/myclaims', 'reset=1&approverid='.$this->_approverId, TRUE);
+    $MyClaimsURL = CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1&approverid='.$this->_approverId, TRUE);
     CRM_Utils_System::redirect($MyClaimsURL);
     parent::postProcess();
   }
@@ -264,7 +281,7 @@ where             l.claim_activity_id = %1";
       }
       $claimParams['claim_id'] = $this->_claimId;
       // if save or save and approve, save the claim
-      if (isset($this->_submitValues['_qf_Claim_submit']) || isset($this->_submitValues['_qf_Claim_next']) || isset($this->_submitValues['_qf_Claim_next_reject'])) {
+      if (isset($this->_submitValues['_qf_Claim_submit']) || isset($this->_submitValues['_qf_Claim_next']) || isset($this->_submitValues['_qf_Claim_next_reject']) || isset($this->_submitValues['_qf_Claim_next_assigntouser'])) {
         $claim = new CRM_Expenseclaims_BAO_Claim();
         $claim->update($claimParams);
         // if save and approve, also change claim status to approval
@@ -276,6 +293,11 @@ where             l.claim_activity_id = %1";
         if (isset($this->_submitValues['_qf_Claim_next_reject'])) {
           $session = CRM_Core_Session::singleton();
           $claim->reject($this->_claimId, $this->_approverId, $session->get('userID'));
+        }
+
+        if(isset($this->_submitValues['_qf_Claim_next_assigntouser'])) {
+          $session = CRM_Core_Session::singleton();
+          $claim->assignToOtherUser($this->_claimId, $session->get('userID'));
         }
       }
     }
