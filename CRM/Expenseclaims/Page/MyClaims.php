@@ -30,7 +30,7 @@ class CRM_Expenseclaims_Page_MyClaims extends CRM_Core_Page {
        ));
     }
 
-    if (($this->_approverId != $this->_userContactId) && (CRM_Core_Permission::check('manage others claims') == FALSE)) {
+    if (($this->_approverId != $this->_userContactId) && (CRM_Core_Permission::check('view others claims') == FALSE)) {
       CRM_Core_Session::setStatus('Sorry, you are not allowed to view claims for this user', 'Claims', 'error');
     } else {
       $this->assign('whoseClaims',$whoseClaims);
@@ -83,6 +83,8 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL  LIMIT %6,
     while ($dao->fetch()) {
       $row = array();
       $row['type'] = $dao->claim_type;
+      $row['submitted_by_cid'] = $dao->claim_submitted_by;
+      $row['submitted_by_cid_url'] = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$row['submitted_by_cid']}");
       $row['submitted_by'] = CRM_Threepeas_Utils::getContactName($dao->claim_submitted_by);
       $row['submitted_date'] = $dao->claim_submitted_date;
       if ($dao->claim_type_id == 'project') {
@@ -173,16 +175,57 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL  LIMIT %6,
    * @access protected
    */
   protected function initializePager() {
-    $params           = array(
-      'total' => CRM_Core_DAO::singleValueQuery("SELECT COUNT(*) FROM pum_claim_level"),
-      'rowCount' => CRM_Utils_Pager::ROWCOUNT,
-      'status' => ts('Expense Claim Levels %%StatusMessage%%'),
-      'buttonBottom' => 'PagerBottomButton',
-      'buttonTop' => 'PagerTopButton',
-      'pageID' => $this->get(CRM_Utils_Pager::PAGE_ID),
-    );
-    $this->_pager = new CRM_Utils_Pager($params);
-    $this->assign_by_ref('pager', $this->_pager);
+    $config = CRM_Expenseclaims_Config::singleton();
+    if (!is_int($this->_userContactId)) {
+      $this->_userContactId = (int)$this->_userContactId;
+    }
+    $this->_approverId = '';
+
+    try{
+      $this->_approverId = (int)CRM_Utils_Request::retrieve('approverid', 'Integer');
+    } catch (Exception $ex) {
+
+    }
+
+    if (is_int($this->_userContactId) | is_int($this->_approverId)) {
+      try {
+        $values = array(
+          1 => array($config->getTargetRecordTypeId(), 'Integer'),
+          2 => array($config->getClaimStatusOptionGroup('id'), 'Integer'),
+          3 => array($config->getClaimTypeOptionGroup('id'), 'Integer'),
+          4 => array($this->_userContactId, 'Integer')
+        );
+        if(is_int($this->_approverId)) {
+          $values[4] = array($this->_approverId, 'Integer');
+        } elseif(is_int($this->_userContactId)) {
+          $values[4] = array($this->_userContactId, 'Integer');
+        }
+
+        $params           = array(
+          'total' => CRM_Core_DAO::singleValueQuery("
+            SELECT COUNT(*)
+              FROM pum_claim_log pclog
+              LEFT JOIN civicrm_activity cact ON pclog.claim_activity_id = cact.id
+              LEFT JOIN {$config->getClaimInformationCustomGroup('table_name')} pcc ON cact.id = pcc.entity_id
+              LEFT JOIN civicrm_activity_contact cac ON cact.id = cac.activity_id AND cac.record_type_id = %1
+              LEFT JOIN civicrm_option_value csov ON pcc.{$config->getClaimStatusCustomField('column_name')} = csov.value AND csov.option_group_id = %2
+              LEFT JOIN civicrm_option_value ctov ON pcc.{$config->getClaimTypeCustomField('column_name')} = ctov.value AND ctov.option_group_id = %3
+              WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL",
+            $values
+          ),
+          'rowCount' => 20,
+          'status' => ts('Expense Claim Levels %%StatusMessage%%'),
+          'buttonBottom' => 'PagerBottomButton',
+          'buttonTop' => 'PagerTopButton',
+          'pageID' => $this->get(CRM_Utils_Pager::PAGE_ID),
+        );
+
+        $this->_pager = new CRM_Utils_Pager($params);
+        $this->assign_by_ref('pager', $this->_pager);
+      } catch (Exception $ex) {
+
+      }
+    }
   }
 
 }

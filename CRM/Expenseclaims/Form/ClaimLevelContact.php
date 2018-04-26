@@ -37,20 +37,34 @@ class CRM_Expenseclaims_Form_ClaimLevelContact extends CRM_Core_Form {
    */
   private function getContacts() {
     $this->_contacts = array();
-    if (empty($this->_claimLevelId) && isset($this->_submitValues['claim_level_id'])) {
+    if (empty($this->_claimLevelId) && is_int($this->_submitValues['claim_level_id'])) {
       $this->_claimLevelId = $this->_submitValues['claim_level_id'];
     }
-    $sql = 'SELECT id, sort_name FROM civicrm_contact WHERE contact_type = %1 AND employer_id = %2
-      AND id NOT IN(SELECT DISTINCT(contact_id) FROM pum_claim_level_contact WHERE claim_level_id = %3) ORDER BY sort_name';
-    $sqlParams = array(
-      1 => array('Individual', 'String'),
-      2 => array(1, 'Integer'),
-      3 => array($this->_claimLevelId, 'Integer')
-    );
-    $contact = CRM_Core_DAO::executeQuery($sql, $sqlParams);
-    while ($contact->fetch()) {
-      $this->_contacts[$contact->id] = $contact->sort_name;
+    if (empty($this->_claimLevelId) && (!empty($this->_attributes['action']) && $this->_attributes['action'] == '/civicrm/pumexpenseclaims/form/claimlevelcontact') && !empty($_GET['id'])) {
+      $this->_claimLevelId = $_GET['id'];
     }
+
+    try{
+      if($this->_claimLevelId) {
+        $sql = 'SELECT id, sort_name FROM civicrm_contact WHERE contact_type = %1 AND employer_id = %2
+          AND id NOT IN(SELECT DISTINCT(contact_id) FROM pum_claim_level_contact WHERE claim_level_id = %3) ORDER BY sort_name';
+        $sqlParams = array(
+          1 => array('Individual', 'String'),
+          2 => array(1, 'Integer'),
+          3 => array($this->_claimLevelId, 'Integer')
+        );
+        $contact = CRM_Core_DAO::executeQuery($sql, $sqlParams);
+        while ($contact->fetch()) {
+          $this->_contacts[$contact->id] = $contact->sort_name;
+        }
+      } else {
+        CRM_Core_Session::setStatus('Unable to get contacts, claim level is not available.','error');
+        CRM_Core_Error::debug_log_message('Unable to get contacts, claim level is not available in: '.debug_backtrace()[0]['function'].', called from: '.debug_backtrace()[1]['function'], FALSE);
+      }
+    } catch (Exception $e) {
+      CRM_Core_Error::debug_log_message($e->getCode() & " | " & $e->getMessage() & " | " & $e->getTraceAsString(), FALSE);
+    }
+    return $this->_contacts;
   }
 
   /**
@@ -176,5 +190,6 @@ class CRM_Expenseclaims_Form_ClaimLevelContact extends CRM_Core_Form {
     } catch (CiviCRM_API3_Exception $ex) {}
     return TRUE;
   }
+
 
 }

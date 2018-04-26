@@ -10,34 +10,6 @@
 class CRM_Expenseclaims_Utils {
 
   /**
-   * Method to check if contact is project officer
-   * (has an active relationship of the type project officer with the country of the customer
-   * of the main activity to which the claim is linked)
-   *
-   * @param $contactId
-   * @param $claimId
-   * @return bool
-   */
-  public static function isProjectOfficer($contactId, $claimId) {
-    if (!empty($contactId) && !empty($claimId)) {
-      $config = CRM_Expenseclaims_Config::singleton();
-
-      $result = civicrm_api3('Claim','get',array('id'=> $claimId));
-      $claim_link_to = $result['values'][$result['id']]['claim_linked_to'];
-      $count = civicrm_api3('Relationship', 'getcount', array(
-        'relationship_type_id' => $config->getProjectOfficerRelationshipTypeId(),
-        'contact_id_b' => $contactId,
-        'case_id' =>  $claim_link_to,
-        'options' => array('limit' => 1)
-      ));
-      if ($count > 0) {
-          return TRUE;
-      }
-    }
-    return FALSE;
-  }
-
-  /**
    * Method to get a country of a claim customer with claim id (only if claim is on project and link holds case_id)
    *
    * @param $claimId
@@ -64,6 +36,71 @@ class CRM_Expenseclaims_Utils {
   }
 
   /**
+   * Method to check if contact is a project officer
+   *
+   * @param $contactId
+   * @param $claimId
+   * @return bool
+   */
+  public static function isProjectOfficer($contactId, $claimId='') {
+    $isProjectOfficer = FALSE;
+
+    if (!empty($contactId)) {
+      $group = civicrm_api('Group', 'get', array(
+        'version' => 3,
+        'sequential' => 1,
+        'title' => 'Project Officers',
+      ));
+
+      $params = array(
+        'version' => 3,
+        'sequential' => 1,
+        'contact_id' => $contactId,
+      );
+      $group_contact = civicrm_api('GroupContact', 'get', $params);
+
+      foreach($group_contact['values'] as $key => $value) {
+        foreach($value as $key2 => $value2) {
+          if (($key2 == 'group_id') && ($value2 == $group['id'])) {
+            $isProjectOfficer = TRUE;
+          }
+        }
+      }
+    }
+
+    return $isProjectOfficer;
+  }
+
+  /**
+   * CRM_Expenseclaims_Utils::hasRelationshipOnCase()
+   *
+   * Method to check if the contact on the claim has a relationship on the case linked to the claim
+   *
+   * @deprecated 1.3 Was part of CRM_Expenseclaims_Utils::isProjectOfficer(),
+   *             but users with same authorization level should now be able to approve claim so separated as deprecated function
+   * @param $contactId
+   * @param $claimId
+   * @return bool
+   */
+  public static function hasRelationshipOnCase($contactId,$claimId) {
+    if (!empty($contactId) && !empty($claimId) && $isProjectOfficer == TRUE) {
+      $config = CRM_Expenseclaims_Config::singleton();
+
+      $result = civicrm_api3('Claim','get',array('id'=> $claimId));
+      $claim_link_to = $result['values'][$result['id']]['claim_linked_to'];
+      $count = civicrm_api3('Relationship', 'getcount', array(
+        'relationship_type_id' => $config->getProjectOfficerRelationshipTypeId(),
+        'contact_id_b' => $contactId,
+        'case_id' =>  $claim_link_to,
+        'options' => array('limit' => 1)
+      ));
+      if ($count > 0) {
+        return TRUE;
+      }
+    }
+  }
+
+  /**
    * Method to check if contact is senior project officer
    * (has an active relationship of the type senior project officer with the country of the customer
    * of the main activity to which the claim is linked)
@@ -73,15 +110,18 @@ class CRM_Expenseclaims_Utils {
    * @return bool
    */
   public static function isSeniorProjectOfficer($contactId, $claimId) {
-    if (!empty($contactId) && !empty($claimId)) {
-      $countryId = self::getCountryForClaimCustomer($claimId);
-      if ($contactId == self::getSeniorProjectOfficerForCountry($countryId)) {
+    //Users with the same role should be able to approve
+    $config = CRM_Expenseclaims_Config::singleton();
+
+    if(!empty($contactId) && !empty($claimId)) {
+      $contacts = self::getClaimLevelContacts($config->getSeniorProjectOfficerLevelId());
+
+      if(array_key_exists($contactId,$contacts)) {
         return TRUE;
       }
     }
-    else {
-       return FALSE;
-    }
+
+    return FALSE;
   }
 
   /**
@@ -196,7 +236,28 @@ class CRM_Expenseclaims_Utils {
         ));
       } catch (CiviCRM_API3_Exception $ex) {}
     }
+
     return FALSE;
+  }
+
+  /**
+   * CRM_Expenseclaims_Form_ClaimLevelContact::userInClaimLevel()
+   *
+   * Method to check if user is in current claim level
+   *
+   * @param in $contactId
+   * @param int $claimLevelId
+   * @return bool
+   */
+  public static function userInClaimLevel($contactId,$claimLevelId) {
+    $userInClaimLevelContacts = FALSE;
+
+    if (!empty($contactId) && !empty($claimLevelId)) {
+      $claimLevelContacts = self::getClaimLevelContacts($claimLevelId);
+      $userInClaimLevelContacts = array_key_exists($contactId, $claimLevelContacts);
+    }
+
+    return $userInClaimLevelContacts;
   }
 
   /**
@@ -296,8 +357,6 @@ class CRM_Expenseclaims_Utils {
     } else {
       return FALSE;
     }
-
-
   }
 
   /**
@@ -315,20 +374,95 @@ class CRM_Expenseclaims_Utils {
   /**
    * Method to check if a contact has a specified authorization level
    *
+   * If $approvalContactId has and higher authorization level then $contactId then this returns to FALSE
+   * If $approvalContactId has the same or lower authorization level
+   *
+   * @todo check if reimplement of $authorizationLevellId is necessary
+   *
+   * @param $authorizationLevellId - Authorization level of current contact (optional)
+   * @param $contactId - Current contact id
+   * @param $approvalContactId - Approval contact assigned to the claim
+   *
+   * @return bool
+   */
+  public static function checkHasAuthorization($authorizationLevellId='', $contactId='', $approvalContactId='') {
+    $claimLevelsCurrentUser = array();
+    $claimLevelsApprovalContact = array();
+
+    $session = CRM_Core_Session::singleton();
+    $currentUser = $session->get('userID');
+
+    if (!empty($currentUser)) {
+      $claimLevelsCurrentUser = CRM_Expenseclaims_Utils::getClaimLevelForContact($currentUser);
+    }
+    if (!empty($approvalContactId)) {
+      $claimLevelsApprovalContact = CRM_Expenseclaims_Utils::getClaimLevelForContact($approvalContactId);
+    }
+
+    if (!empty($claimLevelsCurrentUser) && !empty($claimLevelsApprovalContact)) {
+      (int)$max_cl_approvalcontact = (int)max($claimLevelsApprovalContact);
+      (int)$max_cl_currentuser = (int)max($claimLevelsCurrentUser);
+
+      //If the highest number (==highest permission) of the current contact is less or equal to the highest permission of the approval contact, user has permission
+      //So if approval_contact has a lower number then current user won't have permission
+      if (is_int((int)$max_cl_currentuser) && is_int((int)$max_cl_approvalcontact)) {
+        if((int)$max_cl_currentuser >= (int)$max_cl_approvalcontact) {
+          return TRUE;
+        }
+      }
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * Method to get the claim level of a contact
+   *
    * @param $claimLevelId
    * @param $contactId
    * @return bool
    */
-  public static function checkHasAuthorization($authorizationLevellId, $contactId) {
-    $sql = 'SELECT * FROM pum_claim_level_contact WHERE claim_level_id = %1';
-    $contacts = CRM_Core_DAO::executeQuery($sql, array(1 => array($authorizationLevellId, 'Integer')));
-    while ($contacts->fetch()) {
-      if ($contacts->contact_id == $contactId) {
-        return TRUE;
+  public static function getClaimLevelForContact($contactId) {
+    try {
+      $claimlevels = array();
+      $sql = 'SELECT * FROM pum_claim_level_contact clc LEFT JOIN pum_claim_level cl ON clc.claim_level_id = cl.id WHERE contact_id = %1';
+      $dao = CRM_Core_DAO::executeQuery($sql, array(1 => array((int)$contactId, 'Integer')));
+      $claimlevels = array();
+      while ($dao->fetch()) {
+        if ($dao->contact_id == $contactId) {
+          $claimlevels[] = $dao->level;
+        }
       }
+      return $claimlevels;
+    } catch(Exception $e) {
+      return FALSE;
     }
-    return FALSE;
   }
+
+  public static function getClaimLevelContacts($claimLevelId) {
+    $contacts = array();
+    if(!is_int($claimLevelId)) {
+      (int)$claimLevelId = (int)$claimLevelId;
+    }
+    if(is_int($claimLevelId)) {
+      $query = "SELECT * FROM pum_claim_level_contact WHERE claim_level_id = %1";
+      $dao = CRM_Core_DAO::executeQuery($query, array(1=>array($claimLevelId, 'Integer')));
+
+      while ($dao->fetch()) {
+        try {
+          $contacts[$dao->contact_id] = civicrm_api3('Contact', 'getvalue', array(
+            'id' => $dao->contact_id,
+            'return' => 'display_name'));
+        } catch (Exception $ex) {
+
+        }
+      }
+    } else {
+      CRM_Core_Session::debug_log_message('Unable to get contact for this claimLevelId, must be of type integer', TRUE);
+    }
+    return $contacts;
+  }
+
 
   /**
    * Method to check if a contact has a specified authorization level

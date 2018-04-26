@@ -21,22 +21,25 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
    * Method to build the QuickForm
    */
   public function buildQuickForm() {
+    $session = CRM_Core_Session::singleton();
+    $currentUser = $session->get('userID');
+
     //Check permission
-    if (($currentUser != $this->_approverId) && (CRM_Core_Permission::check(array(array('view others claims','manage others claims'))) == FALSE)) {
+    if ($currentUser == $this->_approverId) {
+      $this->addFormElements();
+    } else if(($currentUser != $this->_approverId) && (CRM_Core_Permission::check(array(array('view others claims','manage others claims'))) == TRUE)) {
+      $this->addFormElements();
+    } else if (($currentUser != $this->_approverId) && (CRM_Core_Permission::check(array(array('view others claims','manage others claims'))) == FALSE)) {
       CRM_Core_Session::setStatus('Sorry, you are not allowed to view/manage this claim', 'Claims', 'error');
-      parent::buildQuickForm();
     } else {
-      if ($currentUser == $this->_approverId) {
-        $this->addFormElements();
-      } else if(($currentUser != $this->_approverId) && (CRM_Core_Permission::check(array(array('view others claims','manage others claims'))) == TRUE)) {
-        $this->addFormElements();
-      }
+      CRM_Core_Session::setStatus('Sorry, you are not allowed to view/manage this claim', 'Claims', 'error');
     }
 
     parent::buildQuickForm();
   }
 
   private function addFormElements() {
+    $session = CRM_Core_Session::singleton();
     // add form elements
     $this->add('hidden', 'claim_id');
     $this->add('hidden', 'approverid',$this->_approverId);
@@ -52,37 +55,57 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
     $this->add('textarea', 'claim_description', ts('Remark'), TRUE);
     $this->add('text', 'claim_total_amount', ts('Total Amount'), TRUE);
     if($this->_action==CRM_CORE_Action::UPDATE) {
-      $this->addButtons([
-        ['type' => 'submit', 'name' => ts('Save'), 'isDefault' => TRUE,],
-        ['type' => 'next', 'name' => ts('Save and Approve')],
-        [
-          'type' => 'next',
-          'subName' => 'reject',
-          'name' => ts('Save and Reject'),
-        ],
-        [
-          'type' => 'next',
-          'subName' => 'assigntouser',
-          'name' => ts('Assign to another user'),
-        ],
-        ['type' => 'cancel', 'name' => ts('Cancel')],
-      ]);
+      $myRole = CRM_Expenseclaims_Utils::getMyRole($this->_claimId, $session->get('userID'));
+
+      try{
+        if(!empty($myRole)) {
+          $myLevel = civicrm_api3('ClaimLevel', 'getsingle', array('level' => $myRole));
+        }
+      } catch(CiviCRM_API3_Exception $ex) {
+        CRM_Core_Error::debug_log_message('Unable to get ClaimLevel for user: '.$session->get('userID').' in Claim ID: '.$this->_claimId, TRUE);
+      }
+
+      //Check if user is authorized to approve this claim, and if so, show buttons
+      if( $session->get('userID') == $this->_approverId |
+          (CRM_Expenseclaims_Utils::checkHasAuthorization($myLevel, $session->get('userID'), $this->_approverId) && CRM_Core_Permission::check('manage others claims') == TRUE) |
+          CRM_Core_Permission::check('administer claims') == TRUE) {
+        //User is authorized to edit/approve/reject/assign this claim
+
+        $this->addButtons([
+          ['type' => 'submit', 'name' => ts('Save'), 'isDefault' => TRUE,],
+          ['type' => 'next', 'name' => ts('Save and Approve')],
+          [
+            'type' => 'next',
+            'subName' => 'reject',
+            'name' => ts('Save and Reject'),
+          ],
+          [
+            'type' => 'next',
+            'subName' => 'assigntouser',
+            'name' => ts('Assign to another user'),
+          ],
+          ['type' => 'cancel', 'name' => ts('Cancel')],
+        ]);
+      } else if(CRM_Core_Permission::check('view others claims') == TRUE |
+                $session->get('userID') == $this->_approverId |
+                CRM_Expenseclaims_Utils::checkHasAuthorization($myLevel, $session->get('userID'), $this->_approverId) && CRM_Core_Permission::check('manage others claims') == TRUE |
+                CRM_Core_Permission::check('administer claims') == TRUE) {
+        //User is authorized to view this claim
+        $this->addButtons([
+          ['type' => 'cancel', 'name' => ts('Cancel')],
+        ]);
+      }
     } else if ($this->_action==CRM_CORE_Action::VIEW) {
-      $this->addButtons([
-        ['type' => 'cancel', 'name' => ts('Cancel')],
-      ]);
+      if(CRM_Core_Permission::check(array(array('view others claims','manage others claims','administer claims'))) == TRUE | $session->get('userID') == $this->_approverId) {
+        $this->addButtons([
+          ['type' => 'cancel', 'name' => ts('Cancel')],
+        ]);
+      }
     }
 
     $this->addClaimLines();
     $this->addAttachements();
     $this->addAuditTrail();
-
-    $session = CRM_Core_Session::singleton();
-    if($session->get('userID')==$this->_approverId){
-      $this->assign('werkbakje','Eigen Werkbakje');
-    } else {
-      $this->assign('werkbakje','Andermans Werkbakje');
-    };
 
     if($this->_action==CRM_Core_Action::UPDATE) {
       if ($this->_approverId == $session->get('userID')) {
@@ -167,7 +190,9 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
 
     $sql = "SELECT l.id
 ,               c.display_name approver
+,               c.id approver_id
 ,               ac.display_name acting_approver
+,               ac.id acting_approver_id
 ,               l.processed_date
 ,               l.is_approved
 ,               l.is_rejected
@@ -188,7 +213,9 @@ where             l.claim_activity_id = %1";
       $id = $dao->id;
       $result[$id] = [];
       $result[$id]['approver'] = $dao->approver;
+      $result[$id]['approver_contact_url'] = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$dao->approver_id}");
       $result[$id]['acting_approver'] = $dao->acting_approver;
+      $result[$id]['acting_approver_url'] = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$dao->acting_approver_id}");
       $result[$id]['processed_date'] = $dao->processed_date;
       $result[$id]['old_status'] = $dao->old_status;
       $result[$id]['new_status'] = $dao->new_status;
@@ -207,9 +234,11 @@ where             l.claim_activity_id = %1";
 
   public static function formRule($fields) {
     $errors = [];
+    $session = CRM_Core_Session::singleton();
+
     if (isset($fields['_qf_Claim_next'])) {
       $claim = new CRM_Expenseclaims_BAO_Claim();
-      $dryRunError = $claim->failsDryRunApprove($fields['claim_id'], $fields['approverid']);
+      $dryRunError = $claim->failsDryRunApprove($fields['claim_id'], $session->get('userID'));
       if ($dryRunError) {
         $errors['_qf_default'] = $dryRunError;
       }
@@ -313,36 +342,56 @@ where             l.claim_activity_id = %1";
     $values = CRM_Utils_Request::exportValues();
     if (isset($values['claim_id'])) {
       $this->_claimId = $values['claim_id'];
-    }
-    else {
+    } else {
       if (isset($values['id'])) {
         $this->_claimId = $values['id'];
       }
     }
-    if(isset($values['approverid'])){
-      $this->_approverId = $values['approverid'];
-    }
-    // action enable means approve claim!
-    if ($this->_action == CRM_Core_Action::ENABLE) {
-      $claim = new CRM_Expenseclaims_BAO_Claim();
-      try {
-        $claim->approve($this->_claimId, $session->get('userID'));
-        CRM_Core_Session::setStatus('Claim ' . $this->_claimId . ' approved', 'Claim Approved', 'success');
-        CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE));
-      } catch (Exception $ex) {
-        CRM_Core_Session::setStatus($ex->getMessage(), 'Claim Approval Error', 'error');
-        CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE));
-      }
-    }
-    if ($this->_action == CRM_Core_Action::UPDATE || $this->_action == CRM_Core_Action::VIEW) {
-      $claim = new CRM_Expenseclaims_BAO_Claim();
-      $this->_claim = $claim->getWithId($this->_claimId);
-    }
-    CRM_Utils_System::setTitle(ts('PUM Senior Experts Expense Manage Claim'));
-    $this->_claimLinkList = CRM_Expenseclaims_Utils::getClaimLinksForContact($this->_claim->claim_submitted_by, TRUE);
 
-    $session = CRM_Core_Session::singleton();
-    $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'approverid='.$this->_approverId, true));
+    if (!empty($this->_claimId)) {
+      //Get approval contact
+      $params_approval_contact = array(
+        'version' => 3,
+        'sequential' => 1,
+        'claim_activity_id' => $this->_claimId,
+        'return' => 'approval_contact_id'
+      );
+      $approval_contact = civicrm_api('ClaimLog', 'get', $params_approval_contact);
+      $ids = array();
+      foreach($approval_contact['values'] as $value) {
+        $ids[$value['id']]=$value['approval_contact_id'];
+      }
+      $latest_approval_contact = max($ids);
+
+      if(!empty($latest_approval_contact)){
+        $this->_approverId = $latest_approval_contact;
+      }
+
+      // action enable means approve claim!
+      if ($this->_action == CRM_Core_Action::ENABLE) {
+        $claim = new CRM_Expenseclaims_BAO_Claim();
+        try {
+          $claim->approve($this->_claimId, $this->_approverId, $session->get('userID'));
+          CRM_Core_Session::setStatus('Claim ' . $this->_claimId . ' approved', 'Claim Approved', 'success');
+          CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE));
+        } catch (Exception $ex) {
+          CRM_Core_Session::setStatus($ex->getMessage(), 'Claim Approval Error', 'error');
+          CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1', TRUE));
+        }
+      }
+      if ($this->_action == CRM_Core_Action::UPDATE || $this->_action == CRM_Core_Action::VIEW) {
+        $claim = new CRM_Expenseclaims_BAO_Claim();
+        $this->_claim = $claim->getWithId($this->_claimId);
+      }
+      CRM_Utils_System::setTitle(ts('PUM Senior Experts Expense Manage Claim'));
+      $this->_claimLinkList = CRM_Expenseclaims_Utils::getClaimLinksForContact($this->_claim->claim_submitted_by, TRUE);
+
+      $session = CRM_Core_Session::singleton();
+      $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'approverid='.$this->_approverId, true));
+    } else {
+      $session = CRM_Core_Session::singleton();
+      $session->pushUserContext(CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', '', true));
+    }
   }
 
 }

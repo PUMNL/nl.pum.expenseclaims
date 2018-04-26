@@ -148,37 +148,71 @@ class CRM_Expenseclaims_BAO_Claim {
    *
    * @param $claimId
    * @param $contactId
+   * @param $actingContactId - Should normally always be current user
    */
   public function approve($claimId, $contactId,$actingContactId) {
+    $authorized = FALSE;
+    $session = CRM_Core_Session::singleton();
+    $currentUser = $session->get('userID');
 
-    // first check if I can actually approve
-    if (!empty($claimId) || !empty($contactId)) {
+    if (!empty($claimId) && !empty($currentUser)) {
       // get my role and then my level
-      $myRole = CRM_Expenseclaims_Utils::getMyRole($claimId, $contactId);
+      $myRole = CRM_Expenseclaims_Utils::getMyRole($claimId, $currentUser);
+
       if ($myRole) {
         $myLevel = civicrm_api3('ClaimLevel', 'getsingle', array('level' => $myRole));
+
+        // first check if I can actually approve
         try {
-          $this->preApprovalValidityChecks($claimId, $contactId, $myLevel);
+          $this->preApprovalValidityChecks($claimId, $actingContactId, $myLevel);
         } catch (Exception $ex) {
           throw new Exception('Could not pass validation before approval of claim, problem : '.$ex->getMessage());
         }
-        // if my limit is 999999999.99 then final approval
-        if ($myLevel['max_amount'] == 999999999.99) {
-          $this->finalApprove($claimId, $contactId,$actingContactId);
-        } else {
 
-          // if the claim total amount is less than my max amount, final approve else next step
-          $totalAmount = $this->getTotalAmount($claimId);
 
-          if ($totalAmount <= $myLevel['max_amount']) {
+        //Get approval contact and check if user has same authorization or higher authorization level
+        $params_approval_contact = array(
+          'version' => 3,
+          'sequential' => 1,
+          'claim_activity_id' => $claimId,
+          'return' => 'approval_contact_id'
+        );
+        $approval_contact = civicrm_api('ClaimLog', 'get', $params_approval_contact);
+        $ids = array();
+        foreach($approval_contact['values'] as $value) {
+          $ids[$value['id']]=$value['approval_contact_id'];
+        }
+        $latest_approval_contact = max($ids);
+
+        if(CRM_Expenseclaims_Utils::checkHasAuthorization($claimLevel['level'],$currentUser, $latest_approval_contact) == TRUE) {
+          if($claim['claim_total_amount'] <= $claimLevel['max_amount']) {
+            $authorized = TRUE;
+          }
+        }
+
+        if ($authorized == TRUE) {
+          // if my limit is 999999999.99 then final approval
+          if ($myLevel['max_amount'] == 999999999.99) {
             $this->finalApprove($claimId, $contactId,$actingContactId);
           } else {
-            $this->nextStep($claimId, $contactId, $actingContactId, $myLevel['authorizing_level']);
+
+            // if the claim total amount is less than my max amount, final approve else next step
+            $totalAmount = $this->getTotalAmount($claimId);
+
+            if ($totalAmount <= $myLevel['max_amount']) {
+              $this->finalApprove($claimId, $contactId,$actingContactId);
+            } else {
+              $this->nextStep($claimId, $contactId, $actingContactId, $myLevel['authorizing_level']);
+            }
           }
+        } else {
+          throw new Exception('Sorry, you are not authorized to approve this claim, please contact someone with a higher authorization or assign this claim to someone with a higher authorization level.');
         }
       } else {
          throw new Exception('Undefined role - cannot Approve');
       }
+    } else {
+      throw new Exception('claimId or contactId empty when trying to approve claim in '.__METHOD__.', contact your system administrator');
     }
   }
 
@@ -189,29 +223,71 @@ class CRM_Expenseclaims_BAO_Claim {
    * @param $contactId
    */
   public function reject($claimId, $contactId,$actingContactId){
-    if (empty($claimId) || empty($contactId)) {
-      throw new Exception('ClaimId or ContactId empty when trying to final reject claim in '.__METHOD__.', contact your system administrator');
-    }
-    $config = CRM_Expenseclaims_Config::singleton();
-    $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
-      .' = %1 WHERE entity_id = %2';
-    CRM_Core_DAO::executeQuery($sql, array(
-      1 => array($config->getRejectedClaimStatusValue(), 'String'),
-      2 => array($claimId, 'Integer')));
-    // now update claim log line for this rejection
-    try {
-      $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
-        'claim_activity_id' => $claimId,
-        'approval_contact_id' => $contactId));
-      civicrm_api3('ClaimLog', 'create', array(
-        'id' => $claimLog['id'],
-        'new_status_id' => $config->getRejectedClaimStatusValue(),
-        'is_payable' => 0,
-        'is_rejected' => 1,
-        'acting_approval_contact_id' => $actingContactId,
-        'processed_date' => date('Y-m-d')));
-    } catch (CiviCRM_API3_Exception $ex) {}
+    $authorized = FALSE;
+    $session = CRM_Core_Session::singleton();
+    $currentUser = $session->get('userID');
 
+    if (empty($claimId) || empty($contactId)) {
+      throw new Exception('claimId or contactId empty when trying to final reject claim in '.__METHOD__.', contact your system administrator');
+    }
+
+    $myRole = CRM_Expenseclaims_Utils::getMyRole($claimId, $currentUser);
+
+    if ($myRole) {
+      $myLevel = civicrm_api3('ClaimLevel', 'getsingle', array('level' => $myRole));
+
+      // first check if I can actually approve
+      try {
+        $this->preApprovalValidityChecks($claimId, $actingContactId, $myLevel);
+      } catch (Exception $ex) {
+        throw new Exception('Could not pass validation before approval of claim, problem : '.$ex->getMessage());
+      }
+
+      //Get approval contact and check if user has same authorization or higher authorization level
+      $params_approval_contact = array(
+        'version' => 3,
+        'sequential' => 1,
+        'claim_activity_id' => $claimId,
+        'return' => 'approval_contact_id'
+      );
+      $approval_contact = civicrm_api('ClaimLog', 'get', $params_approval_contact);
+      $ids = array();
+      foreach($approval_contact['values'] as $value) {
+        $ids[$value['id']]=$value['approval_contact_id'];
+      }
+      $latest_approval_contact = max($ids);
+
+      if(CRM_Expenseclaims_Utils::checkHasAuthorization($claimLevel['level'],$currentUser, $latest_approval_contact) == TRUE) {
+        if($claim['claim_total_amount'] <= $claimLevel['max_amount']) {
+          $authorized = TRUE;
+        }
+      }
+
+      if ($authorized == TRUE) {
+        $config = CRM_Expenseclaims_Config::singleton();
+        $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
+          .' = %1 WHERE entity_id = %2';
+        CRM_Core_DAO::executeQuery($sql, array(
+          1 => array($config->getRejectedClaimStatusValue(), 'String'),
+          2 => array($claimId, 'Integer')));
+        // now update claim log line for this rejection
+        try {
+          $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
+            'claim_activity_id' => $claimId,
+            'approval_contact_id' => $contactId));
+          civicrm_api3('ClaimLog', 'create', array(
+            'id' => $claimLog['id'],
+            'new_status_id' => $config->getRejectedClaimStatusValue(),
+            'is_payable' => 0,
+            'is_approved' => 0,
+            'is_rejected' => 1,
+            'acting_approval_contact_id' => $actingContactId,
+            'processed_date' => date('Y-m-d')));
+        } catch (CiviCRM_API3_Exception $ex) {}
+      } else {
+        throw new Exception('Sorry, you are not authorized to reject this claim, please contact someone with a higher authorization or assign this claim to someone with a higher authorization level.');
+      }
+    }
   }
 
   /**
@@ -229,8 +305,9 @@ class CRM_Expenseclaims_BAO_Claim {
   /**
    * Method to determine what the next step should be and processing that in the database
    *
-   * @param $claimId
+   * @param $claimId Claim ID
    * @param $contactId
+   * @param $actingContactId Current logged in user Contact ID
    * @param $authorizingLevel
    * @throws Exception when one of the params is empty
    */
@@ -244,18 +321,26 @@ class CRM_Expenseclaims_BAO_Claim {
     try {
       $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
         'claim_activity_id' => $claimId,
-        'approval_contact_id' => $contactId));
-      civicrm_api3('ClaimLog', 'create', array(
+        'approval_contact_id' => $contactId)
+      );
+      $claimLogCreate = civicrm_api3('ClaimLog', 'create', array(
         'id' => $claimLog['id'],
         'acting_approval_contact_id' => $actingContactId,
         'new_status_id' => $config->getInitiallyApprovedClaimStatusValue(),
         'is_payable' => 0,
         'is_approved' => 1,
-        'processed_date' => date('Y-m-d')));
+        'is_rejected' => 0,
+        'processed_date' => date('Y-m-d')
+      ));
+
+      if($claimLogCreate['is_error'] == 1) {
+        CRM_Core_Error::debug_log_message('Unable to create claim log entry for claim ID: '.$claimId.', contact id: '.$contactId.' authorizing level: '.$authorizingLevel.', unable to find next level contact id', TRUE);
+      }
+
       // now set next log record for the authorizing level contact
       $nextContactId = CRM_Expenseclaims_BAO_ClaimLevel::getNextLevelContactId($claimId, $authorizingLevel);
-      if ($nextContactId) {
-         civicrm_api3('ClaimLog', 'create', array(
+      if ($nextContactId != FALSE && !empty($nextContactId)) {
+        civicrm_api3('ClaimLog', 'create', array(
           'claim_activity_id' => $claimId,
           'approval_contact_id' => $nextContactId,
           'old_status_id' => $config->getInitiallyApprovedClaimStatusValue(),
@@ -263,14 +348,23 @@ class CRM_Expenseclaims_BAO_Claim {
           'is_payable' => 0,
           'is_rejected' => 0
         ));
+      } else {
+        CRM_Core_Error::debug_log_message('Unable to set new claim status for claim ID: '.$claimId.', contact id: '.$contactId.' authorizing level: '.$authorizingLevel.', unable to find next level contact id: '.$nextContactId, TRUE);
       }
-    } catch (CiviCRM_API3_Exception $ex) {}
-    // finally update claim status
-    $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
-      .' = %1 WHERE entity_id = %2';
-    CRM_Core_DAO::executeQuery($sql, array(
-      1 => array($config->getInitiallyApprovedClaimStatusValue(), 'String'),
-      2 => array($claimId, 'Integer')));
+    } catch (CiviCRM_API3_Exception $ex) {
+      CRM_Core_Error::debug_log_message('Failed to complete nextStep for claim ID: '.$claimId.', contact id: '.$contactId.' authorizing level: '.$authorizingLevel.', unable to find next level contact id', TRUE);
+    }
+
+    try{
+      // finally update claim status to initialy approved
+      $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
+        .' = %1 WHERE entity_id = %2';
+      CRM_Core_DAO::executeQuery($sql, array(
+        1 => array($config->getInitiallyApprovedClaimStatusValue(), 'String'),
+        2 => array($claimId, 'Integer')));
+    } catch (Exception $ex) {
+      CRM_Core_Error::debug_log_message('nextStep() failed for claim ID: '.$claimId.', contact id: '.$contactId.' authorizing level: '.$authorizingLevel.' unable to update claim status', TRUE);
+    }
   }
 
   /**
@@ -285,23 +379,47 @@ class CRM_Expenseclaims_BAO_Claim {
       throw new Exception('ClaimId or ContactId empty when trying to final approve claim in '.__METHOD__.', contact your system administrator');
     }
     $config = CRM_Expenseclaims_Config::singleton();
-    $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
-      .' = %1 WHERE entity_id = %2';
-    CRM_Core_DAO::executeQuery($sql, array(
-      1 => array($config->getApprovedClaimStatusValue(), 'String'),
-      2 => array($claimId, 'Integer')));
+
+    try {
+      $config = CRM_Expenseclaims_Config::singleton();
+      $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
+        .' = %1 WHERE entity_id = %2';
+      CRM_Core_DAO::executeQuery($sql, array(
+        1 => array((int)$config->getApprovedClaimStatusValue(), 'Integer'),
+        2 => array((int)$claimId, 'Integer')));
+    } catch (Exception $ex) {
+      CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim status', TRUE);
+    }
+
     // now update claim log line for this approval
     try {
-      $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
+      $claimLog = civicrm_api3('ClaimLog', 'get', array(
         'claim_activity_id' => $claimId,
         'approval_contact_id' => $contactId));
-      civicrm_api3('ClaimLog', 'create', array(
-        'id' => $claimLog['id'],
-        'acting_approval_contact_id' => $actingContactId,
-        'new_status_id' => $config->getApprovedClaimStatusValue(),
-        'is_payable' => 1,
-        'processed_date' => date('Y-m-d')));
-    } catch (CiviCRM_API3_Exception $ex) { }
+      $last_claim_log_id = max(array_keys($claimLog['values']));
+
+      if(empty($actingContactId)) {
+        $actingContactId = $contactId;
+      }
+      try {
+        $config = CRM_Expenseclaims_Config::singleton();
+        $sql = 'UPDATE pum_claim_log SET is_approved = %1, is_rejected = %2, acting_approval_contact_id = %3, is_payable = %4, new_status_id = %5, processed_date = %6 WHERE id = %7 AND claim_activity_id = %8';
+        $result = CRM_Core_DAO::executeQuery($sql, array(
+          1 => array((int)1, 'Integer'),
+          2 => array((int)0, 'Integer'),
+          3 => array((int)$actingContactId, 'Integer'),
+          4 => array((int)1, 'Integer'),
+          5 => array((int)$config->getApprovedClaimStatusValue(),'Integer'),
+          6 => array(date('YmdHis'),'String'),
+          7 => array((int)$last_claim_log_id,'Integer'),
+          8 => array((int)$claimId,'Integer')
+        ));
+      } catch (Exception $ex) {
+        CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim status', TRUE);
+      }
+    } catch (CiviCRM_API3_Exception $ex) {
+      CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim log line'.$ex->getMessage(), TRUE);
+    }
   }
 
   /**
@@ -561,38 +679,37 @@ class CRM_Expenseclaims_BAO_Claim {
         $config =  CRM_Expenseclaims_Config::singleton();
         return $config->getPumCfo();
         break;
-      //  Programma manager
+      // 7165 is Programma manager
       case "7165":
         $config =  CRM_Expenseclaims_Config::singleton();
         return $config->getPumCfo();
         break;
-      // Sector Coordinator
+      // 7161 is Sector Coordinator
       case "7161":
         $config =  CRM_Expenseclaims_Config::singleton();
         return $config->getPumCpo();
         break;
-      // Country Coordinator
+      // 7160 is Country Coordinator
       case "7160":
         $config =  CRM_Expenseclaims_Config::singleton();
         return $config->getPumCfo();
         break;
-      // if claim type is 7163 or 7164 approval bij CPO
-      // Recruitment (RCT) 7163
-      // Aspect-Advisors (AA) 7164
+      // 7163 is Recruitment (RCT)
       case "7163":
         $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCpo();
         break;
+      // 7164 is Other Roles
       case "7164":
         $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCfo();
         break;
-      // 3101  Regio Coordinatoren
+      // 3101 is Region Coordinator
       case "3101":
         $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCfo();
         break;
-      // 3102  Thema Coordinatoren
+      // 3201 is Theme Coordinator
       case "3201":
         $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCpo();
@@ -744,10 +861,7 @@ class CRM_Expenseclaims_BAO_Claim {
       1 => array($claimLevel['id'], 'Integer'),
       2 => array($contactId, 'Integer')
     ));
-    /*
-    if ($count == 0) {
-      throw new Exception(ts('Contact does not have the required authorization level to approve claim '.$claimId));
-    }*/
+
     // then if the claim is a main activity claim:
     try {
       $claim = civicrm_api3('Claim', 'getsingle', array('id' => $claimId));
@@ -776,25 +890,24 @@ class CRM_Expenseclaims_BAO_Claim {
         if (!$projectOfficerId) {
           throw new Exception(ts('There is no project officer for the country for customer ID '.$caseCustomerId.' linked to claim ID '.$claimId));
         }
-        // if the max amount of my level is not enough
-        if ($claim['claim_total_amount'] > $claimLevel['max_amount']) {
-          // check if CFO exists if that is next level
-          if ($claimLevel['authorizing_level'] == $config->getCfoLevelId()) {
-            if (!$config->getPumCfo()) {
-              throw new Exception(ts('No contact found with authorization level CFO'));
-            }
+      }
+      // if the max amount of my level is not enough
+      if ($claim['claim_total_amount'] > $claimLevel['max_amount']) {
+        // check if CFO exists if that is next level
+        if ($claimLevel['authorizing_level'] == $config->getCfoLevelId()) {
+          if (!$config->getPumCfo()) {
+            throw new Exception(ts('No contact found with authorization level CFO'));
           }
-          // check Senior Project Officer exists, is on the country and has correct claim level
-          if (!CRM_Expenseclaims_Utils::getSeniorProjectOfficerForCountry($countryId)) {
-            throw new Exception(ts('Could not find a valid Senior Project Officer with the correct authorization level for country '
-              .$countryId.' with customer '.$caseCustomerId.' linked to claim ID '.$claimId));
-          }
+        }
+        // check Senior Project Officer exists, is on the country and has correct claim level
+        if (!CRM_Expenseclaims_Utils::getSeniorProjectOfficerForCountry($countryId)) {
+          throw new Exception(ts('Could not find a valid Senior Project Officer with the correct authorization level for country '
+            .$countryId.' with customer '.$caseCustomerId.' linked to claim ID '.$claimId));
         }
       }
     } catch(CiviCRM_API3_Exception $ex) {
       throw new Exception(ts('Could not find the claim with id '.$claimId.' in the database! Contact your system administrator'));
     }
-    return TRUE;
   }
 
   /**
@@ -847,7 +960,10 @@ class CRM_Expenseclaims_BAO_Claim {
   }
 
   /**
+   * Method to retrieve values from the URL
    *
+   * @param array $urlParams
+   * @return
    */
   private function retrieveValuesFromURL($entryURL) {
     $queryStr = parse_url($entryURL, PHP_URL_QUERY);

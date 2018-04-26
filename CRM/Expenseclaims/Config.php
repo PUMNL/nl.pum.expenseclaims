@@ -13,6 +13,11 @@ class CRM_Expenseclaims_Config {
 
   private $_validMainActivities = array();
   private $_claimActivityTypeId = NULL;
+  private $_projectOfficerLevelId = NULL;
+  private $_projectOfficerContactId = NULL;
+  private $_seniorProjectOfficerLevelId = NULL;
+  private $_seniorProjectOfficerContactId = NULL;
+  private $_cpoLevelId = NULL;
   private $_cpoContactId = NULL;
   private $_cfoLevelId = NULL;
   private $_cfoContactId = NULL;
@@ -57,7 +62,7 @@ class CRM_Expenseclaims_Config {
     $this->setClaimInformationCustomGroup();
     $this->setBankInformationCustomFields();
     $this->setEuroCurrencyId();
-    $this->setCpoCfoContactId();
+    $this->setProfSProfCpoCfoContactId();
     try {
       $this->_approvedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
         'option_group_id' => $this->_claimStatusOptionGroup['id'],
@@ -395,8 +400,20 @@ class CRM_Expenseclaims_Config {
     return $this->_cfoContactId;
   }
 
+  public function getProjectOfficerLevelId() {
+    return $this->_projectOfficerLevelId;
+  }
+
+  public function getSeniorProjectOfficerLevelId() {
+    return $this->_seniorProjectOfficerLevelId;
+  }
+
   public function getCfoLevelId() {
     return $this->_cfoLevelId;
+  }
+
+  public function getCpoLevelId() {
+    return $this->_cpoLevelId;
   }
 
   /**
@@ -465,20 +482,30 @@ class CRM_Expenseclaims_Config {
   }
 
   /**
-   * Method to set the CPO and CFO
+   * Method to set the CPO, CFO, Senior Prof, Project Officer
    *
    * @throws Exception when API getvalue error (not found, more than one)
    */
-  private function setCpoCfoContactId() {
+  private function setProfSProfCpoCfoContactId() {
 
     try {
-      // first get levels for cfo and cpo
+      // first get levels
+      $this->_projectOfficerLevelId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->getClaimLevelOptionGroup('id'),
+        'name' => 'project_officer',
+        'return' => 'value'
+      ));
+      $this->_seniorProjectOfficerLevelId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->getClaimLevelOptionGroup('id'),
+        'name' => 'senior_project_officer',
+        'return' => 'value'
+      ));
       $this->_cfoLevelId = civicrm_api3('OptionValue', 'getvalue', array(
         'option_group_id' => $this->getClaimLevelOptionGroup('id'),
         'name' => 'cfo',
         'return' => 'value'
       ));
-      $cpoLevel = civicrm_api3('OptionValue', 'getvalue', array(
+      $this->_cpoLevelId = civicrm_api3('OptionValue', 'getvalue', array(
         'option_group_id' => $this->getClaimLevelOptionGroup('id'),
         'name' => 'cpo',
         'return' => 'value'
@@ -487,8 +514,11 @@ class CRM_Expenseclaims_Config {
       $sql = "SELECT contact_id FROM pum_claim_level_contact lc
               JOIN   pum_claim_level level ON level.id = lc.claim_level_id
               WHERE level.level = %1 LIMIT 1";
+
+      $this->_projectOfficerContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($this->_projectOfficerLevelId, 'Integer')));
+      $this->_seniorProjectOfficerContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($this->_seniorProjectOfficerLevelId, 'Integer')));
       $this->_cfoContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($this->_cfoLevelId, 'Integer')));
-      $this->_cpoContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($cpoLevel, 'Integer')));
+      $this->_cpoContactId = CRM_Core_DAO::singleValueQuery($sql,array(1 => array($this->_cpoLevelId, 'Integer')));
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception('Could not find a contact with authorization level CPO and/or CFO in '.__METHOD__
         .', contact your system administrator');
@@ -508,8 +538,8 @@ class CRM_Expenseclaims_Config {
       $this->_claimLineTypeOptionGroup = civicrm_api3('OptionGroup', 'getsingle', array('name' => 'pum_claim_line_type'));
       $this->_batchStatusOptionGroup = civicrm_api3('OptionGroup', 'getsingle', array('name' => 'pum_claim_batch_status'));
     } catch (CiviCRM_API3_Exception $ex) {
-      throw new Exception('Could not find an option group with name pum_claim_status, pum_claim_level, pum_claim_line_type, 
-      pum_claim_batch_status or pum_claim_type in '.__METHOD__.', is required for PUM Senior Experts Claim Processing. 
+      throw new Exception('Could not find an option group with name pum_claim_status, pum_claim_level, pum_claim_line_type,
+      pum_claim_batch_status or pum_claim_type in '.__METHOD__.', is required for PUM Senior Experts Claim Processing.
       Contact your system administrator, error from API OptionGroup getsingle: '.$ex->getMessage());
     }
   }
@@ -526,7 +556,7 @@ class CRM_Expenseclaims_Config {
         'extends' => 'Activity'));
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception('Could not find a custom group with name Claiminformation in '.__METHOD__
-        .', is required for PUM Senior Experts Claim Processing. Contact your system administrator, 
+        .', is required for PUM Senior Experts Claim Processing. Contact your system administrator,
         error from API CustomGroup getsingle: '.$ex->getMessage());
     }
     // now get possible custom fields in the group
@@ -549,7 +579,7 @@ class CRM_Expenseclaims_Config {
         'extends' => 'Individual'));
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception('Could not find a custom group with name Bank_Information in '.__METHOD__
-        .', is required for PUM Senior Experts Claim Processing. Contact your system administrator, 
+        .', is required for PUM Senior Experts Claim Processing. Contact your system administrator,
         error from API CustomGroup getsingle: '.$ex->getMessage());
     }
     // now get possible custom fields in the group

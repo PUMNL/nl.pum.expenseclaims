@@ -93,16 +93,16 @@
         "label": "Senior Project Officer",
         "is_active": 1
       },
-      "cfo": {
-        "name": "cfo",
-        "value": 3,
-        "label": "CFO",
-        "is_active": 1
-      },
       "cpo": {
         "name": "cpo",
-        "value": 4,
+        "value": 3,
         "label": "CPO",
+        "is_active": 1
+      },
+      "cfo": {
+        "name": "cfo",
+        "value": 4,
+        "label": "CFO",
         "is_active": 1
       }
     }

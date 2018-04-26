@@ -78,10 +78,4 @@
     <title>ClaimAssignToUser</title>
     <access_arguments>administer CiviCRM;administer claims;manage others claims</access_arguments>
   </item>
-  <item>
-    <path>civicrm/pumexpenseclaims/administerclaims</path>
-    <page_callback>CRM_Expenseclaims_Page_AdministerClaims</page_callback>
-    <title>AdministerClaims</title>
-    <access_arguments>administer claims;administer CiviCRM</access_arguments>
-  </item>
 </menu>

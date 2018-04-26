@@ -27,7 +27,7 @@
         <tr id="row{$rowCount}" class="{cycle values="odd,even"}">
           <td>{$claimId}</td>
           <td>{$myClaim.type}</td>
-          <td>{$myClaim.submitted_by}</td>
+          <td><a href="{$myClaim.submitted_by_cid_url}" target="_blank">{$myClaim.submitted_by}</a></td>
           <td>{$myClaim.submitted_date|crmDate}</td>
           {if !empty($myClaim.link_url)}
             <td><a href="{$myClaim.link_url}">{$myClaim.link}</a></td>

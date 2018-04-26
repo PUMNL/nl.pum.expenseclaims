@@ -123,8 +123,8 @@
                 {assign var="rowClass" value="odd-row"}
                 {foreach from=$claimLogs key=claimLogId item=claimLog}
                 <tr class="{$rowClass}">
-                    <td>{$claimLog.approver}</td>
-                    <td>{$claimLog.acting_approver}</td>
+                    <td><a href="{$claimLog.approver_contact_url}" target="_blank">{$claimLog.approver}</a></td>
+                    <td><a href="{$claimLog.acting_approver_url}" target="_blank">{$claimLog.acting_approver}</td>
                     <td>{$claimLog.processed_date|crmDate}</td>
                     <td>{$claimLog.is_approved}</td>
                     <td>{$claimLog.is_rejected}</td>

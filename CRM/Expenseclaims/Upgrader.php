@@ -72,4 +72,15 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
     $this->executeSqlFile('sql/upgrade_1004.sql');
     return TRUE;
   }
+
+  /**
+   * Users with a higher claim level should now be able to approve a claim
+   * So this update fixes the prof, cpo and cfo level, sprof was already in correct group
+   *
+   * @return TRUE
+   */
+  public function upgrade_1005() {
+    $this->executeSqlFile('sql/upgrade_1005.sql');
+    return TRUE;
+  }
 }
