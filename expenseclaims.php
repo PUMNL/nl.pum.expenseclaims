@@ -340,10 +340,11 @@ function expenseclaims_civicrm_navigationMenu(&$menu) {
 
 function expenseclaims_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions) {
   $permissions['claim_line_log']['get'] = array('access CiviCRM');
-
   $permissions['claim_batch']['get'] = array('access CiviCRM');
   $permissions['claim_batch']['create'] = array('create claim batches');
+  $permissions['claim_batch']['update'] = array('create claim batches');
   $permissions['claim_batch_entity']['get'] = array('access CiviCRM');
   $permissions['claim_batch_entity']['create'] = array('create claim batches');
+  $permissions['claim_batch_entity']['update'] = array('create claim batches');
   $permissions['claim_batch_entity']['delete'] = array('delete claim from batches');
 }

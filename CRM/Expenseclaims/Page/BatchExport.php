@@ -11,11 +11,11 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
 
     $claimsql = "
  select   cact.id  AS claim_id
- ,        ci.{$config->getClaimLinkCustomField('column_name')} AS claim_link 
+ ,        ci.{$config->getClaimLinkCustomField('column_name')} AS claim_link
  ,        ci.{$config->getClaimTotalAmountCustomField('column_name')} AS claim_total_amount
  ,        ci.{$config->getClaimDescriptionCustomField('column_name')} AS claim_description
  ,        ci.{$config->getClaimStatusCustomField('column_name')}     AS claim_status_id
- ,        ci.{$config->getClaimTypeCustomField('column_name')} AS claim_type_id    
+ ,        ci.{$config->getClaimTypeCustomField('column_name')} AS claim_type_id
  ,        cac.contact_id AS claim_submitted_by
  ,        adata.shortname_14 AS shortname
  ,        c.display_name AS display_name
@@ -23,7 +23,7 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
  ,        adr.postal_code    AS postal_code
  ,        adr.city           AS city
  ,        adr.country_id     AS country_id
- 
+
  ,        {$config->getBankInformationCustomFields()['IBAN_nummer']} AS iban_number
  ,        {$config->getBankInformationCustomFields()['BIC_Swiftcode']} AS bic_swiftcode
  ,        {$config->getBankInformationCustomFields()['Accountholder_name']} AS accountholder_name
@@ -33,9 +33,9 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
  ,        {$config->getBankInformationCustomFields()['Accountholder_country']}  AS accountholder_country
  ,        {$config->getBankInformationCustomFields()['Foreign_Bank_Account']} AS foreign_bank_account
  ,        {$config->getBankInformationCustomFields()['Bank_Account_Number']} AS bank_account_number
- ,        cact.activity_date_time AS claim_submitted_date 
+ ,        cact.activity_date_time AS claim_submitted_date
  ,        csov.label AS claim_status
-        
+
  ,        ctov.label AS claim_type
  ,        ctov.grouping AS cost_center
  ,        ctov.name     AS fa_default_donor
@@ -190,7 +190,7 @@ function run() {
 
     CRM_Utils_System::download(
       CRM_Utils_File::cleanFileName(basename("claimbatch-$bid.csv")),
-      'text/xml',
+      'text/csv',
       $buffer
     );
   }
