@@ -195,7 +195,7 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL  LIMIT %6,
           3 => array($config->getClaimTypeOptionGroup('id'), 'Integer'),
           4 => array($this->_userContactId, 'Integer')
         );
-        if(is_int($this->_approverId)) {
+        if(!empty($this->_approverId) && is_int($this->_approverId)) {
           $values[4] = array($this->_approverId, 'Integer');
         } elseif(is_int($this->_userContactId)) {
           $values[4] = array($this->_userContactId, 'Integer');
