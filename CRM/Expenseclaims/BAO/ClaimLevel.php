@@ -210,12 +210,10 @@ class CRM_Expenseclaims_BAO_ClaimLevel extends CRM_Expenseclaims_DAO_ClaimLevel 
     switch ($authorizingLevelName) {
       // if cfo, return cfo contact
       case 'cfo':
-        $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCfo();
         break;
       // if cpo, return cpo contact
       case 'cpo':
-        $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCpo();
         break;
       // if senior project officer, get country for claim and then relevant senior project officer

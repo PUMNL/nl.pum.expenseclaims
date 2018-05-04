@@ -36,6 +36,7 @@ class CRM_Expenseclaims_Config {
   private $_rejectedClaimStatusValue = NULL;
   private $_targetRecordTypeId = NULL;
   private $_scheduledActivityStatusId = NULL;
+  private $_completedActivityStatusId = NULL;
   private $_sectorCoordinatorRelationshipTypeId = NULL;
   private $_grantCoordinatorRelationshipTypeId = NULL;
   private $_recruitmentTeamRelationshipTypeId = NULL;
@@ -49,75 +50,11 @@ class CRM_Expenseclaims_Config {
    * CRM_Expenseclaims_Config constructor.
    */
   function __construct() {
-    $this->setSeniorProjectOfficerRelationshipTypeId();
-    $this->setProjectOfficerRelationshipTypeId();
-    $this->setSectorCoordinatorRelationshipTypeId();
-    $this->setGrantCoordinatorRelationshipTypeId();
-    $this->setCountryCoordinatorRelationshipTypeId();
-    $this->setRecruitmentTeamRelationshipTypeId();
-    $this->setProgrammeManagerGroupId();
-    $this->setValidMainActivities();
-    $this->setClaimActivityTypeId();
     $this->setOptionGroups();
     $this->setClaimInformationCustomGroup();
     $this->setBankInformationCustomFields();
     $this->setEuroCurrencyId();
     $this->setProfSProfCpoCfoContactId();
-    try {
-      $this->_approvedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_claimStatusOptionGroup['id'],
-        'name' => 'approved',
-        'return' => 'value'
-      ));
-      $this->_initiallyApprovedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
-        'name' => 'initially_approved',
-        'return' => 'value'
-      ));
-      $this->_waitingForApprovalClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
-        'name' => 'waiting_for_approval',
-        'return' => 'value'
-      ));
-      $this->_rejectedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
-        'name' => 'rejected',
-        'return' => 'value'
-      ));
-      $this->_openBatchStatusId = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_batchStatusOptionGroup[ 'id'],
-        'name' => 'open',
-        'return' => 'value'
-      ));
-      $this->_exportedBatchStatusId = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_batchStatusOptionGroup[ 'id'],
-        'name' => 'exported',
-        'return' => 'value'
-      ));
-    } catch (CiviCRM_API3_Exception $ex) {
-      throw new Exception('Could not find a claim status in '.__METHOD__
-        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
-    }
-    try {
-      $this->_targetRecordTypeId = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => 'activity_contacts',
-        'name' => 'Activity Targets',
-        'return' => 'value'
-      ));
-    } catch (CiviCRM_API3_Exception $ex) {
-      throw new Exception('Could not find a target record id type in '.__METHOD__
-        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
-    }
-    try {
-      $this->_scheduledActivityStatusId = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => 'activity_status',
-        'name' => 'Scheduled',
-        'return' => 'value'
-      ));
-    } catch (CiviCRM_API3_Exception $ex) {
-      throw new Exception('Could not find an activity status Scheduled record id type in '.__METHOD__
-        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
-    }
   }
 
   /**
@@ -135,6 +72,16 @@ class CRM_Expenseclaims_Config {
    * @return array|null
    */
   public function getOpenBatchStatusId() {
+    try {
+      $this->_openBatchStatusId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_batchStatusOptionGroup[ 'id'],
+        'name' => 'open',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a claim status in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
     return $this->_openBatchStatusId;
   }
 
@@ -144,6 +91,16 @@ class CRM_Expenseclaims_Config {
    * @return array|null
    */
   public function getExportedBatchStatusId() {
+    try {
+      $this->_exportedBatchStatusId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_batchStatusOptionGroup[ 'id'],
+        'name' => 'exported',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a claim status in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
     return $this->_exportedBatchStatusId;
   }
 
@@ -152,6 +109,7 @@ class CRM_Expenseclaims_Config {
    * @return array|null
    */
   public function getCountryCoordinatorRelationshipTypeId() {
+    $this->setCountryCoordinatorRelationshipTypeId();
     return $this->_countryCoordinatorRelationshipTypeId;
   }
 
@@ -160,6 +118,7 @@ class CRM_Expenseclaims_Config {
    * @return array|null
    */
   public function getGrantCoordinatorRelationshipTypeId() {
+    $this->setGrantCoordinatorRelationshipTypeId();
     return $this->_grantCoordinatorRelationshipTypeId;
   }
 
@@ -168,6 +127,7 @@ class CRM_Expenseclaims_Config {
    * @return array|null
    */
   public function getRecruitmentTeamRelationshipTypeId() {
+    $this->setRecruitmentTeamRelationshipTypeId();
     return $this->_recruitmentTeamRelationshipTypeId;
   }
 
@@ -176,6 +136,7 @@ class CRM_Expenseclaims_Config {
    * @return array|null
    */
   public function getSectorCoordinatorRelationshipTypeId() {
+    $this->setSectorCoordinatorRelationshipTypeId();
     return $this->_sectorCoordinatorRelationshipTypeId;
   }
 
@@ -184,6 +145,7 @@ class CRM_Expenseclaims_Config {
    * @return array|null
    */
   public function getProgrammeManagerGroupId() {
+    $this->setProgrammeManagerGroupId();
     return $this->_programmeManagerGroupId;
   }
 
@@ -192,7 +154,35 @@ class CRM_Expenseclaims_Config {
    * @return array|null
    */
   public function getScheduledActivityStatusId() {
+    try {
+      $this->_scheduledActivityStatusId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => 'activity_status',
+        'name' => 'Scheduled',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find an activity status Scheduled record id type in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
     return $this->_scheduledActivityStatusId;
+  }
+
+  /**
+   * Getter for completed activity status
+   * @return array|null
+   */
+  public function getCompletedActivityStatusId() {
+    try {
+      $this->_completedActivityStatusId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => 'activity_status',
+        'name' => 'Completed',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find an activity status Completed record id type in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
+    return $this->_completedActivityStatusId;
   }
 
   /**
@@ -200,6 +190,16 @@ class CRM_Expenseclaims_Config {
    * @return array|null
    */
   public function getTargetRecordTypeId() {
+    try {
+      $this->_targetRecordTypeId = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => 'activity_contacts',
+        'name' => 'Activity Targets',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a target record id type in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
     return $this->_targetRecordTypeId;
   }
 
@@ -208,6 +208,16 @@ class CRM_Expenseclaims_Config {
    * @return null
    */
   public function getWaitingForApprovalClaimStatusValue() {
+    try {
+      $this->_waitingForApprovalClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'name' => 'waiting_for_approval',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a claim status in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
     return $this->_waitingForApprovalClaimStatusValue;
   }
 
@@ -216,6 +226,16 @@ class CRM_Expenseclaims_Config {
    * @return null
    */
   public function getInitiallyApprovedClaimStatusValue() {
+    try {
+      $this->_initiallyApprovedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'name' => 'initially_approved',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a claim status in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
     return $this->_initiallyApprovedClaimStatusValue;
   }
 
@@ -224,6 +244,16 @@ class CRM_Expenseclaims_Config {
    * @return null
    */
   public function getApprovedClaimStatusValue() {
+    try {
+      $this->_approvedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_claimStatusOptionGroup['id'],
+        'name' => 'approved',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a claim status in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
     return $this->_approvedClaimStatusValue;
   }
 
@@ -232,6 +262,16 @@ class CRM_Expenseclaims_Config {
    * @return null
    */
   public function getRejectedClaimStatusValue() {
+    try {
+      $this->_rejectedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'name' => 'rejected',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a claim status in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
     return $this->_rejectedClaimStatusValue;
   }
 
@@ -240,6 +280,7 @@ class CRM_Expenseclaims_Config {
    * @return null
    */
   public function getSeniorProjectOfficerRelationshipTypeId() {
+    $this->setSeniorProjectOfficerRelationshipTypeId();
     return $this->_seniorProjectOfficerRelationshipTypeId;
   }
 
@@ -248,6 +289,7 @@ class CRM_Expenseclaims_Config {
    * @return null
    */
   public function getProjectOfficerRelationshipTypeId() {
+    $this->setProjectOfficerRelationshipTypeId();
     return $this->_projectOfficerRelationshipTypeId;
   }
 
@@ -433,6 +475,7 @@ class CRM_Expenseclaims_Config {
    * @access public
    */
   public function getValidMainActivities() {
+    $this->setValidMainActivities();
     return $this->_validMainActivities;
   }
 
@@ -443,6 +486,7 @@ class CRM_Expenseclaims_Config {
    * @access public
    */
   public function getClaimActivityTypeId() {
+    $this->setClaimActivityTypeId();
     return $this->_claimActivityTypeId;
   }
 

@@ -378,10 +378,10 @@ class CRM_Expenseclaims_BAO_Claim {
     if (empty($claimId) || empty($contactId)) {
       throw new Exception('ClaimId or ContactId empty when trying to final approve claim in '.__METHOD__.', contact your system administrator');
     }
+
     $config = CRM_Expenseclaims_Config::singleton();
 
     try {
-      $config = CRM_Expenseclaims_Config::singleton();
       $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
         .' = %1 WHERE entity_id = %2';
       CRM_Core_DAO::executeQuery($sql, array(
@@ -402,7 +402,6 @@ class CRM_Expenseclaims_BAO_Claim {
         $actingContactId = $contactId;
       }
       try {
-        $config = CRM_Expenseclaims_Config::singleton();
         $sql = 'UPDATE pum_claim_log SET is_approved = %1, is_rejected = %2, acting_approval_contact_id = %3, is_payable = %4, new_status_id = %5, processed_date = %6 WHERE id = %7 AND claim_activity_id = %8';
         $result = CRM_Core_DAO::executeQuery($sql, array(
           1 => array((int)1, 'Integer'),
@@ -650,6 +649,8 @@ class CRM_Expenseclaims_BAO_Claim {
         'is_payable' => 0,
         'is_rejected' => 0
       ));
+      //As soon as claim is submitted activity status is set to completed to prevent that the claim appears in 'my activities'
+      CRM_Core_DAO::executeQuery("UPDATE civicrm_activity SET status_id=%1 where id=%2", array('1'=>array((int)$config->getCompletedActivityStatusId(),'Integer'),'2'=>array((int)$params['id'],'Integer')));
     } else {
       $errorTxt = array();
       foreach ($this->_newClaim as $key => $value) {

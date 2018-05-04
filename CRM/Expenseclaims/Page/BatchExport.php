@@ -87,7 +87,6 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
 function run() {
 
     $bid    = CRM_Utils_Request::retrieve('bid', 'Positive', $this, TRUE);
-    $config = CRM_Expenseclaims_Config::singleton();
 
     $claimsql = CRM_Expenseclaims_Page_BatchExport::claimsql();
 

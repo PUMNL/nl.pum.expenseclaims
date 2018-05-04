@@ -10,7 +10,6 @@ class CRM_Expenseclaims_Page_OtherPeoplesClaims extends CRM_Core_Page {
   }
   private function otherPeople() {
     try {
-      $config = CRM_Expenseclaims_Config::singleton();
       $sql = "SELECT lc.contact_id AS 'id', c.display_name FROM pum_claim_level_contact lc JOIN civicrm_contact c ON c.id = lc.contact_id";
 
       $otherPeople = array();
