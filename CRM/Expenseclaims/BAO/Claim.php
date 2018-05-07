@@ -264,14 +264,16 @@ class CRM_Expenseclaims_BAO_Claim {
       }
 
       if ($authorized == TRUE) {
+        //Set status of activity
         $config = CRM_Expenseclaims_Config::singleton();
         $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
           .' = %1 WHERE entity_id = %2';
         CRM_Core_DAO::executeQuery($sql, array(
           1 => array($config->getRejectedClaimStatusValue(), 'String'),
           2 => array($claimId, 'Integer')));
-        // now update claim log line for this rejection
+
         try {
+          // now update claim log line for this rejection
           $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
             'claim_activity_id' => $claimId,
             'approval_contact_id' => $contactId));
@@ -283,7 +285,46 @@ class CRM_Expenseclaims_BAO_Claim {
             'is_rejected' => 1,
             'acting_approval_contact_id' => $actingContactId,
             'processed_date' => date('Y-m-d')));
-        } catch (CiviCRM_API3_Exception $ex) {}
+        } catch (CiviCRM_API3_Exception $ex) {
+          throw new Exception('Unable to update status to rejected in '.__METHOD__.', contact your system administrator');
+        }
+
+        try {
+          //Get mail template
+          $params_template = array('msg_title' => 'claim_rejected');
+          $result_template = civicrm_api3('MessageTemplate', 'get', $params_template);
+
+          //Get contact id of the user who the claim submitted
+          $params_contactofclaim = array(
+            'version' => 3,
+            'sequential' => 1,
+            'id' => $claimId,
+          );
+          $contactOfClaim = civicrm_api3('Claim', 'get', $params_contactofclaim);
+          $ids = array();
+          $contactIdOfClaim = '';
+          if (is_array($contactOfClaim['values'])) {
+            foreach($contactOfClaim['values'] as $value) {
+              if(!empty($value['source_contact_id'])) {
+                $contactIdOfClaim = $value['source_contact_id'];
+              }
+            }
+          }
+
+          //Send E-mail to contact
+          if($result_template['is_error'] == 0 && !empty($contactIdOfClaim)) {
+            //mail claim rejected
+            $params_email = array(
+              'version' => 3,
+              'sequential' => 1,
+              'contact_id' => $contactIdOfClaim,
+              'template_id' => $result_template['id'],
+            );
+            $result_email = civicrm_api3('Email', 'send', $params_email);
+          }
+        } catch (CiviCRM_API3_Exception $ex) {
+          throw new Exception('Unable to send e-mail to contact in '.__METHOD__.', contact your system administrator');
+        }
       } else {
         throw new Exception('Sorry, you are not authorized to reject this claim, please contact someone with a higher authorization or assign this claim to someone with a higher authorization level.');
       }
@@ -381,6 +422,7 @@ class CRM_Expenseclaims_BAO_Claim {
 
     $config = CRM_Expenseclaims_Config::singleton();
 
+    //Set status of activity
     try {
       $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
         .' = %1 WHERE entity_id = %2';
@@ -417,7 +459,43 @@ class CRM_Expenseclaims_BAO_Claim {
         CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim status', TRUE);
       }
     } catch (CiviCRM_API3_Exception $ex) {
-      CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim log line'.$ex->getMessage(), TRUE);
+      CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim log line '.$ex->getMessage(), TRUE);
+    }
+
+    try {
+      //Get mail template
+      $params_template = array('msg_title' => 'claim_approved');
+      $result_template = civicrm_api3('MessageTemplate', 'get', $params_template);
+
+      //Get contact id of the user who the claim submitted
+      $params_contactofclaim = array(
+        'version' => 3,
+        'sequential' => 1,
+        'id' => $claimId,
+      );
+      $contactOfClaim = civicrm_api3('Claim', 'get', $params_contactofclaim);
+      $ids = array();
+      $contactIdOfClaim = '';
+      if (is_array($contactOfClaim['values'])) {
+        foreach($contactOfClaim['values'] as $value) {
+          if(!empty($value['source_contact_id'])) {
+            $contactIdOfClaim = $value['source_contact_id'];
+          }
+        }
+      }
+
+      if($result_template['is_error'] == 0 && !empty($contactIdOfClaim)) {
+        //mail claim approved
+        $params_email = array(
+          'version' => 3,
+          'sequential' => 1,
+          'contact_id' => $contactIdOfClaim,
+          'template_id' => $result_template['id'],
+        );
+        $result_email = civicrm_api3('Email', 'send', $params_email);
+      }
+    } catch (CiviCRM_API3_Exception $ex) {
+      CRM_Core_Error::debug_log_message('Failed to send approval message for claim ID: '.$claimId.', contact id: '.$contactId.' '.$ex->getMessage(), TRUE);
     }
   }
 

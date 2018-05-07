@@ -83,4 +83,14 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
     $this->executeSqlFile('sql/upgrade_1005.sql');
     return TRUE;
   }
+
+  /**
+   * Add message templates for approval/rejection of claims
+   *
+   * @return TRUE
+   */
+  public function upgrade_1006() {
+    $this->executeSqlFile('sql/upgrade_1006.sql');
+    return TRUE;
+  }
 }
