@@ -26,7 +26,9 @@ function civicrm_api3_claim_submit($params) {
   if ($claim['claim_type_id'] == 'project') {
     $params['claim_link'] = $claim['claim_linked_to'];
   }
+
   $bao = new CRM_Expenseclaims_BAO_Claim();
   $bao->createFirstStep($params);
   return civicrm_api3_create_success($claim, $params, 'Claim', 'Create');
+
 }

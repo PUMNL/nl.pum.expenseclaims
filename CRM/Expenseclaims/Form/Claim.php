@@ -84,6 +84,11 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
             'subName' => 'assigntouser',
             'name' => ts('Assign to another user'),
           ],
+          [
+            'type' => 'next',
+            'subName' => 'sendbackforcorrection',
+            'name' => ts('Send back to user for correction'),
+          ],
           ['type' => 'cancel', 'name' => ts('Cancel')],
         ]);
       } else if(CRM_Core_Permission::check('view others claims') == TRUE |
@@ -310,7 +315,11 @@ where             l.claim_activity_id = %1";
       }
       $claimParams['claim_id'] = $this->_claimId;
       // if save or save and approve, save the claim
-      if (isset($this->_submitValues['_qf_Claim_submit']) || isset($this->_submitValues['_qf_Claim_next']) || isset($this->_submitValues['_qf_Claim_next_reject']) || isset($this->_submitValues['_qf_Claim_next_assigntouser'])) {
+      if (isset($this->_submitValues['_qf_Claim_submit']) ||
+          isset($this->_submitValues['_qf_Claim_next']) ||
+          isset($this->_submitValues['_qf_Claim_next_reject']) ||
+          isset($this->_submitValues['_qf_Claim_next_assigntouser']) ||
+          isset($this->_submitValues['_qf_Claim_next_sendbackforcorrection'])) {
         $claim = new CRM_Expenseclaims_BAO_Claim();
         $claim->update($claimParams);
         // if save and approve, also change claim status to approval
@@ -327,6 +336,11 @@ where             l.claim_activity_id = %1";
         if(isset($this->_submitValues['_qf_Claim_next_assigntouser'])) {
           $session = CRM_Core_Session::singleton();
           $claim->assignToOtherUser($this->_claimId, $session->get('userID'));
+        }
+
+        if(isset($this->_submitValues['_qf_Claim_next_sendbackforcorrection'])) {
+          $session = CRM_Core_Session::singleton();
+          $claim->sendBackForCorrection($this->_claimId, $session->get('userID'));
         }
       }
     }

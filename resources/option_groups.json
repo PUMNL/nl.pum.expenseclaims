@@ -154,6 +154,12 @@
         "value": 7,
         "label": "Paid",
         "is_active": 1
+      },
+      "waiting_for_correction": {
+        "name": "waiting_for_correction",
+        "value": 8,
+        "label": "Waiting for correction",
+        "is_active": 1
       }
     }
   },

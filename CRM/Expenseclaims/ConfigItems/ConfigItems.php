@@ -331,4 +331,28 @@ class CRM_Expenseclaims_ConfigItems_ConfigItems {
     CRM_Core_DAO::executeQuery("UPDATE civicrm_option_value set label='Expert' where id=%1",
       array('1'=>array($optionValueId,'Integer')));
   }
+
+  /**
+  * Add claim status waiting for correction
+  */
+  public static function addClaimStatusWaitingForCorrection() {
+    try {
+      $params = array(
+        'version' => 3,
+        'sequential' => 1,
+        'option_group_id' => 'pum_claim_status',
+        'label' => 'Waiting For Correction',
+        'name' => 'waiting_for_correction',
+        'value' => 8,
+        'is_reserved' => 1,
+        'filter' => 'null',
+      );
+      $result = civicrm_api3('OptionValue', 'create', $params);
+
+      return $result;
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not create option value: waiting for correction in '.__METHOD__
+          .', contact your system administrator. Error from API OptionValue create: '.$ex->getMessage());
+    }
+  }
 }

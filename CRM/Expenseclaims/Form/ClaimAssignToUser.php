@@ -83,11 +83,23 @@ class CRM_Expenseclaims_Form_ClaimAssignToUser extends CRM_Core_Form {
       $valuesToArray['approver_id'] = $values['claim_assign_contacts'];
     }
 
+    $config = CRM_Expenseclaims_Config::singleton();
     try {
-      $sql = 'UPDATE pum_claim_log SET approval_contact_id = %1 WHERE claim_activity_id = %2';
+      $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET pum_claim_status = %1 WHERE entity_id = %2 ORDER BY id DESC LIMIT 1';
       CRM_Core_DAO::executeQuery($sql, array(
-        1 => array((int)$valuesToArray['approver_id'], 'Integer'),
-        2 => array((int)$valuesToArray['claim_id'], 'Integer')));
+        1 => array((int)$config->getWaitingForApprovalClaimStatusValue(), 'Integer'),
+        2 => array((int)$claimId, 'Integer')
+      ));
+      $sql = 'UPDATE pum_claim_log SET approval_contact_id = %1, acting_approval_contact_id = %2, is_approved = %3, is_rejected = %4, is_payable = %5, old_status_id = new_status_id, new_status_id = %6, processed_date = %7 WHERE claim_activity_id = %8 ORDER BY id DESC LIMIT 1';
+      CRM_Core_DAO::executeQuery($sql, array(
+        1 => array($valuesToArray['approver_id'], 'String'),
+        2 => array(NULL,'Date'),
+        3 => array((int)0, 'Integer'),
+        4 => array((int)0, 'Integer'),
+        5 => array((int)0, 'Integer'),
+        6 => array((int)$config->getWaitingForApprovalClaimStatusValue(),'Integer'),
+        7 => array(NULL,'Date'),
+        8 => array((int)$valuesToArray['claim_id'], 'Integer')));
     } catch (CiviCRM_API3_Exception $e) {
       CRM_Core_Error::debug_log_message($e->getCode() & " - " & $e->getMessage(), FALSE); //log message to log file
       CRM_Core_Session::setStatus('Failed to assign claim to another user: '.$e->getMessage(), 'error', 'error'); //show message on screen

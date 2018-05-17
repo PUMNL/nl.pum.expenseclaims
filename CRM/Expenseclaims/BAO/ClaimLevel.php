@@ -198,13 +198,37 @@ class CRM_Expenseclaims_BAO_ClaimLevel extends CRM_Expenseclaims_DAO_ClaimLevel 
     }
     $config = CRM_Expenseclaims_Config::singleton();
 
-    $result = civicrm_api3('option_value','getsingle',array(
-      'option_group_id' => $config->getClaimLevelOptionGroup(),
-      'value' => $authorizingLevel,
-      'return' => 'name'
+    //First get max amount of authorizing level and amount of the claim
+    $max_amount_authorizinglevel = civicrm_api('ClaimLevel', 'getsingle', array(
+      'version' => 3,
+      'sequential' => 1,
+      'level' => $authorizingLevel,
+    ));
+    $amount_claim = civicrm_api('Claim', 'getsingle', array(
+      'version' => 3,
+      'sequential' => 1,
+      'id' => $claimId,
     ));
 
-    $authorizingLevelName = $result['name'];
+    //If amount of claim is more then max_amount of authorizing level, directly get the next level authorizing contact
+    $newAuthorizingLevel = $max_amount_authorizinglevel['authorizing_level'];
+    if ($amount_claim['claim_total_amount'] > $max_amount_authorizinglevel['max_amount']) {
+      $result = civicrm_api3('option_value','getsingle',array(
+        'option_group_id' => $config->getClaimLevelOptionGroup(),
+        'value' => $newAuthorizingLevel,
+        'return' => 'name'
+      ));
+
+      $authorizingLevelName = $result['name'];
+    } else {
+      $result = civicrm_api3('option_value','getsingle',array(
+        'option_group_id' => $config->getClaimLevelOptionGroup(),
+        'value' => $authorizingLevel,
+        'return' => 'name'
+      ));
+
+      $authorizingLevelName = $result['name'];
+    }
 
     // check authorizing level
     switch ($authorizingLevelName) {

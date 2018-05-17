@@ -34,6 +34,7 @@ class CRM_Expenseclaims_Config {
   private $_initiallyApprovedClaimStatusValue = NULL;
   private $_waitingForApprovalClaimStatusValue = NULL;
   private $_rejectedClaimStatusValue = NULL;
+  private $_waitingforcorrectionClaimStatusValue = NULL;
   private $_targetRecordTypeId = NULL;
   private $_scheduledActivityStatusId = NULL;
   private $_completedActivityStatusId = NULL;
@@ -210,7 +211,7 @@ class CRM_Expenseclaims_Config {
   public function getWaitingForApprovalClaimStatusValue() {
     try {
       $this->_waitingForApprovalClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'option_group_id' => $this->_claimStatusOptionGroup['id'],
         'name' => 'waiting_for_approval',
         'return' => 'value'
       ));
@@ -228,7 +229,7 @@ class CRM_Expenseclaims_Config {
   public function getInitiallyApprovedClaimStatusValue() {
     try {
       $this->_initiallyApprovedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'option_group_id' => $this->_claimStatusOptionGroup['id'],
         'name' => 'initially_approved',
         'return' => 'value'
       ));
@@ -264,7 +265,7 @@ class CRM_Expenseclaims_Config {
   public function getRejectedClaimStatusValue() {
     try {
       $this->_rejectedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_claimStatusOptionGroup[ 'id'],
+        'option_group_id' => $this->_claimStatusOptionGroup['id'],
         'name' => 'rejected',
         'return' => 'value'
       ));
@@ -274,6 +275,24 @@ class CRM_Expenseclaims_Config {
     }
     return $this->_rejectedClaimStatusValue;
   }
+
+  /**
+   * Getter for waiting for correction claims status value
+   * @return null
+   */
+   public function getWaitingForCorrectionClaimStatusValue() {
+    try {
+      $this->_waitingforcorrectionClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_claimStatusOptionGroup['id'],
+        'name' => 'waiting_for_correction',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a claim status in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
+    return $this->_waitingforcorrectionClaimStatusValue;
+   }
 
   /**
    * Getter for senior project officer relationship type id

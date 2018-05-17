@@ -57,9 +57,6 @@ class CRM_Expenseclaims_Form_ClaimLevelContact extends CRM_Core_Form {
         while ($contact->fetch()) {
           $this->_contacts[$contact->id] = $contact->sort_name;
         }
-      } else {
-        CRM_Core_Session::setStatus('Unable to get contacts, claim level is not available.','error');
-        CRM_Core_Error::debug_log_message('Unable to get contacts, claim level is not available in: '.debug_backtrace()[0]['function'].', called from: '.debug_backtrace()[1]['function'], FALSE);
       }
     } catch (Exception $e) {
       CRM_Core_Error::debug_log_message($e->getCode() & " | " & $e->getMessage() & " | " & $e->getTraceAsString(), FALSE);

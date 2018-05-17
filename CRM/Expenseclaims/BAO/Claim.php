@@ -169,7 +169,6 @@ class CRM_Expenseclaims_BAO_Claim {
           throw new Exception('Could not pass validation before approval of claim, problem : '.$ex->getMessage());
         }
 
-
         //Get approval contact and check if user has same authorization or higher authorization level
         $params_approval_contact = array(
           'version' => 3,
@@ -184,10 +183,15 @@ class CRM_Expenseclaims_BAO_Claim {
         }
         $latest_approval_contact = max($ids);
 
-        if(CRM_Expenseclaims_Utils::checkHasAuthorization($claimLevel['level'],$currentUser, $latest_approval_contact) == TRUE) {
-          if($claim['claim_total_amount'] <= $claimLevel['max_amount']) {
-            $authorized = TRUE;
-          }
+        $params_claim = array(
+          'version' => 3,
+          'sequential' => 1,
+          'id' => $claimId,
+        );
+        $claim = civicrm_api('Claim', 'getsingle', $params_claim);
+
+        if(CRM_Expenseclaims_Utils::checkHasAuthorization('',$currentUser, $latest_approval_contact) == TRUE) {
+          $authorized = TRUE;
         }
 
         if ($authorized == TRUE) {
@@ -227,107 +231,114 @@ class CRM_Expenseclaims_BAO_Claim {
     $session = CRM_Core_Session::singleton();
     $currentUser = $session->get('userID');
 
-    if (empty($claimId) || empty($contactId)) {
-      throw new Exception('claimId or contactId empty when trying to final reject claim in '.__METHOD__.', contact your system administrator');
-    }
+    if (!empty($claimId) && !empty($currentUser)) {
+      $myRole = CRM_Expenseclaims_Utils::getMyRole($claimId, $currentUser);
 
-    $myRole = CRM_Expenseclaims_Utils::getMyRole($claimId, $currentUser);
+      if ($myRole) {
+        $myLevel = civicrm_api3('ClaimLevel', 'getsingle', array('level' => $myRole));
 
-    if ($myRole) {
-      $myLevel = civicrm_api3('ClaimLevel', 'getsingle', array('level' => $myRole));
+        // first check if I can actually approve
+        try {
+          $this->preApprovalValidityChecks($claimId, $actingContactId, $myLevel);
+        } catch (Exception $ex) {
+          throw new Exception('Could not pass validation before approval of claim, problem : '.$ex->getMessage());
+        }
 
-      // first check if I can actually approve
-      try {
-        $this->preApprovalValidityChecks($claimId, $actingContactId, $myLevel);
-      } catch (Exception $ex) {
-        throw new Exception('Could not pass validation before approval of claim, problem : '.$ex->getMessage());
-      }
+        //Get approval contact and check if user has same authorization or higher authorization level
+        $params_approval_contact = array(
+          'version' => 3,
+          'sequential' => 1,
+          'claim_activity_id' => $claimId,
+          'return' => 'approval_contact_id'
+        );
+        $approval_contact = civicrm_api('ClaimLog', 'get', $params_approval_contact);
+        $ids = array();
+        foreach($approval_contact['values'] as $value) {
+          $ids[$value['id']]=$value['approval_contact_id'];
+        }
+        $latest_approval_contact = max($ids);
 
-      //Get approval contact and check if user has same authorization or higher authorization level
-      $params_approval_contact = array(
-        'version' => 3,
-        'sequential' => 1,
-        'claim_activity_id' => $claimId,
-        'return' => 'approval_contact_id'
-      );
-      $approval_contact = civicrm_api('ClaimLog', 'get', $params_approval_contact);
-      $ids = array();
-      foreach($approval_contact['values'] as $value) {
-        $ids[$value['id']]=$value['approval_contact_id'];
-      }
-      $latest_approval_contact = max($ids);
+        $params_claim = array(
+          'version' => 3,
+          'sequential' => 1,
+          'id' => $claimId,
+        );
+        $claim = civicrm_api('Claim', 'getsingle', $params_claim);
 
-      if(CRM_Expenseclaims_Utils::checkHasAuthorization($claimLevel['level'],$currentUser, $latest_approval_contact) == TRUE) {
-        if($claim['claim_total_amount'] <= $claimLevel['max_amount']) {
+        if(CRM_Expenseclaims_Utils::checkHasAuthorization('',$currentUser, $latest_approval_contact) == TRUE) {
           $authorized = TRUE;
         }
-      }
 
-      if ($authorized == TRUE) {
-        //Set status of activity
-        $config = CRM_Expenseclaims_Config::singleton();
-        $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
-          .' = %1 WHERE entity_id = %2';
-        CRM_Core_DAO::executeQuery($sql, array(
-          1 => array($config->getRejectedClaimStatusValue(), 'String'),
-          2 => array($claimId, 'Integer')));
+        if ($authorized == TRUE) {
+          //Set status of activity
+          $config = CRM_Expenseclaims_Config::singleton();
+          $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
+            .' = %1 WHERE entity_id = %2';
+          CRM_Core_DAO::executeQuery($sql, array(
+            1 => array($config->getRejectedClaimStatusValue(), 'String'),
+            2 => array($claimId, 'Integer')));
 
-        try {
-          // now update claim log line for this rejection
-          $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
-            'claim_activity_id' => $claimId,
-            'approval_contact_id' => $contactId));
-          civicrm_api3('ClaimLog', 'create', array(
-            'id' => $claimLog['id'],
-            'new_status_id' => $config->getRejectedClaimStatusValue(),
-            'is_payable' => 0,
-            'is_approved' => 0,
-            'is_rejected' => 1,
-            'acting_approval_contact_id' => $actingContactId,
-            'processed_date' => date('Y-m-d')));
-        } catch (CiviCRM_API3_Exception $ex) {
-          throw new Exception('Unable to update status to rejected in '.__METHOD__.', contact your system administrator');
-        }
-
-        try {
-          //Get mail template
-          $params_template = array('msg_title' => 'claim_rejected');
-          $result_template = civicrm_api3('MessageTemplate', 'get', $params_template);
-
-          //Get contact id of the user who the claim submitted
-          $params_contactofclaim = array(
-            'version' => 3,
-            'sequential' => 1,
-            'id' => $claimId,
-          );
-          $contactOfClaim = civicrm_api3('Claim', 'get', $params_contactofclaim);
-          $ids = array();
-          $contactIdOfClaim = '';
-          if (is_array($contactOfClaim['values'])) {
-            foreach($contactOfClaim['values'] as $value) {
-              if(!empty($value['source_contact_id'])) {
-                $contactIdOfClaim = $value['source_contact_id'];
-              }
-            }
+          try {
+            // now update claim log line for this rejection
+            $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
+              'claim_activity_id' => $claimId,
+              'approval_contact_id' => $contactId));
+            civicrm_api3('ClaimLog', 'create', array(
+              'id' => $claimLog['id'],
+              'new_status_id' => $config->getRejectedClaimStatusValue(),
+              'is_payable' => 0,
+              'is_approved' => 0,
+              'is_rejected' => 1,
+              'acting_approval_contact_id' => $actingContactId,
+              'processed_date' => date('Y-m-d')));
+          } catch (CiviCRM_API3_Exception $ex) {
+            throw new Exception('Unable to update status to rejected in '.__METHOD__.', contact your system administrator');
           }
 
-          //Send E-mail to contact
-          if($result_template['is_error'] == 0 && !empty($contactIdOfClaim)) {
-            //mail claim rejected
-            $params_email = array(
+          try {
+            //Get mail template
+            $params_template = array('msg_title' => 'claim_rejected');
+            $result_template = civicrm_api3('MessageTemplate', 'get', $params_template);
+
+            //Get contact id of the user who the claim submitted
+            $params_contactofclaim = array(
               'version' => 3,
               'sequential' => 1,
-              'contact_id' => $contactIdOfClaim,
-              'template_id' => $result_template['id'],
+              'id' => $claimId,
             );
-            $result_email = civicrm_api3('Email', 'send', $params_email);
+            $contactOfClaim = civicrm_api3('Claim', 'get', $params_contactofclaim);
+            $ids = array();
+            $contactIdOfClaim = '';
+            if (is_array($contactOfClaim['values'])) {
+              foreach($contactOfClaim['values'] as $value) {
+                if(!empty($value['source_contact_id'])) {
+                  $contactIdOfClaim = $value['source_contact_id'];
+                }
+              }
+            }
+
+            //Send E-mail to contact
+            if($result_template['is_error'] == 0 && !empty($contactIdOfClaim)) {
+              //mail claim rejected
+              $params_email = array(
+                'version' => 3,
+                'sequential' => 1,
+                'contact_id' => $contactIdOfClaim,
+                'template_id' => $result_template['id'],
+              );
+              $result_email = civicrm_api3('Email', 'send', $params_email);
+            }
+          } catch (CiviCRM_API3_Exception $ex) {
+            throw new Exception('Unable to send e-mail to contact in '.__METHOD__.', contact your system administrator');
           }
-        } catch (CiviCRM_API3_Exception $ex) {
-          throw new Exception('Unable to send e-mail to contact in '.__METHOD__.', contact your system administrator');
+        } else {
+          throw new Exception('Sorry, you are not authorized to reject this claim, please contact someone with a higher authorization or assign this claim to someone with a higher authorization level.');
         }
       } else {
-        throw new Exception('Sorry, you are not authorized to reject this claim, please contact someone with a higher authorization or assign this claim to someone with a higher authorization level.');
+        throw new Exception('Undefined role - cannot Approve');
       }
+    } else {
+      throw new Exception('claimId or currentUser empty when trying to final reject claim in '.__METHOD__.', contact your system administrator');
     }
   }
 
@@ -341,6 +352,36 @@ class CRM_Expenseclaims_BAO_Claim {
   public function assignToOtherUser($claimId, $currentContactId){
     $claimsAssignToUserURL = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimassigntouser', 'reset=1&claim_id='.$claimId.'&approver_id='.$currentContactId, TRUE);
     CRM_Utils_System::redirect($claimsAssignToUserURL);
+  }
+
+  public function sendBackForCorrection($claimId, $currentContactId) {
+    if (empty($claimId) || empty($currentContactId)) {
+      throw new Exception('ClaimId, or currentContactId empty when trying to send claim back for correction in '.__METHOD__
+        .', contact your system administrator');
+    }
+    $config = CRM_Expenseclaims_Config::singleton();
+
+    $claim_status_waitingcorrection = $config->getWaitingForCorrectionClaimStatusValue();
+
+    if (is_int((int)$claimId) && is_int((int)$claim_status)) {
+      $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET pum_claim_status = %1 WHERE entity_id = %2 ORDER BY id DESC LIMIT 1';
+      $result = CRM_Core_DAO::executeQuery($sql, array(
+        1 => array((int)$claim_status_waitingcorrection, 'Integer'),
+        2 => array((int)$claimId, 'Integer')
+      ));
+      //
+      $sql = 'UPDATE pum_claim_log SET new_status_id = %1, is_approved = %2, is_rejected = %3, is_payable = %4, processed_date = %5 WHERE claim_activity_id = %6 ORDER BY id DESC LIMIT 1';
+      $result = CRM_Core_DAO::executeQuery($sql, array(
+        1 => array((int)$claim_status_waitingcorrection, 'Integer'),
+        2 => array((int)0, 'Integer'),
+        3 => array((int)0, 'Integer'),
+        4 => array((int)0, 'Integer'),
+        5 => array(date('YmdHis'),'String'),
+        6 => array((int)$claimId, 'Integer')
+      ));
+    } else {
+      throw new Exception('Unable to send claim back for correction');
+    }
   }
 
   /**
@@ -380,7 +421,7 @@ class CRM_Expenseclaims_BAO_Claim {
 
       // now set next log record for the authorizing level contact
       $nextContactId = CRM_Expenseclaims_BAO_ClaimLevel::getNextLevelContactId($claimId, $authorizingLevel);
-      if ($nextContactId != FALSE && !empty($nextContactId)) {
+      if (!empty($nextContactId) && $nextContactId != FALSE) {
         civicrm_api3('ClaimLog', 'create', array(
           'claim_activity_id' => $claimId,
           'approval_contact_id' => $nextContactId,
@@ -715,27 +756,59 @@ class CRM_Expenseclaims_BAO_Claim {
    * Method to find approval contact and set claim log for new claim
    */
   public function createFirstStep($params) {
-    $config = CRM_Expenseclaims_Config::singleton();
-    // find approval contact based on claim link
-    $approvalContactId = $this->findFirstApprovalContact($params);
-    if ($approvalContactId) {
-      civicrm_api3('ClaimLog', 'create', array(
-        'claim_activity_id' => $params['id'],
-        'approval_contact_id' => $approvalContactId,
-        'old_status_id' => $config->getWaitingForApprovalClaimStatusValue(),
-        'is_approved' => 0,
-        'is_payable' => 0,
-        'is_rejected' => 0
-      ));
-      //As soon as claim is submitted activity status is set to completed to prevent that the claim appears in 'my activities'
-      CRM_Core_DAO::executeQuery("UPDATE civicrm_activity SET status_id=%1 where id=%2", array('1'=>array((int)$config->getCompletedActivityStatusId(),'Integer'),'2'=>array((int)$params['id'],'Integer')));
-    } else {
-      $errorTxt = array();
-      foreach ($this->_newClaim as $key => $value) {
-        $errorTxt[] = 'parameter '.$key.' and value '.$value;
+
+    $sqlParams = array(1 => array((int)$params['id'], 'Integer'));
+    $countProcessed = CRM_Core_DAO::singleValueQuery("SELECT COUNT(*) FROM pum_claim_log WHERE claim_activity_id = %1", $sqlParams);
+
+    if (!empty($countProcessed) && $countProcessed > 0) {
+      $config = CRM_Expenseclaims_Config::singleton();
+
+      $tx = new CRM_Core_Transaction();
+      try {
+        $sql1 = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET pum_claim_status = %1 WHERE entity_id = %2 ORDER BY id DESC LIMIT 1';
+        $dao = CRM_Core_DAO::executeQuery($sql1, array(
+          1 => array($config->getWaitingForApprovalClaimStatusValue(), 'Integer'),
+          2 => array($params['id'], 'Integer')
+        ));
+
+        //Only update last claim log entry (desc limit 1)
+        $sql2 = 'UPDATE pum_claim_log SET old_status_id = new_status_id, new_status_id = %1, processed_date = %3 WHERE claim_activity_id = %2 ORDER BY id DESC LIMIT 1';
+        $dao = CRM_Core_DAO::executeQuery($sql2, array(
+          1 => array($config->getWaitingForApprovalClaimStatusValue(), 'Integer'),
+          2 => array($params['id'], 'Integer'),
+          3 => array(NULL, 'Date')
+        ));
+
+        return TRUE;
+      } catch (Exception $ex) {
+        $tx->rollBack();
+        CRM_Core_Error::debug_log_message('Unable to set claim status for claim ID: '.$params['id'], TRUE);
       }
-      throw new Exception('Could not create a claim because no approval contact for the claim could be identified in '.__METHOD__
-        .' with values '.implode('; ', $errorTxt));
+    } else {
+      $config = CRM_Expenseclaims_Config::singleton();
+      // find approval contact based on claim link
+      $approvalContactId = $this->findFirstApprovalContact($params);
+      if ($approvalContactId) {
+        civicrm_api3('ClaimLog', 'create', array(
+          'claim_activity_id' => $params['id'],
+          'approval_contact_id' => $approvalContactId,
+          'old_status_id' => $config->getWaitingForApprovalClaimStatusValue(),
+          'is_approved' => 0,
+          'is_payable' => 0,
+          'is_rejected' => 0
+        ));
+        //As soon as claim is submitted activity status is set to completed to prevent that the claim appears in 'my activities'
+        CRM_Core_DAO::executeQuery("UPDATE civicrm_activity SET status_id=%1 where id=%2", array('1'=>array($config->getCompletedActivityStatusId(),'Integer'),'2'=>array($params['id'],'Integer')));
+
+        return TRUE;
+      } else {
+        $errorTxt = array();
+        foreach ($this->_newClaim as $key => $value) {
+          $errorTxt[] = 'parameter '.$key.' and value '.$value;
+        }
+        throw new Exception('Could not create a claim because no approval contact for the claim could be identified in '.__METHOD__
+          .' with values '.implode('; ', $errorTxt));
+      }
     }
   }
 

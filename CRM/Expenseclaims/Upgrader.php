@@ -93,4 +93,18 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
     $this->executeSqlFile('sql/upgrade_1006.sql');
     return TRUE;
   }
+
+  /**
+   * Add claim status waiting for correction
+   *
+   * @return TRUE
+   */
+  public function upgrade_1007() {
+    $status = CRM_Expenseclaims_ConfigItems_ConfigItems::addClaimStatusWaitingForCorrection();
+    if($status['is_error'] == 0) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
 }
