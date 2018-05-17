@@ -67,8 +67,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
 
       //Check if user is authorized to approve this claim, and if so, show buttons
       if( $session->get('userID') == $this->_approverId |
-          (CRM_Expenseclaims_Utils::checkHasAuthorization($myLevel, $session->get('userID'), $this->_approverId) && CRM_Core_Permission::check('manage others claims') == TRUE) |
-          CRM_Core_Permission::check('administer claims') == TRUE) {
+          (CRM_Expenseclaims_Utils::checkHasAuthorization($myLevel, $session->get('userID'), $this->_approverId) && CRM_Core_Permission::check('manage others claims') == TRUE)) {
         //User is authorized to edit/approve/reject/assign this claim
 
         $this->addButtons([
@@ -91,20 +90,33 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
           ],
           ['type' => 'cancel', 'name' => ts('Cancel')],
         ]);
+      } else if(CRM_Core_Permission::check('administer claims') == TRUE) {
+        $this->addButtons([
+          [
+            'type' => 'next',
+            'subName' => 'assigntouser',
+            'name' => ts('Assign to another user'),
+          ],
+          [
+            'type' => 'next',
+            'subName' => 'sendbackforcorrection',
+            'name' => ts('Send back to user for correction'),
+          ],
+          ['type' => 'cancel', 'name' => ts('Cancel')],
+        ]);
       } else if(CRM_Core_Permission::check('view others claims') == TRUE |
                 $session->get('userID') == $this->_approverId |
-                CRM_Expenseclaims_Utils::checkHasAuthorization($myLevel, $session->get('userID'), $this->_approverId) && CRM_Core_Permission::check('manage others claims') == TRUE |
-                CRM_Core_Permission::check('administer claims') == TRUE) {
+                CRM_Expenseclaims_Utils::checkHasAuthorization($myLevel, $session->get('userID'), $this->_approverId) && CRM_Core_Permission::check('manage others claims') == TRUE) {
         //User is authorized to view this claim
         $this->addButtons([
           ['type' => 'cancel', 'name' => ts('Cancel')],
         ]);
-      }
-    } else if ($this->_action==CRM_CORE_Action::VIEW) {
-      if(CRM_Core_Permission::check(array(array('view others claims','manage others claims','administer claims'))) == TRUE | $session->get('userID') == $this->_approverId) {
-        $this->addButtons([
-          ['type' => 'cancel', 'name' => ts('Cancel')],
-        ]);
+      } else if ($this->_action==CRM_CORE_Action::VIEW) {
+        if(CRM_Core_Permission::check(array(array('view others claims','manage others claims','administer claims'))) == TRUE | $session->get('userID') == $this->_approverId) {
+          $this->addButtons([
+            ['type' => 'cancel', 'name' => ts('Cancel')],
+          ]);
+        }
       }
     }
 
@@ -371,11 +383,11 @@ where             l.claim_activity_id = %1";
         'return' => 'approval_contact_id'
       );
       $approval_contact = civicrm_api('ClaimLog', 'get', $params_approval_contact);
+
       $ids = array();
-      foreach($approval_contact['values'] as $value) {
-        $ids[$value['id']]=$value['approval_contact_id'];
-      }
-      $latest_approval_contact = max($ids);
+
+      $latest_approval_contact_key = max(array_keys($approval_contact['values']));
+      $latest_approval_contact = $approval_contact['values'][$latest_approval_contact_key]['approval_contact_id'];
 
       if(!empty($latest_approval_contact)){
         $this->_approverId = $latest_approval_contact;
