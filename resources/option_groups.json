@@ -160,6 +160,12 @@
         "value": 8,
         "label": "Waiting for correction",
         "is_active": 1
+      },
+      "not_submitted": {
+        "name": "not_submitted",
+        "value": 9,
+        "label": "Not submitted",
+        "is_active": 1
       }
     }
   },

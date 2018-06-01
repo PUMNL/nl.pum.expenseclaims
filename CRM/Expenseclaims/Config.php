@@ -35,6 +35,7 @@ class CRM_Expenseclaims_Config {
   private $_waitingForApprovalClaimStatusValue = NULL;
   private $_rejectedClaimStatusValue = NULL;
   private $_waitingforcorrectionClaimStatusValue = NULL;
+  private $_notsubmittedClaimStatusValue = NULL;
   private $_targetRecordTypeId = NULL;
   private $_scheduledActivityStatusId = NULL;
   private $_completedActivityStatusId = NULL;
@@ -219,6 +220,7 @@ class CRM_Expenseclaims_Config {
       throw new Exception('Could not find a claim status in '.__METHOD__
         .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
     }
+
     return $this->_waitingForApprovalClaimStatusValue;
   }
 
@@ -292,6 +294,24 @@ class CRM_Expenseclaims_Config {
         .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
     }
     return $this->_waitingforcorrectionClaimStatusValue;
+   }
+
+   /**
+   * Getter for waiting for correction claims status value
+   * @return null
+   */
+   public function getNotSubmittedClaimStatusValue() {
+    try {
+      $this->_notsubmittedClaimStatusValue = civicrm_api3('OptionValue', 'getvalue', array(
+        'option_group_id' => $this->_claimStatusOptionGroup['id'],
+        'name' => 'not_submitted',
+        'return' => 'value'
+      ));
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not find a claim status in '.__METHOD__
+        .', contact your system administrator. Error from API OptionValue getvalue: '.$ex->getMessage());
+    }
+    return $this->_notsubmittedClaimStatusValue;
    }
 
   /**

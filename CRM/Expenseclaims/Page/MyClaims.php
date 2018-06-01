@@ -69,13 +69,12 @@ LEFT JOIN {$config->getClaimInformationCustomGroup('table_name')} pcc ON cact.id
 LEFT JOIN civicrm_activity_contact cac ON cact.id = cac.activity_id AND cac.record_type_id = %1
 LEFT JOIN civicrm_option_value csov ON pcc.{$config->getClaimStatusCustomField('column_name')} = csov.value AND csov.option_group_id = %2
 LEFT JOIN civicrm_option_value ctov ON pcc.{$config->getClaimTypeCustomField('column_name')} = ctov.value AND ctov.option_group_id = %3
-WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL  LIMIT %6, %7";
+WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL LIMIT %6, %7";
     $queryParams = array(
       1 => array($config->getTargetRecordTypeId(), 'Integer'),
       2 => array($config->getClaimStatusOptionGroup('id'), 'Integer'),
       3 => array($config->getClaimTypeOptionGroup('id'), 'Integer'),
       4 => array($contactId, 'Integer'),
-      //5 => array(1, 'Integer'),
       6 => array($offset, 'Integer'),
       7 => array($limit, 'Integer')
     );

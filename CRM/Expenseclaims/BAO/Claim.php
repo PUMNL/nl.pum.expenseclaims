@@ -732,7 +732,7 @@ class CRM_Expenseclaims_BAO_Claim {
     $activityParams = array(
       'activity_type_id' => $config->getClaimActivityTypeId(),
       'activity_date_time' => date('Y-m-d', strtotime($params['expense_date'])),
-      'status_id' => $config->getScheduledActivityStatusId(),
+      'status_id' => $config->getCompletedActivityStatusId(),
       'target_contact_id' => $params['claim_contact_id'],
       'subject' => 'Claim entered on website'
     );
@@ -756,50 +756,85 @@ class CRM_Expenseclaims_BAO_Claim {
    * Method to find approval contact and set claim log for new claim
    */
   public function createFirstStep($params) {
-
-    $sqlParams = array(1 => array((int)$params['id'], 'Integer'));
+    $sqlParams = array(1 => array($params['id'], 'Integer'));
     $countProcessed = CRM_Core_DAO::singleValueQuery("SELECT COUNT(*) FROM pum_claim_log WHERE claim_activity_id = %1", $sqlParams);
+    $config = CRM_Expenseclaims_Config::singleton();
+
+    $tx = new CRM_Core_Transaction();
 
     if (!empty($countProcessed) && $countProcessed > 0) {
-      $config = CRM_Expenseclaims_Config::singleton();
-
-      $tx = new CRM_Core_Transaction();
       try {
+        //Update status in custom fields table
         $sql1 = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET pum_claim_status = %1 WHERE entity_id = %2 ORDER BY id DESC LIMIT 1';
         $dao = CRM_Core_DAO::executeQuery($sql1, array(
-          1 => array($config->getWaitingForApprovalClaimStatusValue(), 'Integer'),
+          1 => array((int)$config->getWaitingForApprovalClaimStatusValue(), 'Integer'),
           2 => array($params['id'], 'Integer')
         ));
 
-        //Only update last claim log entry (desc limit 1)
+        //Update status in claim log: Only the last entry!! (desc limit 1)
         $sql2 = 'UPDATE pum_claim_log SET old_status_id = new_status_id, new_status_id = %1, processed_date = %3 WHERE claim_activity_id = %2 ORDER BY id DESC LIMIT 1';
         $dao = CRM_Core_DAO::executeQuery($sql2, array(
-          1 => array($config->getWaitingForApprovalClaimStatusValue(), 'Integer'),
+          1 => array((int)$config->getWaitingForApprovalClaimStatusValue(), 'Integer'),
           2 => array($params['id'], 'Integer'),
           3 => array(NULL, 'Date')
+        ));
+
+        //Update status on activity, status on activity is not used on new claims,
+        //but to prevent the activity to show up in 'my activities' the activity is set to status completed
+        $sql3 = 'UPDATE civicrm_activity SET status_id = %1 WHERE id = %2 ORDER BY id DESC LIMIT 1';
+        $dao = CRM_Core_DAO::executeQuery($sql3, array(
+          1 => array((int)$config->getCompletedActivityStatusId(), 'Integer'),
+          2 => array($params['id'], 'Integer')
         ));
 
         return TRUE;
       } catch (Exception $ex) {
         $tx->rollBack();
-        CRM_Core_Error::debug_log_message('Unable to set claim status for claim ID: '.$params['id'], TRUE);
+        CRM_Core_Error::debug_log_message('Unable to set claim status 1 for claim ID: '.$params['id'], TRUE);
+        return FALSE;
       }
     } else {
-      $config = CRM_Expenseclaims_Config::singleton();
       // find approval contact based on claim link
       $approvalContactId = $this->findFirstApprovalContact($params);
+      try {
+        //Update status in custom fields table
+        $sql1 = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET pum_claim_status = %1 WHERE entity_id = %2 ORDER BY id DESC LIMIT 1';
+        $dao = CRM_Core_DAO::executeQuery($sql1, array(
+          1 => array((int)$config->getWaitingForApprovalClaimStatusValue(), 'Integer'),
+          2 => array($params['id'], 'Integer')
+        ));
+      } catch (Exception $ex) {
+        $tx->rollBack();
+        CRM_Core_Error::debug_log_message('Unable to set claim status 2 for claim ID: '.$params['id'], TRUE);
+        return FALSE;
+      }
+
       if ($approvalContactId) {
+        //Create claim log entry
         civicrm_api3('ClaimLog', 'create', array(
           'claim_activity_id' => $params['id'],
           'approval_contact_id' => $approvalContactId,
+          'new_status_id' => $config->getWaitingForApprovalClaimStatusValue(),
           'old_status_id' => $config->getWaitingForApprovalClaimStatusValue(),
+          'processed_date' => NULL,
           'is_approved' => 0,
           'is_payable' => 0,
           'is_rejected' => 0
         ));
-        //As soon as claim is submitted activity status is set to completed to prevent that the claim appears in 'my activities'
-        CRM_Core_DAO::executeQuery("UPDATE civicrm_activity SET status_id=%1 where id=%2", array('1'=>array($config->getCompletedActivityStatusId(),'Integer'),'2'=>array($params['id'],'Integer')));
 
+        try {
+          //Update status on activity, status on activity is not used on new claims,
+          //but to prevent the activity to show up in 'my activities' the activity is set to status completed
+          $sql = 'UPDATE civicrm_activity SET status_id = %1 WHERE id = %2 ORDER BY id DESC LIMIT 1';
+          $dao = CRM_Core_DAO::executeQuery($sql, array(
+            1 => array((int)$config->getCompletedActivityStatusId(), 'Integer'),
+            2 => array((int)$params['id'], 'Integer')
+          ));
+        } catch (Exception $ex) {
+          $tx->rollBack();
+          CRM_Core_Error::debug_log_message('Unable to set claim status 3 for claim ID: '.$params['id'], TRUE);
+          return FALSE;
+        }
         return TRUE;
       } else {
         $errorTxt = array();
@@ -922,7 +957,7 @@ class CRM_Expenseclaims_BAO_Claim {
     $sqlClauses = array('entity_id = %1');
     $sqlParams[1] = array($this->_newClaim['id'], 'Integer');
     $sqlClauses[] = $config->getClaimStatusCustomField('column_name').' = %2';
-    $sqlParams[2] = array($config->getWaitingForApprovalClaimStatusValue(), 'String');
+    $sqlParams[2] = array($config->getNotSubmittedClaimStatusValue(), 'String');
     $index = 2;
     if (isset($params['claim_type'])) {
       $index++;

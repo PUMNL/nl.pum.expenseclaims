@@ -107,4 +107,18 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
       return FALSE;
     }
   }
+
+  /**
+   * Add claim status not submitted
+   *
+   * @return TRUE
+   */
+  public function upgrade_1008() {
+    $status = CRM_Expenseclaims_ConfigItems_ConfigItems::addClaimStatusNotSubmitted();
+    if($status['is_error'] == 0) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
 }
