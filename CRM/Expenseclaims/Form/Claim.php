@@ -247,6 +247,7 @@ where             l.claim_activity_id = %1";
 
   public function addRules() {
     $this->addFormRule(['CRM_Expenseclaims_Form_Claim', 'formRule']);
+    $this->addFormRule(['CRM_Expenseclaims_Form_Claim', 'checkDescriptionOnCorrection']);
   }
 
   public static function formRule($fields) {
@@ -262,6 +263,21 @@ where             l.claim_activity_id = %1";
     }
     return $errors;
   }
+
+  public function checkDescriptionOnCorrection($fields) {
+    $errors = [];
+    $session = CRM_Core_Session::singleton();
+
+    if (isset($fields['_qf_Claim_next_sendbackforcorrection'])) {
+      if(empty($fields['claim_description'])) {
+        $errors['claim_description'] = ts('Please enter a remark before sending the claim back to the user');
+      } else {
+        $claim = new CRM_Expenseclaims_BAO_Claim();
+        $claim->sendBackForCorrection($this->_claimId, $session->get('userID'));
+      }
+    }
+    return $errors;
+  }
   /**
    * Method to process results from the form
    */
@@ -273,6 +289,7 @@ where             l.claim_activity_id = %1";
       $this->_approverId = $this->_submitValues['approverid'];
     }
     $this->saveClaim();
+
     $MyClaimsURL = CRM_Utils_System::url('civicrm/pumexpenseclaims/page/myclaims', 'reset=1&approverid='.$this->_approverId, TRUE);
     CRM_Utils_System::redirect($MyClaimsURL);
     parent::postProcess();
@@ -338,21 +355,30 @@ where             l.claim_activity_id = %1";
         if (isset($this->_submitValues['_qf_Claim_next'])) {
           $session = CRM_Core_Session::singleton();
           $claim->approve($this->_claimId, $this->_approverId, $session->get('userID'));
+          return '_qf_Claim_next';
         }
 
         if (isset($this->_submitValues['_qf_Claim_next_reject'])) {
           $session = CRM_Core_Session::singleton();
           $claim->reject($this->_claimId, $this->_approverId, $session->get('userID'));
+          return '_qf_Claim_next_reject';
         }
 
         if(isset($this->_submitValues['_qf_Claim_next_assigntouser'])) {
           $session = CRM_Core_Session::singleton();
           $claim->assignToOtherUser($this->_claimId, $session->get('userID'));
+          return '_qf_Claim_next_assigntouser';
         }
 
         if(isset($this->_submitValues['_qf_Claim_next_sendbackforcorrection'])) {
           $session = CRM_Core_Session::singleton();
-          $claim->sendBackForCorrection($this->_claimId, $session->get('userID'));
+
+          if(empty($this->_submitValues['claim_description'])) {
+            CRM_Core_Session::setStatus('Please enter a remark before sending the claim back to the user ', ts('Description missing'), 'error');
+          } else {
+            $claim->sendBackForCorrection($this->_claimId, $session->get('userID'));
+          }
+          return '_qf_Claim_next_sendbackforcorrection';
         }
       }
     }

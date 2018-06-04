@@ -632,7 +632,8 @@ class CRM_Expenseclaims_BAO_Claim {
     if (isset($params['claim_description'])) {
       $index++;
       $clauses[] = $config->getClaimDescriptionCustomField('column_name').' = %'.$index;
-      $clausesParams[$index] = array($params['claim_description'], 'String');
+      //max length of description field is 255 characters
+      $clausesParams[$index] = array(substr($params['claim_description'],0,255), 'String');
     }
     // if claim_link has to be updated
     if (isset($params['claim_link'])) {

@@ -21,7 +21,7 @@
       <div class="label">{$form.claim_description.label}</div>
       {if $action eq 2}
         <div class="content">
-            <em>In case of rejection or modification please specify</em><br/>
+            <em>In case of rejection, modification or sending back for correction please specify (max 255 characters)</em><br/>
             {$form.claim_description.html}
          </div>
       {/if}
