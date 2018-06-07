@@ -121,4 +121,14 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
       return FALSE;
     }
   }
+
+  /**
+   * Add message templates for claim that is send back to the user
+   *
+   * @return TRUE
+   */
+  public function upgrade_1009() {
+    $this->executeSqlFile('sql/upgrade_1009.sql');
+    return TRUE;
+  }
 }

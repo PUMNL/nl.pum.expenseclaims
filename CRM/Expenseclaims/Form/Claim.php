@@ -271,9 +271,6 @@ where             l.claim_activity_id = %1";
     if (isset($fields['_qf_Claim_next_sendbackforcorrection'])) {
       if(empty($fields['claim_description'])) {
         $errors['claim_description'] = ts('Please enter a remark before sending the claim back to the user');
-      } else {
-        $claim = new CRM_Expenseclaims_BAO_Claim();
-        $claim->sendBackForCorrection($this->_claimId, $session->get('userID'));
       }
     }
     return $errors;
@@ -372,12 +369,7 @@ where             l.claim_activity_id = %1";
 
         if(isset($this->_submitValues['_qf_Claim_next_sendbackforcorrection'])) {
           $session = CRM_Core_Session::singleton();
-
-          if(empty($this->_submitValues['claim_description'])) {
-            CRM_Core_Session::setStatus('Please enter a remark before sending the claim back to the user ', ts('Description missing'), 'error');
-          } else {
-            $claim->sendBackForCorrection($this->_claimId, $session->get('userID'));
-          }
+          $claim->sendBackForCorrection($this->_claimId, $session->get('userID'));
           return '_qf_Claim_next_sendbackforcorrection';
         }
       }

@@ -307,7 +307,6 @@ class CRM_Expenseclaims_BAO_Claim {
               'id' => $claimId,
             );
             $contactOfClaim = civicrm_api3('Claim', 'get', $params_contactofclaim);
-            $ids = array();
             $contactIdOfClaim = '';
             if (is_array($contactOfClaim['values'])) {
               foreach($contactOfClaim['values'] as $value) {
@@ -364,12 +363,14 @@ class CRM_Expenseclaims_BAO_Claim {
     $claim_status_waitingcorrection = $config->getWaitingForCorrectionClaimStatusValue();
 
     if (is_int((int)$claimId) && is_int((int)$claim_status)) {
+      //Set status of claim
       $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET pum_claim_status = %1 WHERE entity_id = %2 ORDER BY id DESC LIMIT 1';
       $result = CRM_Core_DAO::executeQuery($sql, array(
         1 => array((int)$claim_status_waitingcorrection, 'Integer'),
         2 => array((int)$claimId, 'Integer')
       ));
-      //
+
+      // now update claim log line to have status waiting for correction
       $sql = 'UPDATE pum_claim_log SET new_status_id = %1, is_approved = %2, is_rejected = %3, is_payable = %4, processed_date = %5 WHERE claim_activity_id = %6 ORDER BY id DESC LIMIT 1';
       $result = CRM_Core_DAO::executeQuery($sql, array(
         1 => array((int)$claim_status_waitingcorrection, 'Integer'),
@@ -379,6 +380,43 @@ class CRM_Expenseclaims_BAO_Claim {
         5 => array(date('YmdHis'),'String'),
         6 => array((int)$claimId, 'Integer')
       ));
+
+      //Send e-mail to contact
+      try {
+        //Get mail template
+        $params_template = array('msg_title' => 'claim_correction');
+        $result_template = civicrm_api3('MessageTemplate', 'get', $params_template);
+
+        //Get contact id of the user who submitted the claim
+        $params_contactofclaim = array(
+          'version' => 3,
+          'sequential' => 1,
+          'id' => $claimId,
+        );
+        $contactOfClaim = civicrm_api3('Claim', 'get', $params_contactofclaim);
+        $contactIdOfClaim = '';
+        if (is_array($contactOfClaim['values'])) {
+          foreach($contactOfClaim['values'] as $value) {
+            if(!empty($value['source_contact_id'])) {
+              $contactIdOfClaim = $value['source_contact_id'];
+            }
+          }
+        }
+
+        //Now send the e-mail
+        if($result_template['is_error'] == 0 && !empty($contactIdOfClaim)) {
+          //mail claim correction
+          $params_email = array(
+            'version' => 3,
+            'sequential' => 1,
+            'contact_id' => $contactIdOfClaim,
+            'template_id' => $result_template['id'],
+          );
+          $result_email = civicrm_api3('Email', 'send', $params_email);
+        }
+      } catch (CiviCRM_API3_Exception $ex) {
+        throw new Exception('Unable to send e-mail to contact in '.__METHOD__.', contact your system administrator');
+      }
     } else {
       throw new Exception('Unable to send claim back for correction');
     }
