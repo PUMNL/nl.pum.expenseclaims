@@ -385,7 +385,7 @@ class CRM_Expenseclaims_Utils {
    *
    * @return bool
    */
-  public static function checkHasAuthorization($authorizationLevellId='', $contactId='', $approvalContactId='') {
+  public static function checkHasAuthorization($authorizationLevellId='', $contactId='', $approvalContactId='', $claimId) {
     $claimLevelsCurrentUser = array();
     $claimLevelsApprovalContact = array();
 
@@ -395,20 +395,19 @@ class CRM_Expenseclaims_Utils {
     if (!empty($currentUser)) {
       $claimLevelsCurrentUser = CRM_Expenseclaims_Utils::getClaimLevelForContact($currentUser);
     }
-    if (!empty($approvalContactId)) {
-      $claimLevelsApprovalContact = CRM_Expenseclaims_Utils::getClaimLevelForContact($approvalContactId);
+
+    $latest_approval_contact = CRM_Expenseclaims_Utils::getLatestApprovalContact($claimId);
+    if (!empty($latest_approval_contact)) {
+      $claimLevelsApprovalContact = CRM_Expenseclaims_Utils::getClaimLevelForContact($latest_approval_contact);
     }
 
     if (!empty($claimLevelsCurrentUser) && !empty($claimLevelsApprovalContact)) {
-      (int)$max_cl_approvalcontact = (int)max($claimLevelsApprovalContact);
-      (int)$max_cl_currentuser = (int)max($claimLevelsCurrentUser);
-
+      $max_cl_approvalcontact = max($claimLevelsApprovalContact);
+      $max_cl_currentuser = max($claimLevelsCurrentUser);
       //If the highest number (==highest permission) of the current contact is less or equal to the highest permission of the approval contact, user has permission
       //So if approval_contact has a lower number then current user won't have permission
-      if (is_int((int)$max_cl_currentuser) && is_int((int)$max_cl_approvalcontact)) {
-        if((int)$max_cl_currentuser >= (int)$max_cl_approvalcontact) {
-          return TRUE;
-        }
+      if($max_cl_currentuser >= $max_cl_approvalcontact) {
+        return TRUE;
       }
     }
 
@@ -463,6 +462,30 @@ class CRM_Expenseclaims_Utils {
     return $contacts;
   }
 
+  /**
+   * Method to get the latest (current) approval contact id of the claim
+   *
+   * @param mixed $claimId
+   * @return
+   */
+  public static function getLatestApprovalContact($claimId) {
+    $params_approval_contact = array(
+      'version' => 3,
+      'sequential' => 1,
+      'claim_activity_id' => $claimId,
+      'return' => 'approval_contact_id'
+    );
+    $approval_contact = civicrm_api('ClaimLog', 'get', $params_approval_contact);
+    $ids = array();
+    foreach($approval_contact['values'] as $value) {
+      $ids[$value['id']]=$value['approval_contact_id'];
+    }
+
+    $latest_id = max(array_keys($ids));
+    $latest_approval_contact = $ids[$latest_id];
+
+    return $latest_approval_contact;
+  }
 
   /**
    * Method to check if a contact has a specified authorization level

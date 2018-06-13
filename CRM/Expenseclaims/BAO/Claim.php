@@ -170,18 +170,7 @@ class CRM_Expenseclaims_BAO_Claim {
         }
 
         //Get approval contact and check if user has same authorization or higher authorization level
-        $params_approval_contact = array(
-          'version' => 3,
-          'sequential' => 1,
-          'claim_activity_id' => $claimId,
-          'return' => 'approval_contact_id'
-        );
-        $approval_contact = civicrm_api('ClaimLog', 'get', $params_approval_contact);
-        $ids = array();
-        foreach($approval_contact['values'] as $value) {
-          $ids[$value['id']]=$value['approval_contact_id'];
-        }
-        $latest_approval_contact = max($ids);
+        $latest_approval_contact = CRM_Expenseclaims_Utils::getLatestApprovalContact($claimId);
 
         $params_claim = array(
           'version' => 3,
@@ -190,7 +179,7 @@ class CRM_Expenseclaims_BAO_Claim {
         );
         $claim = civicrm_api('Claim', 'getsingle', $params_claim);
 
-        if(CRM_Expenseclaims_Utils::checkHasAuthorization('',$currentUser, $latest_approval_contact) == TRUE) {
+        if(CRM_Expenseclaims_Utils::checkHasAuthorization('', $currentUser, $latest_approval_contact, $claimId) == TRUE) {
           $authorized = TRUE;
         }
 
@@ -245,18 +234,7 @@ class CRM_Expenseclaims_BAO_Claim {
         }
 
         //Get approval contact and check if user has same authorization or higher authorization level
-        $params_approval_contact = array(
-          'version' => 3,
-          'sequential' => 1,
-          'claim_activity_id' => $claimId,
-          'return' => 'approval_contact_id'
-        );
-        $approval_contact = civicrm_api('ClaimLog', 'get', $params_approval_contact);
-        $ids = array();
-        foreach($approval_contact['values'] as $value) {
-          $ids[$value['id']]=$value['approval_contact_id'];
-        }
-        $latest_approval_contact = max($ids);
+        $latest_approval_contact = CRM_Expenseclaims_Utils::getLatestApprovalContact($claimId);
 
         $params_claim = array(
           'version' => 3,
@@ -265,32 +243,48 @@ class CRM_Expenseclaims_BAO_Claim {
         );
         $claim = civicrm_api('Claim', 'getsingle', $params_claim);
 
-        if(CRM_Expenseclaims_Utils::checkHasAuthorization('',$currentUser, $latest_approval_contact) == TRUE) {
+        if(CRM_Expenseclaims_Utils::checkHasAuthorization('', $currentUser, $latest_approval_contact, $claimId) == TRUE) {
           $authorized = TRUE;
         }
 
         if ($authorized == TRUE) {
           //Set status of activity
-          $config = CRM_Expenseclaims_Config::singleton();
-          $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
-            .' = %1 WHERE entity_id = %2';
-          CRM_Core_DAO::executeQuery($sql, array(
-            1 => array($config->getRejectedClaimStatusValue(), 'String'),
-            2 => array($claimId, 'Integer')));
-
           try {
-            // now update claim log line for this rejection
-            $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
+            $config = CRM_Expenseclaims_Config::singleton();
+            $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET '.$config->getClaimStatusCustomField('column_name')
+              .' = %1 WHERE entity_id = %2';
+            CRM_Core_DAO::executeQuery($sql, array(
+              1 => array((int)$config->getRejectedClaimStatusValue(), 'Integer'),
+              2 => array((int)$claimId, 'Integer')));
+          } catch (Exception $ex) {
+            CRM_Core_Error::debug_log_message('reject() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim status 1', TRUE);
+          }
+
+          // now update claim log line for this rejection
+          try {
+            $claimLog = civicrm_api3('ClaimLog', 'get', array(
               'claim_activity_id' => $claimId,
               'approval_contact_id' => $contactId));
-            civicrm_api3('ClaimLog', 'create', array(
-              'id' => $claimLog['id'],
-              'new_status_id' => $config->getRejectedClaimStatusValue(),
-              'is_payable' => 0,
-              'is_approved' => 0,
-              'is_rejected' => 1,
-              'acting_approval_contact_id' => $actingContactId,
-              'processed_date' => date('Y-m-d')));
+            $last_claim_log_id = max(array_keys($claimLog['values']));
+
+            if(empty($actingContactId)) {
+              $actingContactId = $contactId;
+            }
+            try {
+              $sql = 'UPDATE pum_claim_log SET is_approved = %1, is_rejected = %2, acting_approval_contact_id = %3, is_payable = %4, new_status_id = %5, processed_date = %6 WHERE id = %7 AND claim_activity_id = %8';
+              $result = CRM_Core_DAO::executeQuery($sql, array(
+                1 => array((int)0, 'Integer'),
+                2 => array((int)1, 'Integer'),
+                3 => array((int)$actingContactId, 'Integer'),
+                4 => array((int)0, 'Integer'),
+                5 => array((int)$config->getRejectedClaimStatusValue(),'Integer'),
+                6 => array(date('YmdHis'),'String'),
+                7 => array((int)$last_claim_log_id,'Integer'),
+                8 => array((int)$claimId,'Integer')
+              ));
+            } catch (Exception $ex) {
+              CRM_Core_Error::debug_log_message('reject() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim status 2', TRUE);
+            }
           } catch (CiviCRM_API3_Exception $ex) {
             throw new Exception('Unable to update status to rejected in '.__METHOD__.', contact your system administrator');
           }
@@ -371,14 +365,15 @@ class CRM_Expenseclaims_BAO_Claim {
       ));
 
       // now update claim log line to have status waiting for correction
-      $sql = 'UPDATE pum_claim_log SET new_status_id = %1, is_approved = %2, is_rejected = %3, is_payable = %4, processed_date = %5 WHERE claim_activity_id = %6 ORDER BY id DESC LIMIT 1';
+      $sql = 'UPDATE pum_claim_log SET new_status_id = %1, is_approved = %2, is_rejected = %3, is_payable = %4, processed_date = %5, acting_approval_contact_id = %6 WHERE claim_activity_id = %7 ORDER BY id DESC LIMIT 1';
       $result = CRM_Core_DAO::executeQuery($sql, array(
         1 => array((int)$claim_status_waitingcorrection, 'Integer'),
-        2 => array((int)0, 'Integer'),
-        3 => array((int)0, 'Integer'),
-        4 => array((int)0, 'Integer'),
+        2 => array(0, 'Integer'),
+        3 => array(0, 'Integer'),
+        4 => array(0, 'Integer'),
         5 => array(date('YmdHis'),'String'),
-        6 => array((int)$claimId, 'Integer')
+        6 => array((int)$currentContactId, 'Integer'),
+        7 => array((int)$claimId, 'Integer')
       ));
 
       //Send e-mail to contact
@@ -437,14 +432,17 @@ class CRM_Expenseclaims_BAO_Claim {
         .', contact your system administrator');
     }
     $config = CRM_Expenseclaims_Config::singleton();
+
     // first complete current log record if there is one or create new one
     try {
-      $claimLog = civicrm_api3('ClaimLog', 'getsingle', array(
+      $claimLog = civicrm_api3('ClaimLog', 'get', array(
         'claim_activity_id' => $claimId,
         'approval_contact_id' => $contactId)
       );
+      $claimLogLatestEntry = array_values(array_slice($claimLog['values'], -1))[0];
+
       $claimLogCreate = civicrm_api3('ClaimLog', 'create', array(
-        'id' => $claimLog['id'],
+        'id' => $claimLogLatestEntry['id'],
         'acting_approval_contact_id' => $actingContactId,
         'new_status_id' => $config->getInitiallyApprovedClaimStatusValue(),
         'is_payable' => 0,
@@ -459,6 +457,7 @@ class CRM_Expenseclaims_BAO_Claim {
 
       // now set next log record for the authorizing level contact
       $nextContactId = CRM_Expenseclaims_BAO_ClaimLevel::getNextLevelContactId($claimId, $authorizingLevel);
+
       if (!empty($nextContactId) && $nextContactId != FALSE) {
         civicrm_api3('ClaimLog', 'create', array(
           'claim_activity_id' => $claimId,
@@ -509,7 +508,7 @@ class CRM_Expenseclaims_BAO_Claim {
         1 => array((int)$config->getApprovedClaimStatusValue(), 'Integer'),
         2 => array((int)$claimId, 'Integer')));
     } catch (Exception $ex) {
-      CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim status', TRUE);
+      CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim status 1', TRUE);
     }
 
     // now update claim log line for this approval
@@ -535,7 +534,7 @@ class CRM_Expenseclaims_BAO_Claim {
           8 => array((int)$claimId,'Integer')
         ));
       } catch (Exception $ex) {
-        CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim status', TRUE);
+        CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim status 2', TRUE);
       }
     } catch (CiviCRM_API3_Exception $ex) {
       CRM_Core_Error::debug_log_message('finalApprove() failed for claim ID: '.$claimId.', contact id: '.$contactId.' unable to update claim log line '.$ex->getMessage(), TRUE);
@@ -810,14 +809,6 @@ class CRM_Expenseclaims_BAO_Claim {
           2 => array($params['id'], 'Integer')
         ));
 
-        //Update status in claim log: Only the last entry!! (desc limit 1)
-        $sql2 = 'UPDATE pum_claim_log SET old_status_id = new_status_id, new_status_id = %1, processed_date = %3 WHERE claim_activity_id = %2 ORDER BY id DESC LIMIT 1';
-        $dao = CRM_Core_DAO::executeQuery($sql2, array(
-          1 => array((int)$config->getWaitingForApprovalClaimStatusValue(), 'Integer'),
-          2 => array($params['id'], 'Integer'),
-          3 => array(NULL, 'Date')
-        ));
-
         //Update status on activity, status on activity is not used on new claims,
         //but to prevent the activity to show up in 'my activities' the activity is set to status completed
         $sql3 = 'UPDATE civicrm_activity SET status_id = %1 WHERE id = %2 ORDER BY id DESC LIMIT 1';
@@ -826,10 +817,32 @@ class CRM_Expenseclaims_BAO_Claim {
           2 => array($params['id'], 'Integer')
         ));
 
+        //Set approval contact back to first approval contact
+        $approvalContactId = $this->findFirstApprovalContact($params);
+        //Get current status id and put it in old_status_id, Only the last entry!! (desc limit 1)
+        $old_status_id = CRM_Core_DAO::singleValueQuery("SELECT new_status_id FROM pum_claim_log WHERE claim_activity_id = %1 ORDER BY id DESC LIMIT 1", array(1=>array($params['id'],'Integer')));
+        if ($approvalContactId) {
+          //Create claim log entry
+          civicrm_api3('ClaimLog', 'create', array(
+            'claim_activity_id' => $params['id'],
+            'approval_contact_id' => $approvalContactId,
+            'new_status_id' => $config->getWaitingForApprovalClaimStatusValue(),
+            'old_status_id' => $old_status_id,
+            'processed_date' => NULL,
+            'is_approved' => 0,
+            'is_payable' => 0,
+            'is_rejected' => 0
+          ));
+        } else {
+          $tx->rollBack();
+          CRM_Core_Error::debug_log_message('Unable to set claim status 1 for claim ID: '.$params['id'], TRUE);
+          return FALSE;
+        }
+
         return TRUE;
       } catch (Exception $ex) {
         $tx->rollBack();
-        CRM_Core_Error::debug_log_message('Unable to set claim status 1 for claim ID: '.$params['id'], TRUE);
+        CRM_Core_Error::debug_log_message('Unable to set claim status 2 for claim ID: '.$params['id'], TRUE);
         return FALSE;
       }
     } else {
@@ -844,7 +857,7 @@ class CRM_Expenseclaims_BAO_Claim {
         ));
       } catch (Exception $ex) {
         $tx->rollBack();
-        CRM_Core_Error::debug_log_message('Unable to set claim status 2 for claim ID: '.$params['id'], TRUE);
+        CRM_Core_Error::debug_log_message('Unable to set claim status 3 for claim ID: '.$params['id'], TRUE);
         return FALSE;
       }
 
@@ -871,7 +884,7 @@ class CRM_Expenseclaims_BAO_Claim {
           ));
         } catch (Exception $ex) {
           $tx->rollBack();
-          CRM_Core_Error::debug_log_message('Unable to set claim status 3 for claim ID: '.$params['id'], TRUE);
+          CRM_Core_Error::debug_log_message('Unable to set claim status 4 for claim ID: '.$params['id'], TRUE);
           return FALSE;
         }
         return TRUE;
