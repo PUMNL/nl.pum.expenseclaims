@@ -2,6 +2,16 @@
 
 require_once 'expenseclaims.civix.php';
 
+function expenseclaims_civicrm_tokens(&$tokens) {
+  $expense_claims_tokens = new CRM_Expenseclaims_Tokens('expensclaims', 'Claims');
+  $expense_claims_tokens->tokens($tokens);
+}
+
+function expenseclaims_civicrm_tokenValues(&$values, $cids, $job = null, $tokens = array(), $context = null) {
+  $expense_claims_tokens = new CRM_Expenseclaims_Tokens('expensclaims', 'Claims');
+  $expense_claims_tokens->tokenValues($values,$cids,$job, $tokens, $context);
+}
+
 /**
  * Implements hook_civicrm_buildForm().
  *

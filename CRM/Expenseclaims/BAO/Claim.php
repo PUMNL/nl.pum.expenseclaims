@@ -302,10 +302,12 @@ class CRM_Expenseclaims_BAO_Claim {
             );
             $contactOfClaim = civicrm_api3('Claim', 'get', $params_contactofclaim);
             $contactIdOfClaim = '';
+            $claim = false;
             if (is_array($contactOfClaim['values'])) {
               foreach($contactOfClaim['values'] as $value) {
                 if(!empty($value['source_contact_id'])) {
                   $contactIdOfClaim = $value['source_contact_id'];
+                  $claim = $value;
                 }
               }
             }
@@ -313,13 +315,8 @@ class CRM_Expenseclaims_BAO_Claim {
             //Send E-mail to contact
             if($result_template['is_error'] == 0 && !empty($contactIdOfClaim)) {
               //mail claim rejected
-              $params_email = array(
-                'version' => 3,
-                'sequential' => 1,
-                'contact_id' => $contactIdOfClaim,
-                'template_id' => $result_template['id'],
-              );
-              $result_email = civicrm_api3('Email', 'send', $params_email);
+              $mailer = CRM_Expenseclaims_Mail::singleton();
+              $mailer->sendEmail($claim, $contactIdOfClaim, $result_template['id']);
             }
           } catch (CiviCRM_API3_Exception $ex) {
             throw new Exception('Unable to send e-mail to contact in '.__METHOD__.', contact your system administrator');
@@ -390,10 +387,12 @@ class CRM_Expenseclaims_BAO_Claim {
         );
         $contactOfClaim = civicrm_api3('Claim', 'get', $params_contactofclaim);
         $contactIdOfClaim = '';
+        $claim = false;
         if (is_array($contactOfClaim['values'])) {
           foreach($contactOfClaim['values'] as $value) {
             if(!empty($value['source_contact_id'])) {
               $contactIdOfClaim = $value['source_contact_id'];
+              $claim = $value;
             }
           }
         }
@@ -401,13 +400,8 @@ class CRM_Expenseclaims_BAO_Claim {
         //Now send the e-mail
         if($result_template['is_error'] == 0 && !empty($contactIdOfClaim)) {
           //mail claim correction
-          $params_email = array(
-            'version' => 3,
-            'sequential' => 1,
-            'contact_id' => $contactIdOfClaim,
-            'template_id' => $result_template['id'],
-          );
-          $result_email = civicrm_api3('Email', 'send', $params_email);
+          $mailer = CRM_Expenseclaims_Mail::singleton();
+          $mailer->sendEmail($claim, $contactIdOfClaim, $result_template['id']);
         }
       } catch (CiviCRM_API3_Exception $ex) {
         throw new Exception('Unable to send e-mail to contact in '.__METHOD__.', contact your system administrator');
@@ -558,19 +552,15 @@ class CRM_Expenseclaims_BAO_Claim {
         foreach($contactOfClaim['values'] as $value) {
           if(!empty($value['source_contact_id'])) {
             $contactIdOfClaim = $value['source_contact_id'];
+            $claim = $value;
           }
         }
       }
 
       if($result_template['is_error'] == 0 && !empty($contactIdOfClaim)) {
         //mail claim approved
-        $params_email = array(
-          'version' => 3,
-          'sequential' => 1,
-          'contact_id' => $contactIdOfClaim,
-          'template_id' => $result_template['id'],
-        );
-        $result_email = civicrm_api3('Email', 'send', $params_email);
+        $mailer = CRM_Expenseclaims_Mail::singleton();
+        $mailer->sendEmail($claim, $contactIdOfClaim, $result_template['id']);
       }
     } catch (CiviCRM_API3_Exception $ex) {
       CRM_Core_Error::debug_log_message('Failed to send approval message for claim ID: '.$claimId.', contact id: '.$contactId.' '.$ex->getMessage(), TRUE);
