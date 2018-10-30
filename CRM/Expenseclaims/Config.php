@@ -536,7 +536,7 @@ class CRM_Expenseclaims_Config {
    */
   private function setValidMainActivities() {
     $validMainActivities = array(
-      'Advice', 'Business', 'CTM', 'PDV', 'RemoteCoaching', 'Seminar');
+      'Advice', 'Business', 'CTM', 'FactFinding', 'PDV', 'RemoteCoaching', 'Seminar');
     foreach ($validMainActivities as $mainActivity) {
       try {
         $caseType = civicrm_api3('OptionValue', 'getsingle', array(

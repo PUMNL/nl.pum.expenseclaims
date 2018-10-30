@@ -532,7 +532,7 @@ class CRM_Expenseclaims_Utils {
       $sql = "SELECT `case`.`id`, `case`.`subject`
               FROM `civicrm_relationship` `relationship`
               INNER JOIN `civicrm_case` `case` ON `case`.`id` = `relationship`.`case_id`
-              JOIN  `civicrm_case_pum`  `pum_case`      ON `case`.`id` = `pum_case`.`entity_id` AND `pum_case`.`case_type` in ('A','B','C','P','R','S', 'F')
+              JOIN  `civicrm_case_pum`  `pum_case`      ON `case`.`id` = `pum_case`.`entity_id` AND `pum_case`.`case_type` in ('A','B','C','P','R','S','F')
               WHERE (`relationship`.`contact_id_a` = %1 OR `relationship`.`contact_id_b` = %1) AND (`case`.`case_type_id` NOT LIKE %2) AND
               (`case`.`status_id` != %3) AND (`case`.`status_id` != %4) AND (`case`.`status_id` != %5) AND (`case`.`status_id` != %6) AND (`case`.`status_id` != %7)
               AND `case`.`is_deleted` = '0'";
@@ -550,7 +550,7 @@ class CRM_Expenseclaims_Utils {
       $sql = "SELECT `case`.`id`, `case`.`subject`
               FROM `civicrm_relationship` `relationship`
               INNER JOIN `civicrm_case` `case` ON `case`.`id` = `relationship`.`case_id`
-              JOIN  `civicrm_case_pum`  `pum_case`      ON `case`.`id` = `pum_case`.`entity_id` AND `pum_case`.`case_type` in ('A','B','C','P','R','S', 'F')
+              JOIN  `civicrm_case_pum`  `pum_case`      ON `case`.`id` = `pum_case`.`entity_id` AND `pum_case`.`case_type` in ('A','B','C','P','R','S','F')
               WHERE (`relationship`.`contact_id_a` = %1 OR `relationship`.`contact_id_b` = %1) AND (`case`.`case_type_id` NOT LIKE %2) AND
               (`case`.`status_id` != %3)
               AND `case`.`is_deleted` = '0'";
