@@ -200,6 +200,7 @@ class CRM_Expenseclaims_Utils {
    */
   public static function getMyRole($claimId, $contactId) {
     $config = CRM_Expenseclaims_Config::singleton();
+
     if (self::isCFO($contactId) == TRUE) {
       try {
         return civicrm_api3('OptionValue', 'getvalue', array(

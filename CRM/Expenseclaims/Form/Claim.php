@@ -67,7 +67,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
 
       //Check if user is authorized to approve this claim, and if so, show buttons
       if( $session->get('userID') == $this->_approverId |
-          (CRM_Expenseclaims_Utils::checkHasAuthorization($myLevel, $session->get('userID'), $this->_approverId, $this->_claimId) && CRM_Core_Permission::check('manage others claims') == TRUE)) {
+          (!empty($myLevel) && CRM_Expenseclaims_Utils::checkHasAuthorization($myLevel, $session->get('userID'), $this->_approverId, $this->_claimId) && CRM_Core_Permission::check('manage others claims') == TRUE)) {
         //User is authorized to edit/approve/reject/assign this claim
 
         $this->addButtons([
@@ -106,7 +106,7 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
         ]);
       } else if(CRM_Core_Permission::check('view others claims') == TRUE |
                 $session->get('userID') == $this->_approverId |
-                CRM_Expenseclaims_Utils::checkHasAuthorization($myLevel, $session->get('userID'), $this->_approverId, $this->_claimId) && CRM_Core_Permission::check('manage others claims') == TRUE) {
+                (!empty($myLevel) && CRM_Expenseclaims_Utils::checkHasAuthorization($myLevel, $session->get('userID'), $this->_approverId, $this->_claimId) && CRM_Core_Permission::check('manage others claims') == TRUE)) {
         //User is authorized to view this claim
         $this->addButtons([
           ['type' => 'cancel', 'name' => ts('Cancel')],
@@ -265,7 +265,7 @@ where             l.claim_activity_id = %1";
     return $errors;
   }
 
-  public function checkDescriptionOnCorrection($fields) {
+  public static function checkDescriptionOnCorrection($fields) {
     $errors = [];
     $session = CRM_Core_Session::singleton();
 
@@ -277,7 +277,7 @@ where             l.claim_activity_id = %1";
     return $errors;
   }
 
-  public function checkDescriptionOnRejection($fields) {
+  public static function checkDescriptionOnRejection($fields) {
     $errors = [];
     $session = CRM_Core_Session::singleton();
 
