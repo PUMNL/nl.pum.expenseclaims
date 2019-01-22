@@ -272,14 +272,37 @@ class CRM_Expenseclaims_Utils {
       return FALSE;
     }
     $config = CRM_Expenseclaims_Config::singleton();
+
     try {
-      $result =  civicrm_api3('Relationship', 'getvalue', array(
+      $result =  civicrm_api3('Relationship', 'get', array(
         'relationship_type_id' => $config->getSeniorProjectOfficerRelationshipTypeId(),
         'contact_id_a' => $countryId,
-        'is_active' => 1,
-        'return' => 'contact_id_b'
+        'is_active' => 1
       ));
-      return $result;
+
+      $num_relationships = 0;
+
+      if(is_array($result['values'])) {
+        foreach($result['values'] as $key => $value) {
+          if(!isset($result['values'][$key]['case_id'])) {
+            //Relationship on country
+            if(!empty($result['values'][$key]['contact_id_b'])) {
+              $num_relationships++;
+              $prof = $result['values'][$key]['contact_id_b'];
+            }
+          }
+        }
+      }
+
+      if ($num_relationships > 1) {
+        throw new Exception("More then one active Senior Project Officer for Country: ".$countryId.", please make sure there is only one active senior project officer for this country!");
+      } else {
+        if(!empty($prof)) {
+          return $prof;
+        } else {
+          throw new Exception("Could not find Senior Project Officer for Country $countryId");
+        }
+      }
     } catch (CiviCRM_API3_Exception $ex) {
       throw new Exception("Could not find Senior Project Officer for Country $countryId");
     }
