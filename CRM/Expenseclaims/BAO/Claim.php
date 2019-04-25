@@ -340,7 +340,7 @@ class CRM_Expenseclaims_BAO_Claim {
    * @param $assigneeContactId
    */
   public function assignToOtherUser($claimId, $currentContactId){
-    $claimsAssignToUserURL = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimassigntouser', 'reset=1&claim_id='.$claimId.'&approver_id='.$currentContactId, TRUE);
+    $claimsAssignToUserURL = CRM_Utils_System::url('civicrm/pumexpenseclaims/form/claimassigntouser', 'reset=1&claim_id='.$claimId.'&approverid='.$currentContactId, TRUE);
     CRM_Utils_System::redirect($claimsAssignToUserURL);
   }
 
@@ -1194,7 +1194,7 @@ class CRM_Expenseclaims_BAO_Claim {
    * @param array $urlParams
    * @return
    */
-  private function retrieveValuesFromURL($entryURL) {
+  private static function retrieveValuesFromURL($entryURL) {
     $queryStr = parse_url($entryURL, PHP_URL_QUERY);
     $queryStrStripped = str_replace('amp;','&',$queryStr);
     parse_str($queryStrStripped, $urlParams);

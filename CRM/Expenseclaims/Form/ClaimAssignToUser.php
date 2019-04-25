@@ -17,11 +17,11 @@ class CRM_Expenseclaims_Form_ClaimAssignToUser extends CRM_Core_Form {
     $currentUser = $session->get('userID');
 
     if(!empty($values['claim_assign_contacts'])) {
-      $valuesToArray['approver_id'] = $values['claim_assign_contacts'];
+      $valuesToArray['approverid'] = $values['claim_assign_contacts'];
     }
 
     //Check permission
-    if (($currentUser != $valuesToArray['approver_id']) && (CRM_Core_Permission::check('manage others claims') == FALSE)) {
+    if (($currentUser != $valuesToArray['approverid']) && (CRM_Core_Permission::check('manage others claims') == FALSE)) {
       CRM_Core_Session::setStatus('Sorry, you are not allowed to manage this claim', 'Claims', 'error');
       parent::buildQuickForm();
     } else {
@@ -41,7 +41,7 @@ class CRM_Expenseclaims_Form_ClaimAssignToUser extends CRM_Core_Form {
         array('type' => 'cancel', 'name' => ts('Cancel'))
       ));
 
-      $this->assign('approver_id',$valuesToArray['approver_id']);
+      $this->assign('approver_id',$valuesToArray['approverid']);
       // export form elements
       $this->assign('elementNames', $this->getRenderableElementNames());
     }
@@ -67,7 +67,7 @@ class CRM_Expenseclaims_Form_ClaimAssignToUser extends CRM_Core_Form {
    * @return None
    */
   function setDefaultValues() {
-    $defaults = $this->_values;
+    $defaults = $this->exportValues();
 
     $defaults['claim_assign_contacts'] = CRM_Utils_Array::value('claim_assign_contacts', $defaults);
 
@@ -80,7 +80,7 @@ class CRM_Expenseclaims_Form_ClaimAssignToUser extends CRM_Core_Form {
 
     $valuesToArray = $this->retrieveValuesFromURL($values['entryURL']);
     if(!empty($values['claim_assign_contacts'])) {
-      $valuesToArray['approver_id'] = $values['claim_assign_contacts'];
+      $valuesToArray['approverid'] = $values['claim_assign_contacts'];
     }
 
     $config = CRM_Expenseclaims_Config::singleton();
@@ -88,11 +88,11 @@ class CRM_Expenseclaims_Form_ClaimAssignToUser extends CRM_Core_Form {
       $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET pum_claim_status = %1 WHERE entity_id = %2 ORDER BY id DESC LIMIT 1';
       CRM_Core_DAO::executeQuery($sql, array(
         1 => array((int)$config->getWaitingForApprovalClaimStatusValue(), 'Integer'),
-        2 => array((int)$claimId, 'Integer')
+        2 => array((int)$valuesToArray['claim_id'], 'Integer')
       ));
       $sql = 'UPDATE pum_claim_log SET approval_contact_id = %1, acting_approval_contact_id = %2, is_approved = %3, is_rejected = %4, is_payable = %5, old_status_id = new_status_id, new_status_id = %6, processed_date = %7 WHERE claim_activity_id = %8 ORDER BY id DESC LIMIT 1';
       CRM_Core_DAO::executeQuery($sql, array(
-        1 => array($valuesToArray['approver_id'], 'String'),
+        1 => array($valuesToArray['approverid'], 'String'),
         2 => array(NULL,'Date'),
         3 => array((int)0, 'Integer'),
         4 => array((int)0, 'Integer'),
@@ -111,7 +111,7 @@ class CRM_Expenseclaims_Form_ClaimAssignToUser extends CRM_Core_Form {
 
     try {
       $whoseClaims = civicrm_api3('contact', 'getvalue', [
-        'id' => (int)$valuesToArray['approver_id'],
+        'id' => (int)$valuesToArray['approverid'],
         'return' => 'display_name'
       ]);
       CRM_Core_Session::setStatus('Claim: '.$valuesToArray['claim_id'].' is successfully assigned to: '.$whoseClaims.'. Please make sure that you also assign the case to the assigned project officer, otherwise this claim cannot be approved.', 'success', 'success');
@@ -155,18 +155,10 @@ class CRM_Expenseclaims_Form_ClaimAssignToUser extends CRM_Core_Form {
     if (empty($this->_claimLevelId) && isset($this->_submitValues['claim_level_id'])) {
       $this->_claimLevelId = $this->_submitValues['claim_level_id'];
     }
-    $sql = 'SELECT ct.id, ct.sort_name FROM civicrm_contact ct
-            LEFT JOIN civicrm_group_contact gc ON gc.contact_id = ct.id
-            WHERE ct.contact_type = %1 AND
-                  gc.group_id IN (SELECT id FROM civicrm_group WHERE title = %2) AND
-                  gc.status = %3
-            ORDER BY sort_name';
-    $sqlParams = array(
-      1 => array('Individual', 'String'),
-      2 => array('PUM Staff', 'String'),
-      3 => array('Added', 'String')
-    );
-    $contact = CRM_Core_DAO::executeQuery($sql, $sqlParams);
+    $sql = 'SELECT DISTINCT ct.id, ct.sort_name FROM pum_claim_level_contact clc
+            LEFT JOIN civicrm_contact ct ON ct.id = clc.contact_id
+            ORDER BY ct.sort_name ASC';
+    $contact = CRM_Core_DAO::executeQuery($sql);
     while ($contact->fetch()) {
       $this->_contacts[$contact->id] = $contact->sort_name;
     }
