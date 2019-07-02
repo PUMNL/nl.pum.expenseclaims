@@ -39,6 +39,11 @@ function _civicrm_api3_claim_line_get_spec(&$spec) {
     'title' => 'euro_amount',
     'type' => CRM_Utils_Type::T_MONEY
   );
+  $spec['distance_km'] = array(
+    'name' => 'distance_km',
+    'title' => 'distance_km',
+    'type' => CRM_Utils_Type::T_INT
+  );
   $spec['description'] = array(
     'name' => 'description',
     'title' => 'description',

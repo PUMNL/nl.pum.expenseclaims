@@ -26,6 +26,7 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
     $this->addDate('expense_date', ts('Expense Date'), true);
     $this->add('text', 'description', ts('Description'), array(),true);
     $this->add('select', 'expense_type', ts('Expense Type'), $this->_expenseTypeList, true);
+    $this->add('text', 'distance_km', ts('Distance in KM'), array(), true);
     $this->add('select', 'currency_id', ts('Currency'), $this->_currencyList, true);
     $this->add('text', 'currency_amount', ts('Amount in Currency'), array(), true);
     $this->add('text', 'euro_amount', ts('Amount in Euro'));
@@ -72,6 +73,9 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
     if (isset($this->_claimLine['currency_id'])) {
       $defaults['currency_id'] = $this->_claimLine['currency_id'];
     }
+    if (isset($this->_claimLine['distance_km'])) {
+      $defaults['distance_km'] = $this->_claimLine['distance_km'];
+    }
     if (isset($this->_claimLine['currency_amount'])) {
       $defaults['currency_amount'] = $this->_claimLine['currency_amount'];
     }
@@ -113,6 +117,13 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
         'euro_amount' => $euro_amount,
         'description' => $this->_submitValues['description']
       );
+      if( isset($this->_submitValues['expense_type']) &&
+          $this->_submitValues['expense_type'] == civicrm_api('OptionValue', 'getvalue', array('version' => 3, 'sequential' => 1, 'option_group_name' => 'pum_claim_line_type', 'label' => 'KM-allowance', 'return' => 'value')) &&
+          !is_null($this->_submitValues['distance_km']) && !$this->_submitValues['distance_km'] == 0) {
+        $params['distance_km'] = $this->_submitValues['distance_km'];
+      } else {
+        $params['distance_km'] = "";
+      }
       // add reason for change for log entry
       if (isset($this->_submitValues['reason_for_change'])) {
         $params['change_reason'] = $this->_submitValues['reason_for_change'];

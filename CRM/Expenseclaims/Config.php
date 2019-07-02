@@ -45,7 +45,7 @@ class CRM_Expenseclaims_Config {
   private $_countryCoordinatorRelationshipTypeId = NULL;
   private $_programmeManagerGroupId = NULL;
   private $_openBatchStatusId = NULL;
-  private $_exportedBatchStatus = NULL;
+  private $_exportedBatchStatusId = NULL;
   private $_euroCurrencyId = NULL;
 
   /**
@@ -76,7 +76,7 @@ class CRM_Expenseclaims_Config {
   public function getOpenBatchStatusId() {
     try {
       $this->_openBatchStatusId = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_batchStatusOptionGroup[ 'id'],
+        'option_group_id' => $this->_batchStatusOptionGroup['id'],
         'name' => 'open',
         'return' => 'value'
       ));
@@ -95,7 +95,7 @@ class CRM_Expenseclaims_Config {
   public function getExportedBatchStatusId() {
     try {
       $this->_exportedBatchStatusId = civicrm_api3('OptionValue', 'getvalue', array(
-        'option_group_id' => $this->_batchStatusOptionGroup[ 'id'],
+        'option_group_id' => $this->_batchStatusOptionGroup['id'],
         'name' => 'exported',
         'return' => 'value'
       ));

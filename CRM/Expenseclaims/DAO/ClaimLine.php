@@ -61,6 +61,10 @@ class CRM_Expenseclaims_DAO_ClaimLine extends CRM_Core_DAO {
           'name' => 'euro_amount',
           'type' => CRM_Utils_Type::T_MONEY,
         ),
+        'distance_km' => array(
+          'name' => 'distance_km',
+          'type' => CRM_Utils_Type::T_INT,
+        ),
         'exchange_rate' => array(
           'name' => 'exchange_rate',
           'type' => CRM_Utils_Type::T_MONEY,
@@ -90,6 +94,7 @@ class CRM_Expenseclaims_DAO_ClaimLine extends CRM_Core_DAO {
         'currency_id' => 'currency_id',
         'currency_amount' => 'currency_amount',
         'euro_amount' => 'euro_amount',
+        'distance_km' => 'distance_km',
         'exchange_rate' => 'exchange_rate',
         'description' => 'description'
       );

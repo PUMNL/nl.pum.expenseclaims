@@ -47,6 +47,7 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
  ,        line.euro_amount AS euro_amount
  ,         line.exchange_rate AS exchange_rate
  ,         line.description AS description
+ ,         line.distance_km AS distance_km
  ,         pum_case.case_sequence AS case_sequence
  ,         pum_case.case_type AS case_type
  ,         pum_case.case_country AS case_country
@@ -125,6 +126,7 @@ function run() {
       'euro_amount',
       'exchange_rate',
       'description',
+      'distance_km',
 
     );
 
@@ -164,19 +166,17 @@ function run() {
        $dao->foreign_bank_account,
        $dao->bank_account_number,
 
-
        $dao->claim_submitted_date,
        $dao->expense_date,
        $dao->expense_type,
-
-
 
        $dao->pum_account_number,
        $dao->currency,
        $dao->currency_amount,
        $dao->euro_amount,
        $dao->exchange_rate,
-       $dao->description
+       $dao->description,
+       $dao->distance_km
      );
 
      $buffer .= implode(';',array_map("CRM_Expenseclaims_Utils::csvField",$line))."\n";

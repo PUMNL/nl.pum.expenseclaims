@@ -17,6 +17,30 @@
     <div class="content">{$form.expense_type.html}</div>
     <div class="clear"></div>
   </div>
+  {literal}
+    <script type="text/javascript">
+      cj('#ClaimLine #expense_type')
+        .change(function() {
+          if(cj('#ClaimLine #expense_type').val() == 9) {
+            cj('#ClaimLine .pum_claim_line_distance_km').show();
+          } else {
+            cj('#ClaimLine .pum_claim_line_distance_km').hide();
+          }
+        })
+        .ready(function() {
+          if(cj('#ClaimLine #expense_type').val() == 9) {
+            cj('#ClaimLine .pum_claim_line_distance_km').show();
+          } else {
+            cj('#ClaimLine .pum_claim_line_distance_km').hide();
+          }
+        });
+    </script>
+  {/literal}
+  <div class="crm-section pum_claim_line_distance_km">
+    <div class="label">{$form.distance_km.label}</div>
+    <div class="content">{$form.distance_km.html}</div>
+    <div class="clear"></div>
+  </div>
   <div class="crm-section pum_claim_line_currency">
     <div class="label">{$form.currency_id.label}</div>
     <div class="content">{$form.currency_id.html}</div>

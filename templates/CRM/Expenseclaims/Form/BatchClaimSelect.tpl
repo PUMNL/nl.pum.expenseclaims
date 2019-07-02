@@ -72,7 +72,8 @@
                 <input id="selectClaim_{$subsetClaim.claim_id}" name="selectClaim" value="1"
                   class="form-checkbox-row select-claims-check" type="checkbox" title="select all claims">
               </td>
-              <td>{$subsetClaim.claim_id}</td>
+              <td><a href="{crmURL p='civicrm/pumexpenseclaims/form/claim' q="action=view&id=`$subsetClaim.claim_id`"}"
+                  class="action-item action-item-first" title="lines">{$subsetClaim.claim_id}</a></td>
               <td>{$subsetClaim.claim_description}</td>
               <td>{$subsetClaim.claim_submitted_by}</td>
               <td>{$subsetClaim.claim_submitted_date|crmDate}</td>

@@ -31,6 +31,7 @@
               <th scope="col">{ts}Link{/ts}</th>
               <th scope="col">{ts}Total Amount{/ts}</th>
               <th scope="col">{ts}Status{/ts}</th>
+              <th scope="col"></th>
             </tr>
           </thead>
 
@@ -44,13 +45,20 @@
                 </td>
               {/if}
 
-              <td>{$currentClaim.claim_id}</td>
+              <td><a href="{crmURL p='civicrm/pumexpenseclaims/form/claim' q="action=view&id=`$currentClaim.claim_id`"}"
+                  class="action-item action-item-first" title="lines">{$currentClaim.claim_id}</a></td>
               <td>{$currentClaim.claim_description}</td>
               <td>{$currentClaim.claim_submitted_by}</td>
               <td>{$currentClaim.claim_submitted_date|crmDate}</td>
               <td>{$currentClaim.claim_link}</td>
               <td>{$currentClaim.claim_total_amount}</td>
               <td>{$currentClaim.claim_status}</td>
+              <td>
+                <span>
+                  <a href="{crmURL p='civicrm/pumexpenseclaims/form/claim' q="action=view&id=`$currentClaim.claim_id`"}"
+                  class="action-item action-item-first" title="lines">{ts}Lines{/ts}</a>
+                </span>
+              </td>
             </tr>
           {/foreach}
         </table>

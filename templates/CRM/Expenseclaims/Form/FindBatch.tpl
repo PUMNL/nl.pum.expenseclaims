@@ -65,7 +65,7 @@
             </span>
             {if $row.batch_status eq Open}
             <span>
-              <a href="#"  onclick="closeBatch({$row.batch_id},'{$row.description}',{$exportedBatchStatusId})"
+              <a href="#" onclick="closeBatch({$row.batch_id},'{$row.description}',{$exportedBatchStatusId})"
                  class="action-item action-item-first" title="claims">{ts}Close for export{/ts}
               </a>
             </span>
