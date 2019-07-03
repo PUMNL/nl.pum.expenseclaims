@@ -133,12 +133,22 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
   }
 
   /**
-   * Add fieldsdistance_km
+   * Add field distance_km
    *
    * @return TRUE
    */
   public function upgrade_1010() {
     $this->executeSqlFile('sql/upgrade_1010.sql');
+    return TRUE;
+  }
+
+  /**
+   * Add field cost_center
+   *
+   * @return TRUE
+   */
+  public function upgrade_1011() {
+    $this->executeSqlFile('sql/upgrade_1011.sql');
     return TRUE;
   }
 }

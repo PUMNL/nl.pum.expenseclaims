@@ -50,6 +50,12 @@ function _civicrm_api3_claim_line_create_spec(&$spec) {
     'type' => CRM_Utils_Type::T_INT,
     'api.required' => 0,
   );
+  $spec['cost_center'] = array(
+    'name' => 'cost_center',
+    'title' => 'cost_center',
+    'type' => CRM_Utils_Type::T_STRING,
+    'api.required' => 0,
+  );
   $spec['description'] = array(
     'name' => 'description',
     'title' => 'description',

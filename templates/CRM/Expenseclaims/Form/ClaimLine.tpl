@@ -41,6 +41,11 @@
     <div class="content">{$form.distance_km.html}</div>
     <div class="clear"></div>
   </div>
+  <div class="crm-section pum_claim_line_cost_center">
+    <div class="label">{$form.cost_center.label}</div>
+    <div class="content">{$form.cost_center.html}</div>
+    <div class="clear"></div>
+  </div>
   <div class="crm-section pum_claim_line_currency">
     <div class="label">{$form.currency_id.label}</div>
     <div class="content">{$form.currency_id.html}</div>

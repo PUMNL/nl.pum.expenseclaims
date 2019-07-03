@@ -27,6 +27,7 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
     $this->add('text', 'description', ts('Description'), array(),true);
     $this->add('select', 'expense_type', ts('Expense Type'), $this->_expenseTypeList, true);
     $this->add('text', 'distance_km', ts('Distance in KM'), array(), true);
+    $this->add('text', 'cost_center', ts('Cost Center'), array(), false);
     $this->add('select', 'currency_id', ts('Currency'), $this->_currencyList, true);
     $this->add('text', 'currency_amount', ts('Amount in Currency'), array(), true);
     $this->add('text', 'euro_amount', ts('Amount in Euro'));
@@ -70,11 +71,14 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
     if (isset($this->_claimLine['expense_type'])) {
       $defaults['expense_type'] = $this->_claimLine['expense_type'];
     }
-    if (isset($this->_claimLine['currency_id'])) {
-      $defaults['currency_id'] = $this->_claimLine['currency_id'];
-    }
     if (isset($this->_claimLine['distance_km'])) {
       $defaults['distance_km'] = $this->_claimLine['distance_km'];
+    }
+    if (isset($this->_claimLine['cost_center'])) {
+      $defaults['cost_center'] = $this->_claimLine['cost_center'];
+    }
+    if (isset($this->_claimLine['currency_id'])) {
+      $defaults['currency_id'] = $this->_claimLine['currency_id'];
     }
     if (isset($this->_claimLine['currency_amount'])) {
       $defaults['currency_amount'] = $this->_claimLine['currency_amount'];
@@ -112,6 +116,7 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
         'activity_id' => $this->_claimLine['activity_id'],
         'expense_date' => date('Y-m-d', strtotime($this->_submitValues['expense_date'])),
         'expense_type' => $this->_submitValues['expense_type'],
+        'cost_center' => $this->_submitValues['cost_center'],
         'currency_id' => $this->_submitValues['currency_id'],
         'currency_amount' => $this->_submitValues['currency_amount'],
         'euro_amount' => $euro_amount,

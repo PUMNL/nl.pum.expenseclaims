@@ -48,6 +48,7 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
  ,         line.exchange_rate AS exchange_rate
  ,         line.description AS description
  ,         line.distance_km AS distance_km
+ ,         line.cost_center AS cost_center
  ,         pum_case.case_sequence AS case_sequence
  ,         pum_case.case_type AS case_type
  ,         pum_case.case_country AS case_country
@@ -127,7 +128,7 @@ function run() {
       'exchange_rate',
       'description',
       'distance_km',
-
+      'cost_center'
     );
 
     $buffer = implode(';',array_map("CRM_Expenseclaims_Utils::csvField",$heading))."\n";
@@ -176,7 +177,8 @@ function run() {
        $dao->euro_amount,
        $dao->exchange_rate,
        $dao->description,
-       $dao->distance_km
+       $dao->distance_km,
+       $dao->cost_center
      );
 
      $buffer .= implode(';',array_map("CRM_Expenseclaims_Utils::csvField",$line))."\n";

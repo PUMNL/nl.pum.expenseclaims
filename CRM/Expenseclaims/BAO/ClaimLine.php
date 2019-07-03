@@ -109,6 +109,9 @@ class CRM_Expenseclaims_BAO_ClaimLine extends CRM_Expenseclaims_DAO_ClaimLine {
     if (isset($newData['distance_km'])) {
       $params['distance_km'] = $newData['distance_km'];
     }
+    if (isset($newData['cost_center'])) {
+      $params['cost_center'] = $newData['cost_center'];
+    }
     if (isset($newData['expense_date'])) {
       $params['old_expense_date'] = $claimLine->expense_date;
       $params['new_expense_date'] = $newData['expense_date'];
@@ -209,7 +212,8 @@ class CRM_Expenseclaims_BAO_ClaimLine extends CRM_Expenseclaims_DAO_ClaimLine {
           'euro_amount' => $claimLine->euro_amount,
           'description' => $claimLine->description,
           'exchange_rate' => $claimLine->exchange_rate,
-          'distance_km' => $claimLine->distance_km
+          'distance_km' => $claimLine->distance_km,
+          'cost_center' => $claimLine->cost_center
         );
       }
     }
