@@ -10,7 +10,7 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
     $config = CRM_Expenseclaims_Config::singleton();
 
     $claimsql = "
- select   cact.id  AS claim_id
+ SELECT   cact.id  AS claim_id
  ,        ci.{$config->getClaimLinkCustomField('column_name')} AS claim_link
  ,        ci.{$config->getClaimTotalAmountCustomField('column_name')} AS claim_total_amount
  ,        ci.{$config->getClaimDescriptionCustomField('column_name')} AS claim_description
@@ -37,7 +37,7 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
  ,        csov.label AS claim_status
 
  ,        ctov.label AS claim_type
- ,        ctov.grouping AS cost_center
+ ,        ctov.grouping AS gl_account_number
  ,        ctov.name     AS fa_default_donor
  ,        line.expense_date AS expense_date
  ,        line.expense_type AS expense_type
@@ -68,9 +68,9 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
  LEFT   JOIN   civicrm_option_value   ctov ON ci.{$config->getClaimTypeCustomField('column_name')} = ctov.value AND ctov.option_group_id = {$config->getClaimTypeOptionGroup('id')}
  LEFT   JOIN   civicrm_option_value   ltov ON (line.expense_type = ltov.value collate utf8_general_ci AND ltov.option_group_id = {$config->getClaimLineTypeOptionGroup('id')})
  WHERE  cb.id = %1";
-    return $claimsql;
 
-}
+    return $claimsql;
+  }
 
   private function donorCode($caseId) {
     if (empty($caseId)) {
@@ -101,7 +101,7 @@ function run() {
       'claim_feedback',
       'claim_status',
       'claim_role',
-      'cost_center',
+      'project_number',
       'submitted_by',
       'shortname',
       'display_name',
@@ -121,7 +121,7 @@ function run() {
       'submitted_date',
       'expense_date',
       'expense_type',
-      'GL_account_number',
+      'gl_account_number',
       'currency',
       'currency_amount',
       'euro_amount',
@@ -142,13 +142,14 @@ function run() {
      $line = array (
        $dao->claim_id,
        $dao->claim_link,
-       $pumCaseNumber?$pumCaseNumber:$dao->cost_center,
-       $donorCode?$donorCode:$dao->fa_default_donor,
+       $pumCaseNumber,                                  //claim_pum_case_number
+       $donorCode?$donorCode:$dao->fa_default_donor,    //fa_donor
        $dao->claim_total_amount,
-       $dao->claim_description,
+       $dao->claim_description,                         //claim_feedback
        $dao->claim_status,
-       $dao->claim_type,
-       $dao->cost_center,
+       $dao->claim_type,                                //claim_role
+       $dao->gl_account_number,                         //project_number: grouping from option group pum_claim_type
+                                                        //don't ask my why but finance department don't want general ledger code in general ledger column :(
        $dao->claim_submitted_by,
        $dao->shortname,
        $dao->display_name,
@@ -171,7 +172,8 @@ function run() {
        $dao->expense_date,
        $dao->expense_type,
 
-       $dao->pum_account_number,
+       $dao->pum_account_number,                        //gl_account_number: general ledger code (grouping from option_group pum_claim_line_type)
+                                                        //don't ask my why but finance department wants general ledger code in column 'gl_account_number' :(
        $dao->currency,
        $dao->currency_amount,
        $dao->euro_amount,
