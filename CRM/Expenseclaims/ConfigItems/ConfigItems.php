@@ -379,4 +379,36 @@ class CRM_Expenseclaims_ConfigItems_ConfigItems {
           .', contact your system administrator. Error from API OptionValue create: '.$ex->getMessage());
     }
   }
+
+  /**
+  * Add claim type representative
+  */
+  public static function addClaimTypeRepresentative() {
+    try {
+      $params = array(
+        'version' => 3,
+        'sequential' => 1,
+        'name' => 'pum_claim_type',
+        'return' => 'id',
+      );
+      $pum_claim_type_groupid = civicrm_api('OptionGroup', 'getvalue', $params);
+
+      $params = array(
+        'version' => 3,
+        'sequential' => 1,
+        'option_group_id' => $pum_claim_type_groupid,
+        'name' => 'representative',
+        'label' => 'Representative',
+        'is_reserved' => 1,
+        'value' => 'representative',
+        'grouping' => 'Project',
+      );
+      $result = civicrm_api('OptionValue', 'create', $params);
+
+      return $result;
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not create option value: Representative in '.__METHOD__
+          .', contact your system administrator. Error from API OptionValue create: '.$ex->getMessage());
+    }
+  }
 }

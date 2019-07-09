@@ -86,7 +86,7 @@ WHERE pclog.approval_contact_id = %4 AND pclog.processed_date IS NULL LIMIT %6, 
       $row['submitted_by_cid_url'] = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$row['submitted_by_cid']}");
       $row['submitted_by'] = CRM_Threepeas_Utils::getContactName($dao->claim_submitted_by);
       $row['submitted_date'] = $dao->claim_submitted_date;
-      if ($dao->claim_type_id == 'project') {
+      if ($dao->claim_type_id == 'project' | $dao->claim_type_id == 'representative') {
         $row['link'] = $this->getLinkCaseSubject($dao->claim_link);
         $row['link_url'] = $this->getLinkUrl($dao->claim_link);
       } else {

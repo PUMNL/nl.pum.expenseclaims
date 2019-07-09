@@ -151,4 +151,18 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
     $this->executeSqlFile('sql/upgrade_1011.sql');
     return TRUE;
   }
+
+  /**
+   * Add claim type representative
+   *
+   * @return TRUE
+   */
+  public function upgrade_1012() {
+    $status = CRM_Expenseclaims_ConfigItems_ConfigItems::addClaimTypeRepresentative();
+    if($status['is_error'] == 0) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
 }

@@ -23,7 +23,7 @@ function civicrm_api3_claim_submit($params) {
   $claim = civicrm_api3('claim', 'getsingle', array('id' => $params['id']));
   $params['id'] = $claim['id'];
   $params['claim_type'] = $claim['claim_type_id'];
-  if ($claim['claim_type_id'] == 'project') {
+  if ($claim['claim_type_id'] == 'project' | $claim['claim_type_id'] == 'representative') {
     $params['claim_link'] = $claim['claim_linked_to'];
   }
 

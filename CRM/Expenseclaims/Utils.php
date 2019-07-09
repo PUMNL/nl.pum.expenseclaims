@@ -22,6 +22,7 @@ class CRM_Expenseclaims_Utils {
     // only makes sense if claim is project, then case can be retrieved
     $claim = new CRM_Expenseclaims_BAO_Claim();
     $caseId = $claim->getProjectClaimCaseId($claimId);
+
     if ($caseId) {
       // now get case client and country of case client
       $caseClientId = CRM_Threepeas_Utils::getCaseClientId($caseId);

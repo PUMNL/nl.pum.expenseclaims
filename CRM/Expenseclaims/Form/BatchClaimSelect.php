@@ -81,8 +81,8 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
     $dao = CRM_Core_DAO::executeQuery($this->getCurrentClaimsQuery(), $this->getCurrentClaimsParams());
     while ($dao->fetch()) {
       $claimLink = $dao->claim_link;
-      // get case subject with claim_link if claim_type = project
-      if ($dao->claim_type == 'project') {
+      // get case subject with claim_link if claim_type = project or representative
+      if ($dao->claim_type == 'project' | $dao->claim_type == 'representative') {
         try {
           $claimLink = civicrm_api3('Case', 'getvalue', array('id' => $dao->claim_link, 'return' => 'subject'));
         } catch (CiviCRM_API3_Exception $ex) {
@@ -219,8 +219,8 @@ class CRM_Expenseclaims_Form_BatchClaimSelect extends CRM_Core_Form {
     $dao = CRM_Core_DAO::executeQuery($this->getSubsetQuery($whereClauses), $this->_subsetParams);
     while ($dao->fetch()) {
       $claimLink = $dao->claim_link;
-      // get case subject with claim_link if claim_type = project
-      if ($dao->claim_type == 'project') {
+      // get case subject with claim_link if claim_type = project or representative
+      if ($dao->claim_type == 'project' | $dao->claim_type == 'representative') {
         try {
           $claimLink = civicrm_api3('Case', 'getvalue', array('id' => $dao->claim_link, 'return' => 'subject'));
         } catch (CiviCRM_API3_Exception $ex) {

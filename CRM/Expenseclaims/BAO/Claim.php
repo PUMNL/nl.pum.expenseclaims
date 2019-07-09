@@ -714,10 +714,11 @@ class CRM_Expenseclaims_BAO_Claim {
     if (!empty($claimId)) {
       $config = CRM_Expenseclaims_Config::singleton();
       $sql = 'SELECT ' . $config->getClaimLinkCustomField('column_name') . ' FROM ' . $config->getClaimInformationCustomGroup('table_name')
-        . ' WHERE entity_id = %1 AND ' . $config->getClaimTypeCustomField('column_name') . ' = %2';
+        . ' WHERE entity_id = %1 AND (' . $config->getClaimTypeCustomField('column_name') . ' = %2 OR ' . $config->getClaimTypeCustomField('column_name') . ' = %3)';
       $claimLink = CRM_Core_DAO::singleValueQuery($sql, array(
         1 => array($claimId, 'Integer'),
-        2 => array('project', 'String')));
+        2 => array('project', 'String'),
+        3 => array('representative', 'String')));
       if ($claimLink) {
         return $claimLink;
       }
@@ -959,6 +960,15 @@ class CRM_Expenseclaims_BAO_Claim {
           }
         }
         break;
+      case "representative":
+        if (CRM_Expenseclaims_Utils::isCTMorPDVCase($params['claim_link'])) {
+          $config = CRM_Expenseclaims_Config::singleton();
+          return $config->getPumCfo();
+        }
+        else {
+          return $this->findFirstApprovalProjectContact($params['claim_link']);
+        }
+        break;
       default:
         return FALSE;
         break;
@@ -1094,7 +1104,7 @@ class CRM_Expenseclaims_BAO_Claim {
     // then if the claim is a main activity claim:
     try {
       $claim = civicrm_api3('Claim', 'getsingle', array('id' => $claimId));
-      if ($claim['claim_type_id'] == 'project') {
+      if ($claim['claim_type_id'] == 'project' | $claim['claim_type_id'] == 'representative') {
         // check if there is a case for the claim
         try {
           $caseCount = civicrm_api3('Case', 'getcount', array('id' => $claim['claim_linked_to']));

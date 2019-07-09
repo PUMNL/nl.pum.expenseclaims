@@ -95,40 +95,41 @@
 </div>
 {literal}
   <script type="text/javascript">
-    cj('#add_claims_to_batch').click(function() {
-      var requests = new Array();
-      cj('.form-checkbox-row').each(function () {
-        if (cj(this).attr('name') === 'selectClaim') {
-          // if checked is true, add claim to batch
-          var checked = cj(this).is(":checked");
-          if (checked) {
-            var claimId = cj(this).attr('id').substr(12);
-            var batchId = cj('#batch_id').val();
-            requests.push(['ClaimBatchEntity', 'create', {'batch_id':batchId, 'entity_id':claimId, 'entity_table':'civicrm_activity'}]);
+    cj(document).ready(function(){
+      cj('#add_claims_to_batch').click(function() {
+        var requests = new Array();
+        cj('.form-checkbox-row').each(function () {
+          if (cj(this).attr('name') === 'selectClaim') {
+            // if checked is true, add claim to batch
+            var checked = cj(this).is(":checked");
+            if (checked) {
+              var claimId = cj(this).attr('id').substr(12);
+              var batchId = cj('#batch_id').val();
+              requests.push(['ClaimBatchEntity', 'create', {'batch_id':batchId, 'entity_id':claimId, 'entity_table':'civicrm_activity'}]);
+            }
           }
+        });
+        CRM.api3(requests)
+          .done(function (result) {
+            //CRM.alert('','Successfully added claims to batch', 'success');
+            window.location.reload();
+          })
+          .fail(function (result) {
+            CRM.alert('','Failed to add claims to batch', 'error');
+            window.location.reload();
+          });
+      });
+      // toggle all checkboxes with select all
+      cj('#toggleSelectAll').change(function() {
+        var checkboxes = cj(this).closest('form').find('.select-claims-check');
+        if(cj(this).is(':checked')) {
+          checkboxes.prop('checked', true);
+        } else {
+          checkboxes.prop('checked', false);
         }
       });
-      CRM.api3(requests)
-        .done(function (result) {
-          //CRM.alert('','Successfully added claims to batch', 'success');
-          window.location.reload();
-        })
-        .fail(function (result) {
-          CRM.alert('','Failed to add claims to batch', 'error');
-          window.location.reload();
-        });
-    });
-    // toggle all checkboxes with select all
-    cj('#toggleSelectAll').change(function() {
-      var checkboxes = cj(this).closest('form').find('.select-claims-check');
-      if(cj(this).is(':checked')) {
-        checkboxes.prop('checked', true);
-      } else {
-        checkboxes.prop('checked', false);
-      }
-    });
-    // uncheck all checkboxes when loading from
-    cj(document).ready(function(){
+      // uncheck all checkboxes when loading from
+
       cj('input[type=checkbox]').prop("checked", false);
     });
   </script>
