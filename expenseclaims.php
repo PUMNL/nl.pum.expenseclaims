@@ -358,3 +358,15 @@ function expenseclaims_civicrm_alterAPIPermissions($entity, $action, &$params, &
   $permissions['claim_batch_entity']['update'] = array('create claim batches');
   $permissions['claim_batch_entity']['delete'] = array('delete claim from batches');
 }
+
+function expenseclaims_civicrm_validateForm( $formName, &$fields, &$files, &$form, &$errors ) {
+  $claim_types = _pum_claims_getClaimLineTypes();
+
+  if($formName == 'CRM_Expenseclaims_Form_ClaimLine'){
+    if(!empty($fields['expense_type']) && $fields['expense_type'] == array_search('KM-allowance', $claim_types)) {
+      if(empty($fields['distance_km']) | !is_int((int)$fields['distance_km']) | (int)$fields['distance_km'] < 1) {
+        $errors['distance_km'] = 'Distance in KM is a required field.';
+      }
+    }
+  }
+}

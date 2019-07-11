@@ -993,7 +993,10 @@ class CRM_Expenseclaims_BAO_Claim {
       'case_id' => $claim_link,
       'options' => array('limit' => 1)
     ));
-    if (!empty($relation['values'][$relation['id']]['contact_id_b'])) {
+
+    if (!empty($relation['values'][0]['contact_id_b'])) {
+      $contactId = $relation['values'][0]['contact_id_b'];
+    } else if (!empty($relation['values'][$relation['id']]['contact_id_b'])) {
       $contactId = $relation['values'][$relation['id']]['contact_id_b'];
     }
     return $contactId;

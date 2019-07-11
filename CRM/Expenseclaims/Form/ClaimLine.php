@@ -15,6 +15,7 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
   protected $_expenseTypeList = array();
   protected $_currencyList = array();
   protected $_claimLine = array();
+  public $_fields = array();
 
   /**
    * Method to build the QuickForm
@@ -26,7 +27,7 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
     $this->addDate('expense_date', ts('Expense Date'), true);
     $this->add('text', 'description', ts('Description'), array(),true);
     $this->add('select', 'expense_type', ts('Expense Type'), $this->_expenseTypeList, true);
-    $this->add('text', 'distance_km', ts('Distance in KM'), array(), true);
+    $this->add('text', 'distance_km', ts('Distance in KM'), array(), false);
     $this->add('text', 'cost_center', ts('Cost Center'), array(), false);
     $this->add('select', 'currency_id', ts('Currency'), $this->_currencyList, true);
     $this->add('text', 'currency_amount', ts('Amount in Currency'), array(), true);
@@ -73,6 +74,9 @@ class CRM_Expenseclaims_Form_ClaimLine extends CRM_Core_Form {
     }
     if (isset($this->_claimLine['distance_km'])) {
       $defaults['distance_km'] = $this->_claimLine['distance_km'];
+    }
+    if (empty($defaults['distance_km'])) {
+      $defaults['distance_km'] = 0;
     }
     if (isset($this->_claimLine['cost_center'])) {
       $defaults['cost_center'] = $this->_claimLine['cost_center'];
