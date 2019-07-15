@@ -961,13 +961,8 @@ class CRM_Expenseclaims_BAO_Claim {
         }
         break;
       case "representative":
-        if (CRM_Expenseclaims_Utils::isCTMorPDVCase($params['claim_link'])) {
-          $config = CRM_Expenseclaims_Config::singleton();
-          return $config->getPumCfo();
-        }
-        else {
-          return $this->findFirstApprovalProjectContact($params['claim_link']);
-        }
+        return $this->findFirstApprovalProjectContact($params['claim_link']);
+
         break;
       default:
         return FALSE;
