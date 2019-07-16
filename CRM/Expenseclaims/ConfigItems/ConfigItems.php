@@ -411,4 +411,50 @@ class CRM_Expenseclaims_ConfigItems_ConfigItems {
           .', contact your system administrator. Error from API OptionValue create: '.$ex->getMessage());
     }
   }
+
+  /**
+   * Change name of option values in option_group pum_claim_type for correct output in batch export
+   */
+  public static function changeNamesClaimTypes() {
+    try {
+      $params = array(
+        'version' => 3,
+        'sequential' => 1,
+        'option_group_name' => 'pum_claim_type',
+      );
+      $result = civicrm_api('OptionValue', 'get', $params);
+
+      $result_update = array();
+
+      foreach($result['values'] as $key => $value) {
+        if(in_array($value['name'], array('main_activity'))) {
+          $params_update1 = array(
+            'version' => 3,
+            'sequential' => 1,
+            'id' => $value['id'],
+            'name' => '600',
+            'is_reserved' => 0
+          );
+          $result_update1 = civicrm_api('OptionValue', 'update', $params_update1);
+        }
+      }
+      foreach($result['values'] as $key => $value) {
+        if(in_array($value['name'], array('country_coordinator','sector_coordinator','hans_blankert','recruitment','aspect_advisors','programme_manager','representative'))) {
+          $params_update2 = array(
+            'version' => 3,
+            'sequential' => 1,
+            'id' => $value['id'],
+            'name' => '599',
+            'is_reserved' => 0
+          );
+          $result_update2 = civicrm_api('OptionValue', 'update', $params_update2);
+        }
+      }
+      $result_update = array($result_update1,$result_update2);
+      return $result_update;
+    } catch (CiviCRM_API3_Exception $ex) {
+      throw new Exception('Could not update option value: pum_claim_type in '.__METHOD__
+          .', contact your system administrator. Error from API OptionValue create: '.$ex->getMessage());
+    }
+  }
 }

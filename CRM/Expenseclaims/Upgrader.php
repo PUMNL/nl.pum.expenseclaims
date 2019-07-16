@@ -165,4 +165,18 @@ class CRM_Expenseclaims_Upgrader extends CRM_Expenseclaims_Upgrader_Base {
       return FALSE;
     }
   }
+
+  /**
+   * Add claim type representative
+   *
+   * @return TRUE
+   */
+  public function upgrade_1013() {
+    $status = CRM_Expenseclaims_ConfigItems_ConfigItems::changeNamesClaimTypes();
+    if($status['is_error'] == 0) {
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
 }

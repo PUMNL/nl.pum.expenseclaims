@@ -946,18 +946,21 @@ class CRM_Expenseclaims_BAO_Claim {
         break;
       // if project, check my role (if SC then approval by CPO) else approval based on levels
       case "project":
-        if (CRM_Expenseclaims_Utils::isClaimEnteredBySC($params['id'], $params['claim_link']) == TRUE) {
-          $config = CRM_Expenseclaims_Config::singleton();
-          return $config->getPumCpo();
-        }
-        else {
-          if (CRM_Expenseclaims_Utils::isCTMorPDVCase($params['claim_link'])) {
+        if (CRM_Expenseclaims_Utils::isCTMorPDVCase($params['claim_link'])) {
+          if (CRM_Expenseclaims_Utils::isClaimEnteredBySC($params['id'], $params['claim_link']) == TRUE) {
+            $config = CRM_Expenseclaims_Config::singleton();
+            return $config->getPumCpo();
+          }
+          else if (CRM_Expenseclaims_Utils::isClaimEnteredByCC($params['id'], $params['claim_link']) == TRUE) {
             $config = CRM_Expenseclaims_Config::singleton();
             return $config->getPumCfo();
           }
           else {
             return $this->findFirstApprovalProjectContact($params['claim_link']);
           }
+        }
+        else {
+          return $this->findFirstApprovalProjectContact($params['claim_link']);
         }
         break;
       case "representative":
