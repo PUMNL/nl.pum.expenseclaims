@@ -142,7 +142,7 @@ function run() {
      $line = array (
        $dao->claim_id,
        $dao->claim_link,
-       $pumCaseNumber,                                  //claim_pum_case_number
+       $pumCaseNumber?$pumCaseNumber:$dao->gl_account_number, //claim_pum_case_number, request from finance: if pumCaseNumber == empty, show gl_account_number
        $donorCode?$donorCode:$dao->fa_default_donor,    //fa_donor
        $dao->claim_total_amount,
        $dao->claim_description,                         //claim_feedback
