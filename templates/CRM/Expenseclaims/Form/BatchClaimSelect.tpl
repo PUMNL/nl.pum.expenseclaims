@@ -120,7 +120,7 @@
           });
       });
       // toggle all checkboxes with select all
-      cj('#toggleSelectAll').change(function() {
+      cj('input#toggleSelectAll').change(function() {
         var checkboxes = cj(this).closest('form').find('.select-claims-check');
         if(cj(this).is(':checked')) {
           checkboxes.prop('checked', true);
