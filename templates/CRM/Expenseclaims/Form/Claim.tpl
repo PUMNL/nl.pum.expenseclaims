@@ -46,6 +46,13 @@
     </div>
   {* include claim lines part if there are any *}
   {if !empty($claimLines)}
+    {assign var="containsKMallowance" value=0}
+    {foreach from=$claimLines key=claimLineId item=claimLine}
+      {if $claimLine.type == 'KM-allowance'}
+        {assign var="containsKMallowance" value=1}
+      {/if}
+    {/foreach}
+
     <h3>{ts}Claim Lines{/ts}</h3>
     <div class="crm-block crm-form-block">
       <div id="claim_lines-wrapper" class="dataTables_wrapper">
@@ -56,6 +63,9 @@
             <th>{ts}Date{/ts}</th>
             <th>{ts}Description{/ts}</th>
             <th>{ts}Type{/ts}</th>
+            {if $containsKMallowance eq 1}
+            <th>{ts}Distance in KM{/ts}</th>
+            {/if}
             <th>{ts}Amt. in Currency{/ts}</th>
             <th>{ts}Amt. in Euro{/ts}</th>
             <th>{ts}Exchange Rate{/ts}</th>
@@ -72,6 +82,13 @@
               <td>{$claimLine.date|crmDate}</td>
               <td>{$claimLine.description}</td>
               <td>{$claimLine.type}</td>
+              {if $containsKMallowance eq 1}
+                {if $claimLine.type eq 'KM-allowance'}
+                <td>{$claimLine.distance_km}</td>
+                {else}
+                <td></td>
+                {/if}
+              {/if}
               <td>{$claimLine.currency_amount|crmNumberFormat:2}&nbsp;{$claimLine.currency}</td>
               <td>{$claimLine.euro_amount|crmMoney}</td>
               <td>{$claimLine.exchange_rate|crmNumberFormat:2}</td>

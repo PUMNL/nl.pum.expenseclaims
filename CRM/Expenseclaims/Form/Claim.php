@@ -168,6 +168,9 @@ class CRM_Expenseclaims_Form_Claim extends CRM_Core_Form {
           ],
         ]);
       }
+      if (isset($claimLine['distance_km'])) {
+        $result[$claimLineId]['distance_km'] = $claimLine['distance_km'];
+      }
       if (isset($claimLine['currency_amount'])) {
         $result[$claimLineId]['currency_amount'] = $claimLine['currency_amount'];
       }
