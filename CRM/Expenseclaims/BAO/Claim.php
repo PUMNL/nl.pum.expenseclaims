@@ -929,7 +929,7 @@ class CRM_Expenseclaims_BAO_Claim {
         $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCpo();
         break;
-      // 7164 is Other Roles
+      // 7164 is Experts and Representatives not linked to cases
       case "7164":
         $config = CRM_Expenseclaims_Config::singleton();
         return $config->getPumCfo();
