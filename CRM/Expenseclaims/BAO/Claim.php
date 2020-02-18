@@ -353,7 +353,7 @@ class CRM_Expenseclaims_BAO_Claim {
 
     $claim_status_waitingcorrection = $config->getWaitingForCorrectionClaimStatusValue();
 
-    if (is_int((int)$claimId) && is_int((int)$claim_status)) {
+    if (is_int((int)$claimId) && is_int((int)$claim_status_waitingcorrection)) {
       //Set status of claim
       $sql = 'UPDATE '.$config->getClaimInformationCustomGroup('table_name').' SET pum_claim_status = %1 WHERE entity_id = %2 ORDER BY id DESC LIMIT 1';
       $result = CRM_Core_DAO::executeQuery($sql, array(
