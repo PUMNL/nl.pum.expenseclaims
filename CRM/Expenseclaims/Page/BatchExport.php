@@ -10,7 +10,7 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
     $config = CRM_Expenseclaims_Config::singleton();
 
     $claimsql = "
- SELECT   cact.id  AS claim_id
+ SELECT   DISTINCT cact.id  AS claim_id
  ,        ci.{$config->getClaimLinkCustomField('column_name')}          AS claim_link
  ,        ci.{$config->getClaimTotalAmountCustomField('column_name')}   AS claim_total_amount
  ,        ci.{$config->getClaimDescriptionCustomField('column_name')}   AS claim_description
