@@ -73,7 +73,6 @@ class CRM_Expenseclaims_Page_BatchExport extends CRM_Core_Page {
  LEFT   JOIN  civicrm_case                      cas       ON cas.id = ci.pum_projectnumber_referencenumbe_387
  LEFT   JOIN  civicrm_option_value              cap       ON cap.option_group_id = (SELECT id FROM civicrm_option_group WHERE name = 'case_type') AND cap.value = cas.case_type_id
  /* To display country in export */
-  LEFT JOIN civicrm_case ctp ON ctp.id = ci.pum_projectnumber_referencenumbe_387
   LEFT JOIN civicrm_case_contact pccc ON pccc.case_id = ci.pum_projectnumber_referencenumbe_387
   LEFT JOIN civicrm_contact pccl ON (
     CASE pccl.contact_sub_type WHEN CONCAT(char(1),'Country',char(1)) THEN pccl.id = pccc.contact_id END
