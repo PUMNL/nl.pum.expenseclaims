@@ -629,6 +629,7 @@ class CRM_Expenseclaims_Utils {
       $value = str_replace(';','',$value);
       $value = str_replace(',','',$value);
       $value = str_replace('"','""',$value);
+      $value = str_replace('&','and',$value);
       return '"' . $value . '"';
     } else {
       return '""';
