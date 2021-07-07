@@ -101,11 +101,13 @@
             buttons: {
                 Ok: function () {
                     CRM.api3('ClaimBatch', 'create', {'id':id, 'batch_status_id':batch_status_id})
-                        .done(function () {
+                        .done(function (msg) {
+                          cj('#Custom').submit();
+                        })
+                        .error(function(msg) {
 
                         });
                     cj(this).dialog("close");
-                    cj('#Custom').submit();
                 },
                 Cancel: function () {
                     cj(this).dialog("close");
